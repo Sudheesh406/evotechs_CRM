@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink,useNavigate } from "react-router-dom";
 import {
   Home,
   Users,
@@ -16,12 +16,16 @@ import {
   UserPlus,
   Briefcase,
   Boxes,
+  RotateCcw,
+  Trash2,
   Wrench,
   FolderKanban,
+  Hourglass
 } from "lucide-react";
 
 const Sidebar = ({ closeSidebar }) => {
   const [openMenus, setOpenMenus] = useState({});
+  const navigate = useNavigate()
 
   const toggleMenu = (index) => {
     setOpenMenus((prev) => ({
@@ -38,8 +42,10 @@ const Sidebar = ({ closeSidebar }) => {
       subMenu: [
         { title: "Leads", path: "/sales/leads", icon: UserPlus },
         { title: "Contacts", path: "/sales/contacts", icon: Users },
-        { title: "Deals", path: "/sales/deals", icon: Briefcase },
         { title: "Personalize", path: "/sales/personalize", icon: Shield },
+        { title: "Deals", path: "/sales/deals", icon: Briefcase },
+        { title: "Pending", path: "/sales/pendings", icon: Hourglass },
+        { title: "Rework", path: "/sales/reworks", icon: RotateCcw },
         { title: "Documents", path: "/sales/documents", icon: FileText },
       ],
     },
@@ -61,7 +67,7 @@ const Sidebar = ({ closeSidebar }) => {
         { title: "Messages", path: "/workspace/messages", icon: MessageSquare },
       ],
     },
-    { title: "Integrations", icon: Boxes, path: "/integrations" },
+    { title: "Trash", icon: Trash2, path: "/trash" },
     { title: "Services", icon: Wrench, path: "/services" },
     { title: "Projects", icon: FolderKanban, path: "/projects" },
   ];
@@ -147,7 +153,8 @@ const Sidebar = ({ closeSidebar }) => {
           <Settings className="w-5 h-5" />
           <span className="font-medium">Settings</span>
         </div>
-        <div className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-[#2A3A5F] hover:text-[#E50914] cursor-pointer transition-all duration-200">
+        <div className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-[#2A3A5F] hover:text-[#E50914] cursor-pointer transition-all duration-200"
+         onClick={()=>navigate('/auth')}>
           <LogOut className="w-5 h-5" />
           <span className="font-medium">Logout</span>
         </div>

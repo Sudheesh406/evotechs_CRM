@@ -1,6 +1,6 @@
 import React from "react";
 import { Phone } from "lucide-react";
-import Table from "../../components/Table";
+import Table from "../../components/Table2";
 
 const Contacts = () => {
   const columns = [

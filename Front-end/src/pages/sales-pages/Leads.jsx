@@ -1,6 +1,6 @@
 import React from "react";
 import { ChevronDown, Phone } from "lucide-react";
-import DataTable from "../../components/Table";
+import DataTable from "../../components/Table2";
 
 const Leads = () => {
   const leads = [
