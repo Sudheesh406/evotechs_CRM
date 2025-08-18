@@ -1,133 +1,243 @@
 import React, { useState } from "react";
-import logo from "../../assets/images/logo1.png"
+import logo from "../../assets/images/logo1.png";
+import axios from "../../instance/Axios";
+import { useNavigate } from "react-router-dom"
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const [serverError, setServerError] = useState("");
+  const navigate = useNavigate()
+
   const [form, setForm] = useState({
     name: "",
     email: "",
     password: "",
     confirmPassword: "",
+    signupCode: "",
   });
+  const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!form.email || !form.password || (!isLogin && !form.name)) {
-      alert("Please fill all required fields");
-      return;
-    }
-    if (!isLogin && form.password !== form.confirmPassword) {
-      alert("Passwords do not match");
-      return;
-    }
-    alert(isLogin ? "Login Successful!" : "Signup Successful!");
+    const newErrors = {};
 
-    if(isLogin){
-      
-      // here is the injection place for login
-    }else{
-     // here is the injection place for signup
+    if (!form.email) newErrors.email = "Email is required";
+    if (!form.password) newErrors.password = "Password is required";
+    if (!isLogin && !form.name) newErrors.name = "Full Name is required";
+    if (!isLogin && !form.signupCode)
+      newErrors.signupCode = "Signup Code is required";
+    if (!isLogin && form.password !== form.confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
+
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) return;
+
+    if (isLogin) {
+      console.log("Login Successful!");
+      handleLogin(form);
+    } else {
+      console.log("Signup Successful!");
+      handleSignup(form);
+    }
+  };
+
+  // signup function
+  const handleSignup = async (data) => {
+    try {
+      const response = await axios.post("/auth/signup", data);
+      console.log("response in signUp : ", response);
+      setServerError(""); // clear error if success
+      navigate('/')
+    } catch (error) {
+      setServerError(error.response?.data?.message || "Something went wrong");
+    }
+  };
+
+  // login function
+  const handleLogin = async (data) => {
+    try {
+      const response = await axios.post("/auth/login", data);
+      console.log("response in login : ", response);
+      setServerError(""); // clear error if success
+      if(response?.data?.userDetails?.role === 'admin'){
+        navigate('/admin')
+      }else if(response?.data?.userDetails?.role === 'staff'){
+        navigate('/')
+      }
+    } catch (error) {
+      console.log(error)
+      setServerError(error.response?.data?.message || "Something went wrong");
     }
   };
 
   return (
-    <div className=" flex items-center justify-center mt-8 bg-gray-100 p-4">
-      <div className="w-full max-w-md bg-white border border-gray-200 rounded-lg shadow-md p-8">
-        {/* Government Branding */}
-        <div className="text-center mb-6">
-          <img
-            src={logo}
-            alt="Government Emblem"
-            className="mx-auto h-16"
-          />
-          <h1 className="text-xl font-semibold text-gray-800 mt-2">
-            CRM Portal
-          </h1>
-          <p className="text-sm text-gray-500">
-            {isLogin ? "Secure Login" : "Register for an Account"}
-          </p>
-        </div>
+    // FULL-VIEWPORT WRAPPER to bypass parent/sidebars and own the scroll
+    <div className="fixed inset-0 z-[9999] bg-gray-100 overflow-y-auto overscroll-contain">
+      <div
+        className={`min-h-full flex justify-center p-4 ${
+          isLogin ? "items-center" : "items-start"
+        }`}
+      >
+        <div className="w-full max-w-md bg-white border border-gray-200 rounded-lg shadow-md p-8 my-8">
+          {/* Branding */}
+          <div className="text-center mb-2">
+            <img src={logo} alt="Government Emblem" className="mx-auto h-12" />
+            <h1 className="text-xl font-semibold text-gray-800 mt-2">
+              CRM Portal
+            </h1>
+            <p className="text-sm text-gray-500">
+              {isLogin ? "Secure Login" : "Register for an Account"}
+            </p>
+          </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {!isLogin && (
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {!isLogin && (
+              <>
+                <div>
+                  <label className="block text-gray-700 text-sm font-medium mb-1">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={form.name}
+                    onChange={handleChange}
+                    placeholder="Enter your full name"
+                    className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      errors.name ? "border-red-500" : ""
+                    }`}
+                  />
+                  {errors.name && (
+                    <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 text-sm font-medium mb-1">
+                    Signup Code
+                  </label>
+                  <input
+                    type="text"
+                    name="signupCode"
+                    value={form.signupCode}
+                    onChange={handleChange}
+                    placeholder="Enter your Signup Code"
+                    className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      errors.signupCode ? "border-red-500" : ""
+                    }`}
+                  />
+                  {errors.signupCode && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.signupCode}
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
+
             <div>
               <label className="block text-gray-700 text-sm font-medium mb-1">
-                Full Name
+                Email Address
               </label>
               <input
-                type="text"
-                name="name"
-                value={form.name}
+                type="email"
+                name="email"
+                value={form.email}
                 onChange={handleChange}
-                placeholder="Enter your full name"
-                className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter your email"
+                className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                  errors.email ? "border-red-500" : ""
+                }`}
               />
+              {errors.email && (
+                <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+              )}
             </div>
-          )}
-          <div>
-            <label className="block text-gray-700 text-sm font-medium mb-1">
-              Email Address
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              placeholder="Enter your email"
-              className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700 text-sm font-medium mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              name="password"
-              value={form.password}
-              onChange={handleChange}
-              placeholder="Enter your password"
-              className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          {!isLogin && (
+
             <div>
               <label className="block text-gray-700 text-sm font-medium mb-1">
-                Confirm Password
+                Password
               </label>
               <input
                 type="password"
-                name="confirmPassword"
-                value={form.confirmPassword}
+                name="password"
+                value={form.password}
                 onChange={handleChange}
-                placeholder="Re-enter your password"
-                className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter your password"
+                className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                  errors.password ? "border-red-500" : ""
+                }`}
               />
+              {errors.password && (
+                <p className="text-red-500 text-sm mt-1">{errors.password}</p>
+              )}
+            </div>
+
+            {!isLogin && (
+              <div>
+                <label className="block text-gray-700 text-sm font-medium mb-1">
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  value={form.confirmPassword}
+                  onChange={handleChange}
+                  placeholder="Re-enter your password"
+                  className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    errors.confirmPassword ? "border-red-500" : ""
+                  }`}
+                />
+                {errors.confirmPassword && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.confirmPassword}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md font-medium transition"
+            >
+              {isLogin ? "Login" : "Sign Up"}
+            </button>
+          </form>
+          {/* Global Error Message */}
+          {serverError && (
+            <div className="mb-4 p-3 rounded-md flex justify-center text-red-700 text-sm font-medium">
+              {serverError}
             </div>
           )}
-          <button
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md font-medium transition"
-          >
-            {isLogin ? "Login" : "Sign Up"}
-          </button>
-        </form>
 
-        {/* Switch */}
-        <p className="text-center text-gray-600 mt-4 text-sm">
-          {isLogin ? "Don’t have an account?" : "Already registered?"}{" "}
-          <button
-            onClick={() => setIsLogin(!isLogin)}
-            className="text-blue-600 font-medium hover:underline"
-          >
-            {isLogin ? "Sign Up" : "Login"}
-          </button>
-        </p>
+          {/* Switch */}
+          <p className="text-center text-gray-600 mt-4 text-sm">
+            {isLogin ? "Don’t have an account?" : "Already registered?"}{" "}
+            <button
+              onClick={() => {
+                setIsLogin(!isLogin);
+                setErrors({});
+                setForm({
+                  name: "",
+                  email: "",
+                  password: "",
+                  confirmPassword: "",
+                });
+              }}
+              className="text-blue-600 font-medium hover:underline"
+            >
+              {isLogin ? "Sign Up" : "Login"}
+            </button>
+          </p>
+        </div>
       </div>
     </div>
   );

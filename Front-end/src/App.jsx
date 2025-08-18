@@ -28,7 +28,7 @@ function Layout() {
   const location = useLocation();
 
   // Hide sidebar for auth routes
-  const hideSidebar = location.pathname.startsWith("/auth");
+  const hideSidebar = location.pathname.startsWith("/login");
 
   return (
     <div className="flex bg-gray-100 h-screen">
@@ -86,7 +86,7 @@ function Layout() {
           <Route path="/workspace/messages" element={<Messages />} />
           <Route path="/workspace/attendance" element={<Attendance />} />
           <Route path="/trash" element={<Trash />} />
-          <Route path="/auth" element={<Auth />} />
+          <Route path="/login" element={<Auth />} />
         </Routes>
       </div>
     </div>

@@ -154,7 +154,7 @@ const Sidebar = ({ closeSidebar }) => {
           <span className="font-medium">Settings</span>
         </div>
         <div className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-[#2A3A5F] hover:text-[#E50914] cursor-pointer transition-all duration-200"
-         onClick={()=>navigate('/auth')}>
+         onClick={()=>navigate('/login')}>
           <LogOut className="w-5 h-5" />
           <span className="font-medium">Logout</span>
         </div>
