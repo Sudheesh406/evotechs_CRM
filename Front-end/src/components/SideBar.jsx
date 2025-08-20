@@ -59,6 +59,15 @@ const Sidebar = ({ closeSidebar }) => {
       ],
     },
     {
+      title: "Team",
+      icon: Boxes,
+      subMenu: [
+        { title: "Notacess", path: "/team/attendance", icon: CheckSquare },
+        { title: "Notacess", path: "/team/calendar", icon: Calendar },
+        { title: "Notacess", path: "/team/messages", icon: MessageSquare },
+      ],
+    },
+    {
       title: "Workspace",
       icon: Users,
       subMenu: [

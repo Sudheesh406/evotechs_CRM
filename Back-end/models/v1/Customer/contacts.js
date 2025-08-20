@@ -2,7 +2,7 @@ const { DataTypes } = require('sequelize');
 const { sequelize } = require('../../../database/dbConfigue');
 const signup = require('../Authentication/authModel'); 
 
-const Leads = sequelize.define('leads', {
+const contacts = sequelize.define('contacts', {
   id: {
     type: DataTypes.INTEGER,
     autoIncrement: true,
@@ -37,8 +37,8 @@ const Leads = sequelize.define('leads', {
     allowNull: false,
     defaultValue: 'normal',
   },
-  amount: {
-    type: DataTypes.DECIMAL(10, 2),  // stores up to 99999999.99
+   amount: {
+    type: DataTypes.DECIMAL(10, 2),  
     allowNull: true,
     defaultValue: 0.00,
   },
@@ -61,8 +61,10 @@ const Leads = sequelize.define('leads', {
     onDelete: 'SET NULL',
   },
 }, {
-  tableName: 'leads',
+  tableName: 'contacts',
   timestamps: true,
 });
 
-module.exports = Leads;
+
+
+module.exports = contacts;

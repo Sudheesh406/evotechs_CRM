@@ -6,10 +6,10 @@ export default function TaskDetail() {
   const navigate = useNavigate(); // 👈 initialize navigate
 
   const [workStages, setWorkStages] = useState({
-    stage1: true,
-    stage2: false,
-    stage3: false,
-    stage4: false,
+    pending1: true,
+    pending2: false,
+    pending3: false,
+    pending4: false,
   });
 
   const toggleStage = (k) =>
@@ -89,7 +89,7 @@ export default function TaskDetail() {
                     checked={workStages[k]}
                     onChange={() => toggleStage(k)}
                   />
-                  Stage {i + 1}
+                  pending {i + 1}
                 </label>
               ))}
             </div>
