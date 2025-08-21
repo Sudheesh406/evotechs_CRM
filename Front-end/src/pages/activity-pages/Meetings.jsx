@@ -1,10 +1,22 @@
 import React, { useState } from "react";
-import { ChevronDown, Phone } from "lucide-react";
+import { ChevronDown, Phone, X } from "lucide-react";
 import DataTable from "../../components/Table2";
+import axios from '../../instance/Axios'
 
 const Meetings = () => {
   const [filter, setFilter] = useState("Meetings");
   const [open, setOpen] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    subject: "",
+    meetingDate: "",
+    startTime: "",
+    endTime: "",
+    phoneNumber: "",
+    description: "",
+  });
+  const [errors, setErrors] = useState({});
 
   const filterOptions = [
     "Today's",
@@ -15,40 +27,98 @@ const Meetings = () => {
   ];
 
   const leads = [
-    { subject: "Mudra", contact: "Rangoni Of Florence", host: "Malu", date:"12/12/2025", from:'8:00 AM',to:'9:00AM', phone: "555-555-5555", source: "Cold Call" },
-    { subject: "Mudra", contact: "Oh My Goodknits Inc", host: "Malu",date:"12/12/2025", from:'8:00 AM',to:'9:00AM', phone: "555-555-5555", source: "Advertisement" },
-    { subject: "Mudra", contact: "Kwik Kopy Printing", host: "Malu",date:"12/12/2025", from:'8:00 AM',to:'9:00AM', phone: "555-555-5555", source: "Web Download" },
-    { subject: "Mudra", contact: "Morlong Associates", host: "Malu",date:"12/12/2025", from:'8:00 AM',to:'9:00AM', phone: "555-555-5555", source: "Seminar Partner" },
-    { subject: "Mudra", contact: "Chapman", host: "Malu",date:"12/12/2025", from:'8:00 AM',to:'9:00AM', phone: "555-555-5555", source: "Online Store" },
+    {
+      subject: "Mudra",
+      contact: "Rangoni Of Florence",
+      host: "Malu",
+      date: "12/12/2025",
+      from: "8:00 AM",
+      to: "9:00AM",
+      phone: "555-555-5555",
+      source: "Cold Call",
+    },
+    {
+      subject: "Mudra",
+      contact: "Oh My Goodknits Inc",
+      host: "Malu",
+      date: "12/12/2025",
+      from: "8:00 AM",
+      to: "9:00AM",
+      phone: "555-555-5555",
+      source: "Advertisement",
+    },
   ];
 
   const columns = [
-    { label: "Subject", key: "subject", className: "font-medium text-gray-800" },
+    { label: "Subject", key: "subject" },
     { label: "Contact Name", key: "contact" },
-    { label: "Host", key: "host", className: "text-indigo-600 hover:underline cursor-pointer" },
-    { label: "Date", key: "date", className: "text-indigo-600 hover:underline cursor-pointer" },
-    { label: "From", key: "from", className: "text-indigo-600 hover:underline cursor-pointer" },
-    { label: "To", key: "to", className: "text-indigo-600 hover:underline cursor-pointer" },
+    { label: "Host", key: "host" },
+    { label: "Date", key: "date" },
+    { label: "From", key: "from" },
+    { label: "To", key: "to" },
     { label: "Phone Number", key: "phone" },
     { label: "Source", key: "source" },
-    { label: "Actions", key: "actions" }, // new column
-
+    { label: "Actions", key: "actions" },
   ];
+
+  // Validation
+  const validateForm = () => {
+    const newErrors = {};
+    Object.keys(formData).forEach((key) => {
+      if (!formData[key]) {
+        newErrors[key] = "This field is required";
+      }
+    });
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Handle Input Change
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setErrors({ ...errors, [e.target.name]: "" }); // clear error when typing
+  };
+
+  // Handle Submit
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (validateForm()) {
+      console.log("Form Submitted ✅", formData);
+
+
+      setShowForm(false);
+      setFormData({
+        name: "",
+        subject: "",
+        meetingDate: "",
+        startTime: "",
+        endTime: "",
+        phoneNumber: "",
+        description: "",
+      });
+    }
+  };
+
+  const CreateMeeting = async ()=>{
+    try {
+      
+    } catch (error) {
+      console.log('error found in CreateMeeting',error)
+    }
+  }
 
   return (
     <div className="bg-gray-50 min-h-[680px] p-4">
       {/* Top bar */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
         <div className="flex flex-wrap items-center gap-2 relative">
-          {/* Dropdown button */}
           <button
             onClick={() => setOpen(!open)}
-            className="border rounded px-3 py-1 flex items-center gap-1 bg-white shadow-sm w-full sm:w-auto justify-between sm:justify-start"
+            className="border rounded px-3 py-1 flex items-center gap-1 bg-white shadow-sm w-full sm:w-auto"
           >
             {filter} <ChevronDown size={16} />
           </button>
 
-          {/* Dropdown menu */}
           {open && (
             <div className="absolute top-full mt-1 w-40 bg-white border rounded shadow-lg z-10">
               {filterOptions.map((option) => (
@@ -65,18 +135,17 @@ const Meetings = () => {
               ))}
             </div>
           )}
-
           <span className="text-gray-600 text-sm">
             Total Records {leads.length}
           </span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button className="bg-blue-600 text-white px-4 py-2 rounded shadow w-full sm:w-auto">
+          <button
+            onClick={() => setShowForm(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded shadow"
+          >
             Create Meetings
-          </button>
-          <button className="border rounded px-3 py-2 flex items-center gap-1 bg-white shadow-sm w-full sm:w-auto justify-between sm:justify-start">
-            Actions <ChevronDown size={16} />
           </button>
         </div>
       </div>
@@ -96,18 +165,20 @@ const Meetings = () => {
           }
           if (key === "source") {
             return (
-              <span className="inline-block px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-700 rounded-full">
+              <span className="px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-700 rounded-full">
                 {row.source}
               </span>
             );
           }
           if (key === "actions") {
             return (
-              <div className="relative">
-                  <div className="flex gap-2">
-                  <button className="bg-blue-500 text-white px-2 py-1 text-sm rounded-lg hover:bg-blue-600" onClick={()=>console.log('hello')}>Edit</button>
-                  <button className="bg-red-500 text-white px-2 py-1 text-sm rounded-lg hover:bg-red-600">Delete</button>
-                  </div>
+              <div className="flex gap-2">
+                <button className="bg-blue-500 text-white px-2 py-1 text-sm rounded hover:bg-blue-600">
+                  Edit
+                </button>
+                <button className="bg-red-500 text-white px-2 py-1 text-sm rounded hover:bg-red-600">
+                  Delete
+                </button>
               </div>
             );
           }
@@ -115,11 +186,85 @@ const Meetings = () => {
         }}
       />
 
-      {/* Pagination */}
-      <div className="flex justify-between items-center mt-4 text-sm text-gray-600">
-        <span>10 Records Per Page</span>
-        <span>1 - {leads.length}</span>
-      </div>
+      {/* Form Modal */}
+      {showForm && (
+        <div className="fixed inset-0 bg-opacity-40 flex justify-center items-center bg-black/50 z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl relative">
+            <button
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+              onClick={() => setShowForm(false)}
+            >
+              <X size={20} />
+            </button>
+            <h2 className="text-xl font-semibold mb-4">Create Meeting</h2>
+
+            <form
+              onSubmit={handleSubmit}
+              className="grid grid-cols-1 md:grid-cols-2 gap-4"
+            >
+              {Object.keys(formData).map((field) => {
+                if (field === "description") {
+                  return (
+                    <div key={field} className="flex flex-col md:col-span-2">
+                      <label className="block text-sm font-medium mb-1 capitalize">
+                        {field}
+                      </label>
+                      <textarea
+                        name={field}
+                        value={formData[field]}
+                        onChange={handleChange}
+                        rows={4}
+                        className={`w-full border rounded px-3 py-2 resize-none ${
+                          errors[field] ? "border-red-500" : "border-gray-300"
+                        }`}
+                      />
+                      {errors[field] && (
+                        <p className="text-red-500 text-sm">{errors[field]}</p>
+                      )}
+                    </div>
+                  );
+                }
+
+                return (
+                  <div key={field} className="flex flex-col">
+                    <label className="block text-sm font-medium mb-1 capitalize">
+                      {field}
+                    </label>
+                    <input
+                      type={
+                        field.includes("Date")
+                          ? "date"
+                          : field.includes("Time")
+                          ? "time"
+                          : "text"
+                      }
+                      name={field}
+                      value={formData[field]}
+                      onChange={handleChange}
+                      className={`w-full border rounded px-3 py-2 ${
+                        errors[field] ? "border-red-500" : "border-gray-300"
+                      }`}
+                    />
+                    {errors[field] && (
+                      <p className="text-red-500 text-sm">{errors[field]}</p>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Full-width submit button */}
+              <div className="md:col-span-2">
+                <button
+                  type="submit"
+                  className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+                >
+                  Submit
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -59,13 +59,6 @@ const meetings = sequelize.define(
         len: [7, 15], // min 7 digits, max 15
       },
     },
-    amount: {
-      type: DataTypes.DECIMAL(10, 2),
-      allowNull: false,
-      validate: {
-        isDecimal: true,
-      },
-    },
     description: {
       type: DataTypes.TEXT,
       allowNull: true,

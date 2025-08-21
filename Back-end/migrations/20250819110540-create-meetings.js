@@ -52,10 +52,6 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false,
       },
-      amount: {
-        type: Sequelize.DECIMAL(10, 2),
-        allowNull: false,
-      },
       description: {
         type: Sequelize.TEXT,
         allowNull: true,
