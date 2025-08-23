@@ -11,6 +11,7 @@ const { connectDB, sequelize } = require("./database/dbConfigue");
 // Authentication routes (login, signup, password reset, etc.)
 const authRoute = require("./routes/v1/AuthRoute");
 const customerRoute = require("./routes/v1/customerRoute");
+const meetingRoute = require("./routes/v1/meetingRoute");
 
 // ====================
 // Middleware Setup
@@ -29,11 +30,16 @@ app.use(cors({
 // Mount Routes
 // ====================
 
+
 // Authentication routes
 app.use("/api/auth", authRoute);
 
 // Handling Customers
 app.use("/api/customer", customerRoute);
+
+// Handling Meetings
+app.use("/api/meetings", meetingRoute);
+
 
 
 // ====================

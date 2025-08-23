@@ -152,8 +152,11 @@ const approveLeads = async (req, res) => {
       return httpError(res, 403, "Access denied");
     }
 
-    // Copy data into Contacts (plain object)
-    const approved = await Contacts.create(customer.toJSON());
+    // Remove id so a new one is generated in Contacts
+    const { id: _, ...customerData } = customer.toJSON();
+
+    // Create new contact with same details (new id will be auto-generated)
+    const approved = await Contacts.create(customerData);
 
     // Delete from Leads
     await Leads.destroy({ where: { id } });
@@ -164,6 +167,7 @@ const approveLeads = async (req, res) => {
     return httpError(res, 500, "Internal Server Error");
   }
 };
+
 
 //contacts
 const createContact = async (req, res) => {

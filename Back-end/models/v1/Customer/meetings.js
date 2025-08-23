@@ -63,6 +63,11 @@ const meetings = sequelize.define(
       type: DataTypes.TEXT,
       allowNull: true,
     },
+      status: {
+      type: DataTypes.ENUM("pending", "completed", "cancelled"),
+      allowNull: false,
+      defaultValue: "pending",
+    },
   },
   {
     tableName: "meetings",
