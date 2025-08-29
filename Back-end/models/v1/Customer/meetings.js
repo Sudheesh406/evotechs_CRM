@@ -19,25 +19,25 @@ const meetings = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    staffId: {                
-    type: DataTypes.INTEGER,
-    allowNull: true,        
-    references: {
-      model: signup,   
-      key: 'id',
+    staffId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: signup,
+        key: "id",
+      },
+      onUpdate: "CASCADE",
+      onDelete: "SET NULL",
     },
-    onUpdate: 'CASCADE',
-    onDelete: 'SET NULL',
-    },
-   contactId: {                
-    type: DataTypes.INTEGER,
-    allowNull: true,        
-    references: {
-      model: contacts,   
-      key: 'id',
-    },
-    onUpdate: 'CASCADE',
-    onDelete: 'SET NULL',
+    contactId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: contacts,
+        key: "id",
+      },
+      onUpdate: "CASCADE",
+      onDelete: "SET NULL",
     },
     meetingDate: {
       type: DataTypes.DATEONLY,
@@ -59,11 +59,15 @@ const meetings = sequelize.define(
         len: [7, 15], // min 7 digits, max 15
       },
     },
+    softDelete: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
     description: {
       type: DataTypes.TEXT,
       allowNull: true,
     },
-      status: {
+    status: {
       type: DataTypes.ENUM("pending", "completed", "cancelled"),
       allowNull: false,
       defaultValue: "pending",

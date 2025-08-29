@@ -1,12 +1,13 @@
 const meetings = require("../../models/v1/Customer/meetings");
 const Contacts = require("../../models/v1/Customer/contacts");
-const {signup} = require("../../models/v1/index")
+const { signup } = require("../../models/v1/index");
 const { httpError, httpSuccess } = require("../../utils/v1/httpResponse");
-const dayjs = require("dayjs");          // ✅ Import dayjs
+const dayjs = require("dayjs"); // ✅ Import dayjs
 const customParseFormat = require("dayjs/plugin/customParseFormat");
 const { Op } = require("sequelize");
 const moment = require("moment");
 dayjs.extend(customParseFormat);
+
 
 const createMeetings = async (req, res) => {
   try {
@@ -47,11 +48,18 @@ const createMeetings = async (req, res) => {
     }
 
     // ✅ Convert times to MySQL TIME format (HH:mm:ss)
-    const formattedStartTime = dayjs(startTime, ["h:mm A", "HH:mm"]).format("HH:mm:ss");
-    const formattedEndTime = dayjs(endTime, ["h:mm A", "HH:mm"]).format("HH:mm:ss");
+    const formattedStartTime = dayjs(startTime, ["h:mm A", "HH:mm"]).format(
+      "HH:mm:ss"
+    );
+    const formattedEndTime = dayjs(endTime, ["h:mm A", "HH:mm"]).format(
+      "HH:mm:ss"
+    );
 
     // Prevent invalid time values (e.g., if someone types letters)
-    if (formattedStartTime === "Invalid Date" || formattedEndTime === "Invalid Date") {
+    if (
+      formattedStartTime === "Invalid Date" ||
+      formattedEndTime === "Invalid Date"
+    ) {
       return httpError(res, 400, "Invalid time format. Please use hh:mm AM/PM");
     }
 
@@ -67,7 +75,9 @@ const createMeetings = async (req, res) => {
     }
     // Case 2: No contactId → try by phone number
     else if (phoneNumber) {
-      customer = await Contacts.findOne({ where: { phone: phoneNumber, staffId } });
+      customer = await Contacts.findOne({
+        where: { phone: phoneNumber, staffId },
+      });
       // If not found → will just create without linking
     }
 
@@ -76,7 +86,7 @@ const createMeetings = async (req, res) => {
       name,
       subject,
       meetingDate,
-      startTime: formattedStartTime,   // ✅ Save in proper format
+      startTime: formattedStartTime, // ✅ Save in proper format
       endTime: formattedEndTime,
       phoneNumber,
       description,
@@ -93,49 +103,49 @@ const createMeetings = async (req, res) => {
 
 
 const getMeetings = async (req, res) => {
-  const user = req.user; 
+  const user = req.user;
 
   try {
     const { filter } = req.body;
     const today = moment().format("YYYY-MM-DD");
 
-    console.log(filter)
+    // console.log(filter)
 
     let where = {
       staffId: user.id,
+      softDelete: false, 
     };
 
-  switch (filter) {
-  case "Today's":
-    where.meetingDate = today;
-    break;
+    switch (filter) {
+      case "Today's":
+        where.meetingDate = today;
+        break;
 
-  case "Upcoming":
-    where.meetingDate = { [Op.gt]: today };
-    where.status = "Upcoming";  // only upcoming ones
-    break;
+      case "Upcoming":
+        where.meetingDate = { [Op.gt]: today };
+        break;
 
-  case "Completed":
-    where.status = "completed";
-    break;
-  case "Pending":
-    where.status = "pending";
-    break;
+      case "Completed":
+        where.status = "completed";
+        break;
+      case "Pending":
+        where.status = "pending";
+        break;
 
-  case "Cancelled":
-    where.status = "cancelled";
-    break;
+      case "Cancelled":
+        where.status = "cancelled";
+        break;
 
-  case "All":
-  default:
-    break;
-}
-    const result = await meetings.findAll({   
+      case "All":
+      default:
+        break;
+    }
+    const result = await meetings.findAll({
       where,
       include: [
         {
           model: signup,
-          as: "staff", 
+          as: "staff",
           attributes: ["id", "name"],
         },
       ],
@@ -143,32 +153,131 @@ const getMeetings = async (req, res) => {
     });
 
     return httpSuccess(res, 200, "meetings created successfully", result);
-
   } catch (error) {
     console.error("Error fetching meetings:", error);
     return httpError(res, 500, "Server error", error.message);
-
   }
 };
 
 
-//editing is pending in here-------------------------------------
+const editMeetings = async (req, res) => {
+  const user = req.user;
+  const newData = req.body.data;
+  const id = req.params.id;
 
-const editMeetings = async(req,res)=>{
-  const user = req.user
-  const newData = req.body
-  const id = req.params.id
-
-  console.log('datas:',user,newData,id)
   try {
+    if (!id) return httpError(res, 400, "Meeting ID is required");
+    if (!newData || Object.keys(newData).length === 0) {
+      return httpError(res, 400, "No update data provided");
+    }
 
+    const meeting = await meetings.findByPk(id);
+    if (!meeting) return httpError(res, 404, "Meeting not found");
+    if (meeting.staffId != user.id) return httpError(res, 403, "Access denied");
+
+    // ✅ Validation for required fields
+    const requiredFields = [
+      "name",
+      "subject",
+      "meetingDate",
+      "startTime",
+      "endTime",
+      "phoneNumber",
+      "description"
+    ];
+    for (const field of requiredFields) {
+      if (
+        newData[field] !== undefined &&
+        newData[field].toString().trim() === ""
+      ) {
+        return httpError(res, 400, `${field} cannot be empty`);
+      }
+    }
+
+    // ✅ Normalize time fields if provided
+    if (newData.startTime) {
+      const formattedStartTime = dayjs(newData.startTime, ["h:mm A", "HH:mm"])
+        .isValid()
+        ? dayjs(newData.startTime, ["h:mm A", "HH:mm"]).format("HH:mm:ss")
+        : null;
+
+      if (!formattedStartTime) {
+        return httpError(
+          res,
+          400,
+          "Invalid start time format. Please use hh:mm AM/PM"
+        );
+      }
+      newData.startTime = formattedStartTime;
+    }
+
+    if (newData.endTime) {
+      const formattedEndTime = dayjs(newData.endTime, ["h:mm A", "HH:mm"])
+        .isValid()
+        ? dayjs(newData.endTime, ["h:mm A", "HH:mm"]).format("HH:mm:ss")
+        : null;
+
+      if (!formattedEndTime) {
+        return httpError(
+          res,
+          400,
+          "Invalid end time format. Please use hh:mm AM/PM"
+        );
+      }
+      newData.endTime = formattedEndTime;
+    }
+
+    // ✅ Update contactId if phone number changed
+    if (newData.phoneNumber) {
+      const contact = await Contacts.findOne({
+        where: { phone: newData.phoneNumber, staffId: user.id }
+      });
+      newData.contactId = contact ? contact.id : null;
+    }
+
+    await meeting.update(newData);
+    return httpSuccess(res, 200, "Meeting updated successfully", meeting);
   } catch (error) {
-    console.log('error found in edit meetings',error)
+    console.error("error found in edit meetings", error);
     return httpError(res, 500, "Server error", error.message);
-
   }
-}
+};
 
 
 
-module.exports = { createMeetings, getMeetings, editMeetings };
+const deleteMeetings = async (req, res) => {
+  try {
+    const user = req.user;
+    const id = req.params.id;
+
+    if (!id) {
+      return httpError(res, 400, "Meeting ID is required");
+    }
+
+    // Find meeting by primary key
+    const meeting = await meetings.findByPk(id);
+
+    if (!meeting) {
+      return httpError(res, 404, "Meeting not found");
+    }
+
+      if(meeting.staffId != user.id){
+      return httpError(res, 403, "Access denied");
+    }
+
+    // Instead of destroying, update softDelete
+    await meeting.update({ softDelete: true || null });
+
+    return res.status(200).json({
+      success: true,
+      message: "Meeting deleted successfully (soft delete applied)",
+    });
+  } catch (error) {
+    console.error("error found in delete meetings", error);
+    return httpError(res, 500, "Server error", error.message);
+  }
+};
+
+
+
+module.exports = { createMeetings, getMeetings, editMeetings, deleteMeetings };

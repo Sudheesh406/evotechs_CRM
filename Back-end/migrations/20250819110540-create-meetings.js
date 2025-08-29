@@ -52,6 +52,10 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false,
       },
+       softDelete: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false,
+      },
       description: {
         type: Sequelize.TEXT,
         allowNull: true,

@@ -2,6 +2,7 @@ const Leads = require('./Customer/leads');
 const contacts = require('./Customer/contacts');
 const signup = require('./Authentication/authModel');
 const meetings = require('./Customer/meetings')
+const calls = require('./Customer/calls')
 
 // Define associations
 Leads.belongsTo(signup, { foreignKey: 'staffId', as: 'assignedStaff' });
@@ -16,4 +17,7 @@ contacts.hasMany(meetings, { foreignKey: 'contactId', as: 'contacts' });
 meetings.belongsTo(signup, { foreignKey: 'staffId', as: 'staff' })
 signup.hasMany(meetings, { foreignKey: 'staffId', as: 'meetings' });
 
-module.exports = { Leads, signup, contacts };
+calls.belongsTo(signup, { foreignKey: 'staffId', as: 'staff' })
+signup.hasMany(calls, { foreignKey: 'staffId', as: 'calls' });
+
+module.exports = { Leads, signup, contacts, calls };
