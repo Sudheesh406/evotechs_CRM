@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { ChevronDown, Phone, X } from "lucide-react";
 import DataTable from "../../components/Table2";
 import axios from "../../instance/Axios";
@@ -7,6 +7,12 @@ const Meetings = () => {
   const [filter, setFilter] = useState("Today's");
   const [open, setOpen] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [originalData, setOriginalData] = useState(null);
+
+  const dropdownRef = useRef(null);
+
   const [formData, setFormData] = useState({
     name: "",
     subject: "",
@@ -15,7 +21,9 @@ const Meetings = () => {
     endTime: "",
     phoneNumber: "",
     description: "",
+    status: "pending", // ✅ default status
   });
+
   const [errors, setErrors] = useState({});
   const [meetings, setMeetings] = useState([]);
 
@@ -49,7 +57,7 @@ const Meetings = () => {
     "6:30 PM","7:00 PM","7:30 PM","8:00 PM",
   ];
 
-  // format helpers
+  // helpers
   const formatDate = (dateStr) => {
     if (!dateStr) return "-";
     const date = new Date(dateStr);
@@ -71,16 +79,41 @@ const Meetings = () => {
     });
   };
 
+  const formatTo12Hour = (time) => {
+    if (!time) return "";
+    const [h, m] = time.split(":");
+    const d = new Date();
+    d.setHours(h, m);
+    return d.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  };
+
   const validateForm = () => {
     const newErrors = {};
     Object.keys(formData).forEach((key) => {
-      const value = formData[key].trim();
+      if (key === "status" && !isEditing) return; // skip status in create
+      const value = formData[key]?.trim?.() ?? formData[key];
       if (!value) {
         newErrors[key] = "This field is required";
       }
     });
+
+    // ✅ Phone validation
+    if (formData.phoneNumber && !/^\d{10}$/.test(formData.phoneNumber)) {
+      newErrors.phoneNumber = "Enter a valid 10-digit number";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const isFormChanged = () => {
+    if (!originalData) return true;
+    return Object.keys(formData).some(
+      (key) => formData[key] !== originalData[key]
+    );
   };
 
   const handleChange = (e) => {
@@ -90,7 +123,15 @@ const Meetings = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (validateForm()) {
+    if (!validateForm()) return;
+
+    if (isEditing) {
+      if (!isFormChanged()) {
+        alert("No changes detected. Please modify a field before updating.");
+        return;
+      }
+      UpdateMeeting(editingId, formData);
+    } else {
       CreateMeeting(formData);
     }
   };
@@ -99,16 +140,7 @@ const Meetings = () => {
     try {
       const response = await axios.post("/meetings/create", { data });
       if (response) {
-        setShowForm(false);
-        setFormData({
-          name: "",
-          subject: "",
-          meetingDate: "",
-          startTime: "",
-          endTime: "",
-          phoneNumber: "",
-          description: "",
-        });
+        closeForm();
         getMeetings(filter);
       }
     } catch (error) {
@@ -116,13 +148,58 @@ const Meetings = () => {
     }
   };
 
+  const UpdateMeeting = async (id, data) => {
+    try {
+      const response = await axios.put(`/meetings/edit/${id}`, { data });
+      if (response) {
+        closeForm();
+        getMeetings(filter);
+      }
+    } catch (error) {
+      console.log("error found in UpdateMeeting", error);
+    }
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setFormData({
+      name: "",
+      subject: "",
+      meetingDate: "",
+      startTime: "",
+      endTime: "",
+      phoneNumber: "",
+      description: "",
+      status: "pending",
+    });
+    setIsEditing(false);
+    setEditingId(null);
+    setOriginalData(null);
+  };
+
+  const handleEdit = (row) => {
+    const editData = {
+      name: row.name || "",
+      subject: row.subject || "",
+      meetingDate: row.meetingDate ? row.meetingDate.split("T")[0] : "",
+      startTime: formatTo12Hour(row.startTime),
+      endTime: formatTo12Hour(row.endTime),
+      phoneNumber: row.phoneNumber || "",
+      description: row.description || "",
+      status: row.status || "pending",
+    };
+    setFormData(editData);
+    setOriginalData(editData);
+    setEditingId(row.id);
+    setIsEditing(true);
+    setShowForm(true);
+  };
+
   const getMeetings = async (selectedFilter) => {
     try {
       const response = await axios.post("/meetings/get", {
         filter: selectedFilter,
       });
-      console.log(response);
-
       const data = Array.isArray(response.data.data)
         ? response.data.data
         : [];
@@ -133,25 +210,37 @@ const Meetings = () => {
     }
   };
 
-  const handleEdit = async (id)=>{
-    console.log(id)
+  const handleDelete = async (id) => {
     try {
-      const response = await axios.put('/meetings/')
-      console.log(response)
+      const result = await axios.delete(`/meetings/delete/${id}`);
+      if (result) {
+        getMeetings(filter); // ✅ refresh after delete
+      }
     } catch (error) {
-      console.log('error found in handleEdit',error)
+      console.log("error found delete", error);
     }
-  }
+  };
 
   useEffect(() => {
     getMeetings(filter);
   }, [filter]);
 
+  // ✅ close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   return (
     <div className="bg-gray-50 min-h-[680px] p-4">
       {/* Top bar */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
-        <div className="flex flex-wrap items-center gap-2 relative">
+        <div className="flex flex-wrap items-center gap-2 relative" ref={dropdownRef}>
           <button
             onClick={() => setOpen(!open)}
             className="border rounded px-3 py-1 flex items-center gap-1 bg-white shadow-sm w-full sm:w-auto"
@@ -215,6 +304,8 @@ const Meetings = () => {
                       ? "bg-yellow-100 text-yellow-700"
                       : row.status === "completed"
                       ? "bg-green-100 text-green-700"
+                      : row.status === "cancelled"
+                      ? "bg-red-100 text-red-700"
                       : "bg-gray-100 text-gray-600"
                   }`}
                 >
@@ -234,11 +325,16 @@ const Meetings = () => {
             if (key === "actions") {
               return (
                 <div className="flex gap-2">
-                  <button className="bg-blue-500 text-white px-2 py-1 text-sm rounded hover:bg-blue-600"
-                  onClick={()=>handleEdit(row.id)}>
+                  <button
+                    className="bg-blue-500 text-white px-2 py-1 text-sm rounded hover:bg-blue-600"
+                    onClick={() => handleEdit(row)}
+                  >
                     Edit
                   </button>
-                  <button className="bg-red-500 text-white px-2 py-1 text-sm rounded hover:bg-red-600">
+                  <button
+                    className="bg-red-500 text-white px-2 py-1 text-sm rounded hover:bg-red-600"
+                    onClick={() => handleDelete(row.id)}
+                  >
                     Delete
                   </button>
                 </div>
@@ -259,94 +355,178 @@ const Meetings = () => {
           <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl relative">
             <button
               className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-              onClick={() => setShowForm(false)}
+              onClick={closeForm}
             >
               <X size={20} />
             </button>
-            <h2 className="text-xl font-semibold mb-4">Create Meeting</h2>
+            <h2 className="text-xl font-semibold mb-4">
+              {isEditing ? "Edit Meeting" : "Create Meeting"}
+            </h2>
 
             <form
               onSubmit={handleSubmit}
               className="grid grid-cols-1 md:grid-cols-2 gap-4"
             >
-              {Object.keys(formData).map((field) => {
-                if (field === "description") {
-                  return (
-                    <div key={field} className="flex flex-col md:col-span-2">
-                      <label className="block text-sm font-medium mb-1 capitalize">
-                        {field}
-                      </label>
-                      <textarea
-                        name={field}
-                        value={formData[field]}
-                        onChange={handleChange}
-                        rows={4}
-                        className={`w-full border rounded px-3 py-2 resize-none ${
-                          errors[field] ? "border-red-500" : "border-gray-300"
-                        }`}
-                      />
-                      {errors[field] && (
-                        <p className="text-red-500 text-sm">{errors[field]}</p>
-                      )}
-                    </div>
-                  );
-                }
+              {/* Name */}
+              <div className="flex flex-col">
+                <label className="block text-sm font-medium mb-1">Name</label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className={`w-full border rounded px-3 py-2 ${
+                    errors.name ? "border-red-500" : "border-gray-300"
+                  }`}
+                />
+                {errors.name && (
+                  <p className="text-red-500 text-sm">{errors.name}</p>
+                )}
+              </div>
 
-                if (field.includes("Time")) {
-                  return (
-                    <div key={field} className="flex flex-col">
-                      <label className="block text-sm font-medium mb-1 capitalize">
-                        {field}
-                      </label>
-                      <input
-                        list={`${field}-options`}
-                        name={field}
-                        value={formData[field]}
-                        onChange={handleChange}
-                        placeholder="HH:MM AM/PM"
-                        className={`w-full border rounded px-3 py-2 ${
-                          errors[field] ? "border-red-500" : "border-gray-300"
-                        }`}
-                      />
-                      <datalist id={`${field}-options`}>
-                        {timeOptions.map((time) => (
-                          <option key={time} value={time} />
-                        ))}
-                      </datalist>
-                      {errors[field] && (
-                        <p className="text-red-500 text-sm">{errors[field]}</p>
-                      )}
-                    </div>
-                  );
-                }
+              {/* Subject */}
+              <div className="flex flex-col">
+                <label className="block text-sm font-medium mb-1">Subject</label>
+                <input
+                  type="text"
+                  name="subject"
+                  value={formData.subject}
+                  onChange={handleChange}
+                  className={`w-full border rounded px-3 py-2 ${
+                    errors.subject ? "border-red-500" : "border-gray-300"
+                  }`}
+                />
+                {errors.subject && (
+                  <p className="text-red-500 text-sm">{errors.subject}</p>
+                )}
+              </div>
 
-                return (
-                  <div key={field} className="flex flex-col">
-                    <label className="block text-sm font-medium mb-1 capitalize">
-                      {field}
-                    </label>
-                    <input
-                      type={field.includes("Date") ? "date" : "text"}
-                      name={field}
-                      value={formData[field]}
-                      onChange={handleChange}
-                      className={`w-full border rounded px-3 py-2 ${
-                        errors[field] ? "border-red-500" : "border-gray-300"
-                      }`}
-                    />
-                    {errors[field] && (
-                      <p className="text-red-500 text-sm">{errors[field]}</p>
-                    )}
-                  </div>
-                );
-              })}
+              {/* Meeting Date */}
+              <div className="flex flex-col">
+                <label className="block text-sm font-medium mb-1">Meeting Date</label>
+                <input
+                  type="date"
+                  name="meetingDate"
+                  value={formData.meetingDate}
+                  onChange={handleChange}
+                  className={`w-full border rounded px-3 py-2 ${
+                    errors.meetingDate ? "border-red-500" : "border-gray-300"
+                  }`}
+                />
+                {errors.meetingDate && (
+                  <p className="text-red-500 text-sm">{errors.meetingDate}</p>
+                )}
+              </div>
+
+              {/* Start Time */}
+              <div className="flex flex-col">
+                <label className="block text-sm font-medium mb-1">Start Time</label>
+                <input
+                  list="startTime-options"
+                  name="startTime"
+                  value={formData.startTime}
+                  onChange={handleChange}
+                  placeholder="HH:MM AM/PM"
+                  className={`w-full border rounded px-3 py-2 ${
+                    errors.startTime ? "border-red-500" : "border-gray-300"
+                  }`}
+                />
+                <datalist id="startTime-options">
+                  {timeOptions.map((time) => (
+                    <option key={time} value={time} />
+                  ))}
+                </datalist>
+                {errors.startTime && (
+                  <p className="text-red-500 text-sm">{errors.startTime}</p>
+                )}
+              </div>
+
+              {/* End Time */}
+              <div className="flex flex-col">
+                <label className="block text-sm font-medium mb-1">End Time</label>
+                <input
+                  list="endTime-options"
+                  name="endTime"
+                  value={formData.endTime}
+                  onChange={handleChange}
+                  placeholder="HH:MM AM/PM"
+                  className={`w-full border rounded px-3 py-2 ${
+                    errors.endTime ? "border-red-500" : "border-gray-300"
+                  }`}
+                />
+                <datalist id="endTime-options">
+                  {timeOptions.map((time) => (
+                    <option key={time} value={time} />
+                  ))}
+                </datalist>
+                {errors.endTime && (
+                  <p className="text-red-500 text-sm">{errors.endTime}</p>
+                )}
+              </div>
+
+              {/* Phone Number */}
+              <div className="flex flex-col">
+                <label className="block text-sm font-medium mb-1">Phone Number</label>
+                <input
+                  type="text"
+                  name="phoneNumber"
+                  value={formData.phoneNumber}
+                  onChange={handleChange}
+                  className={`w-full border rounded px-3 py-2 ${
+                    errors.phoneNumber ? "border-red-500" : "border-gray-300"
+                  }`}
+                />
+                {errors.phoneNumber && (
+                  <p className="text-red-500 text-sm">{errors.phoneNumber}</p>
+                )}
+              </div>
+
+              {/* Status (only in Edit mode) */}
+              {isEditing && (
+                <div className="flex flex-col">
+                  <label className="block text-sm font-medium mb-1">Status</label>
+                  <select
+                    name="status"
+                    value={formData.status}
+                    onChange={handleChange}
+                    className={`w-full border rounded px-3 py-2 ${
+                      errors.status ? "border-red-500" : "border-gray-300"
+                    }`}
+                  >
+                    <option value="">Select Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                  {errors.status && (
+                    <p className="text-red-500 text-sm">{errors.status}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Description */}
+              <div className="flex flex-col md:col-span-2">
+                <label className="block text-sm font-medium mb-1">Description</label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  rows={4}
+                  className={`w-full border rounded px-3 py-2 resize-none ${
+                    errors.description ? "border-red-500" : "border-gray-300"
+                  }`}
+                />
+                {errors.description && (
+                  <p className="text-red-500 text-sm">{errors.description}</p>
+                )}
+              </div>
 
               <div className="md:col-span-2">
                 <button
                   type="submit"
                   className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
                 >
-                  Submit
+                  {isEditing ? "Update" : "Submit"}
                 </button>
               </div>
             </form>
