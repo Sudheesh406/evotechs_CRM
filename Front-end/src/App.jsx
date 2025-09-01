@@ -76,10 +76,8 @@ function Layout() {
           <Route path="/sales/personalize" element={<Personalize />} />
           <Route path="/sales/documents" element={<Documents />} />
           <Route path="/sales/reworks" element={<Rework />} />
-
           <Route path="/activities/tasks" element={<Task />} />
           <Route path="/activities/tasks/person" element={<TrashDetail />} />
-
           <Route path="/activities/meetings" element={<Meetings />} />
           <Route path="/activities/calls" element={<Calls />} />
           <Route path="/workspace/calendar" element={<Calendar />} />
@@ -102,3 +100,5 @@ function App() {
 }
 
 export default App;
+
+
