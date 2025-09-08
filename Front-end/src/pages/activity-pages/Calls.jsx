@@ -46,9 +46,7 @@ const calls = () => {
     { label: "Actions", key: "actions" },
   ];
 
-  const timeOptions = [
-    "7:00 AM","7:30 AM","8:00 AM",
-  ];
+  const timeOptions = ["7:00 AM", "7:30 AM", "8:00 AM"];
 
   // helpers
   const formatDate = (dateStr) => {
@@ -141,7 +139,7 @@ const calls = () => {
     }
   };
 
-  const UpdateCall= async (id, data) => {
+  const UpdateCall = async (id, data) => {
     try {
       const response = await axios.put(`/calls/edit/${id}`, { data });
       if (response) {
@@ -191,9 +189,7 @@ const calls = () => {
       const response = await axios.post("/calls/get", {
         filter: selectedFilter,
       });
-      const data = Array.isArray(response.data.data)
-        ? response.data.data
-        : [];
+      const data = Array.isArray(response.data.data) ? response.data.data : [];
       setCalls(data);
     } catch (error) {
       console.log("error", error);
@@ -203,7 +199,7 @@ const calls = () => {
 
   const handleDelete = async (id) => {
     try {
-      console.log('id',id)
+      console.log("id", id);
       const result = await axios.delete(`/calls/delete/${id}`);
       if (result) {
         getCalls(filter); // ✅ refresh after delete
@@ -232,7 +228,10 @@ const calls = () => {
     <div className="bg-gray-50 min-h-[680px] p-4">
       {/* Top bar */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
-        <div className="flex flex-wrap items-center gap-2 relative" ref={dropdownRef}>
+        <div
+          className="flex flex-wrap items-center gap-2 relative"
+          ref={dropdownRef}
+        >
           <button
             onClick={() => setOpen(!open)}
             className="border rounded px-3 py-1 flex items-center gap-1 bg-white shadow-sm w-full sm:w-auto"
@@ -318,7 +317,7 @@ const calls = () => {
                     className="bg-blue-500 text-white px-2 py-1 text-sm rounded hover:bg-blue-600"
                     onClick={() => handleEdit(row)}
                   >
-           4567890oi8uy7trewqs  2Q1 ZAXcvbnm,mn b         Edit
+                    Edit
                   </button>
                   <button
                     className="bg-red-500 text-white px-2 py-1 text-sm rounded hover:bg-red-600"
@@ -333,9 +332,7 @@ const calls = () => {
           }}
         />
       ) : (
-        <div className="text-center text-gray-500 py-8">
-          No calls found
-        </div>
+        <div className="text-center text-gray-500 py-8">No calls found</div>
       )}
 
       {/* Modal form */}
@@ -375,7 +372,9 @@ const calls = () => {
 
               {/* Subject */}
               <div className="flex flex-col">
-                <label className="block text-sm font-medium mb-1">Subject</label>
+                <label className="block text-sm font-medium mb-1">
+                  Subject
+                </label>
                 <input
                   type="text"
                   name="subject"
@@ -392,7 +391,9 @@ const calls = () => {
 
               {/* Call Date */}
               <div className="flex flex-col">
-                <label className="block text-sm font-medium mb-1">Call Date</label>
+                <label className="block text-sm font-medium mb-1">
+                  Call Date
+                </label>
                 <input
                   type="date"
                   name="date"
@@ -432,7 +433,9 @@ const calls = () => {
 
               {/* Phone Number */}
               <div className="flex flex-col">
-                <label className="block text-sm font-medium mb-1">Phone Number</label>
+                <label className="block text-sm font-medium mb-1">
+                  Phone Number
+                </label>
                 <input
                   type="text"
                   name="phoneNumber"
@@ -450,7 +453,9 @@ const calls = () => {
               {/* Status (only in Edit mode) */}
               {isEditing && (
                 <div className="flex flex-col">
-                  <label className="block text-sm font-medium mb-1">Status</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Status
+                  </label>
                   <select
                     name="status"
                     value={formData.status}
@@ -472,7 +477,9 @@ const calls = () => {
 
               {/* Description */}
               <div className="flex flex-col md:col-span-2">
-                <label className="block text-sm font-medium mb-1">Description</label>
+                <label className="block text-sm font-medium mb-1">
+                  Description
+                </label>
                 <textarea
                   name="description"
                   value={formData.description}
