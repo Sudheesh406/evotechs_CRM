@@ -12,6 +12,7 @@ const { connectDB, sequelize } = require("./database/dbConfigue");
 const authRoute = require("./routes/v1/AuthRoute");
 const customerRoute = require("./routes/v1/customerRoute");
 const meetingRoute = require("./routes/v1/meetingRoute");
+const callRoute = require("./routes/v1/callRoute");
 const RequirementRoute = require("./routes/v1/requirementRoute");
 
 // ====================
@@ -40,6 +41,9 @@ app.use("/api/customer", customerRoute);
 
 // Handling Meetings
 app.use("/api/meetings", meetingRoute);
+
+// Handling Calls
+app.use("/api/Calls", callRoute);
 
 // Handling Requirements
 app.use("/api/requirement", RequirementRoute);

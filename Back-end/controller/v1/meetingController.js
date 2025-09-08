@@ -152,7 +152,7 @@ const getMeetings = async (req, res) => {
       order: [["meetingDate", "ASC"]],
     });
 
-    return httpSuccess(res, 200, "meetings created successfully", result);
+    return httpSuccess(res, 200, "meetings getted successfully", result);
   } catch (error) {
     console.error("Error fetching meetings:", error);
     return httpError(res, 500, "Server error", error.message);
@@ -244,7 +244,6 @@ const editMeetings = async (req, res) => {
 };
 
 
-
 const deleteMeetings = async (req, res) => {
   try {
     const user = req.user;
@@ -272,12 +271,12 @@ const deleteMeetings = async (req, res) => {
       success: true,
       message: "Meeting deleted successfully (soft delete applied)",
     });
+    
   } catch (error) {
     console.error("error found in delete meetings", error);
     return httpError(res, 500, "Server error", error.message);
   }
 };
-
 
 
 module.exports = { createMeetings, getMeetings, editMeetings, deleteMeetings };

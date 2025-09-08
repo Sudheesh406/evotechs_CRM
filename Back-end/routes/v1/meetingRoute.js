@@ -10,4 +10,5 @@ Router.put("/edit/:id",authenticate, editMeetings);
 Router.delete('/delete/:id', authenticate, deleteMeetings)
 
 
+
 module.exports = Router

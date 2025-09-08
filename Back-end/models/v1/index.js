@@ -5,19 +5,29 @@ const meetings = require('./Customer/meetings')
 const calls = require('./Customer/calls')
 
 // Define associations
+
+// Leads ↔ Staff
 Leads.belongsTo(signup, { foreignKey: 'staffId', as: 'assignedStaff' });
 signup.hasMany(Leads, { foreignKey: 'staffId', as: 'leads' });
 
+// Contacts ↔ Staff
 contacts.belongsTo(signup, { foreignKey: 'staffId', as: 'assignedStaff' });
 signup.hasMany(contacts, { foreignKey: 'staffId', as: 'contacts' });
 
-meetings.belongsTo(contacts, { foreignKey: 'contactId', as: 'assignedCustomer' })
-contacts.hasMany(meetings, { foreignKey: 'contactId', as: 'contacts' });
+// Meetings ↔ Contacts
+meetings.belongsTo(contacts, { foreignKey: 'contactId', as: 'customer' });
+contacts.hasMany(meetings, { foreignKey: 'contactId', as: 'meetings' });
 
-meetings.belongsTo(signup, { foreignKey: 'staffId', as: 'staff' })
+// Meetings ↔ Staff
+meetings.belongsTo(signup, { foreignKey: 'staffId', as: 'staff' });
 signup.hasMany(meetings, { foreignKey: 'staffId', as: 'meetings' });
 
-calls.belongsTo(signup, { foreignKey: 'staffId', as: 'staff' })
+// Calls ↔ Contacts
+calls.belongsTo(contacts, { foreignKey: 'contactId', as: 'customer' });
+contacts.hasMany(calls, { foreignKey: 'contactId', as: 'calls' });
+
+// Calls ↔ Staff
+calls.belongsTo(signup, { foreignKey: 'staffId', as: 'staff' });
 signup.hasMany(calls, { foreignKey: 'staffId', as: 'calls' });
 
-module.exports = { Leads, signup, contacts, calls };
+module.exports = { Leads, signup, contacts, calls, meetings };
