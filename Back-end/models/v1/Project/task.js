@@ -21,7 +21,7 @@ const task = sequelize.define(
     },
     staffId: {
       type: DataTypes.INTEGER,
-      allowNull: true,
+      allowNull: false,
       references: {
         model: signup,
         key: "id",
@@ -31,7 +31,7 @@ const task = sequelize.define(
     },
     contactId: {
       type: DataTypes.INTEGER,
-      allowNull: true,
+      allowNull: false,
       references: {
         model: contacts,
         key: "id",
@@ -51,6 +51,15 @@ const task = sequelize.define(
       type: DataTypes.ENUM("1", "2", "3","4"),
       allowNull: false,
       defaultValue: "1", 
+    },
+      priority: {
+        type: DataTypes.ENUM("High", "Normal", "Low"),
+        defaultValue: "Normal",
+        allowNull: false,
+    },
+      finishBy: {
+      type: DataTypes.DATEONLY,
+      allowNull: false,
     },
     softDelete: {
       type: DataTypes.BOOLEAN,

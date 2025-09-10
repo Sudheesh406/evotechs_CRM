@@ -3,6 +3,7 @@ const contacts = require('./Customer/contacts');
 const signup = require('./Authentication/authModel');
 const meetings = require('./Customer/meetings')
 const calls = require('./Customer/calls')
+const task = require('./Project/task')
 
 // Define associations
 
@@ -29,5 +30,13 @@ contacts.hasMany(calls, { foreignKey: 'contactId', as: 'calls' });
 // Calls ↔ Staff
 calls.belongsTo(signup, { foreignKey: 'staffId', as: 'staff' });
 signup.hasMany(calls, { foreignKey: 'staffId', as: 'calls' });
+
+//task ↔ contacts
+task.belongsTo(contacts, { foreignKey: 'contactId', as: 'customer' });
+contacts.hasMany(task, { foreignKey: 'contactId', as: 'tasks' });
+
+//task ↔ staff
+task.belongsTo(signup, { foreignKey: 'staffId', as: 'staff' });
+signup.hasMany(task, { foreignKey: 'staffId', as: 'tasks' });
 
 module.exports = { Leads, signup, contacts, calls, meetings };

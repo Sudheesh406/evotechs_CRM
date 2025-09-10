@@ -36,6 +36,7 @@ const createRequirement = async (req, res) => {
   }
 };
 
+
 const getRequirement = async (req,res)=>{
     try {
         const user = req.user; 
@@ -55,6 +56,7 @@ const getRequirement = async (req,res)=>{
     return httpError(res, 500, "Server error", err.message);  
    }
 }
+
 
 const editRequirement = async (req, res) => {
   try {
