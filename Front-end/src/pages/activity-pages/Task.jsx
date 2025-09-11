@@ -3,7 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { X } from "lucide-react";
 import axios from "../../instance/Axios";
 
-const TaskColumn = ({ status, cards, onCardClick, activeCardId, toggleMenu }) => {
+const TaskColumn = ({
+  status,
+  cards,
+  onCardClick,
+  activeCardId,
+  toggleMenu,
+}) => {
   const dropdownRef = useRef(null);
 
   // Close dropdown when clicking outside
@@ -14,7 +20,7 @@ const TaskColumn = ({ status, cards, onCardClick, activeCardId, toggleMenu }) =>
         !dropdownRef.current.contains(e.target) &&
         !e.target.closest(".three-dot-btn")
       ) {
-        toggleMenu(null); 
+        toggleMenu(null);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -54,6 +60,12 @@ const TaskColumn = ({ status, cards, onCardClick, activeCardId, toggleMenu }) =>
                     ref={dropdownRef} // 👈 fixed: ref only on dropdown
                     className="absolute right-3 top-8 bg-white shadow-md rounded-md border z-10 w-32"
                   >
+                    <button
+                      className="w-full text-left px-3 py-2 hover:bg-gray-100"
+                      onClick={() => onCardClick(task, "taskUpdate")}
+                    >
+                      Stage
+                    </button>
                     <button
                       className="w-full text-left px-3 py-2 hover:bg-gray-100"
                       onClick={() => onCardClick(task, "view")}
@@ -138,12 +150,15 @@ const Task = () => {
   const navigate = useNavigate();
   const [originalData, setOriginalData] = useState({});
   const [activeCardId, setActiveCardId] = useState(null);
+  const [stage, setStage] = useState(1);
+  const [taskById, setTaskById] = useState(null);
   const [tasksByStage, setTasksByStage] = useState({
     "Not Started": [],
     "In Progress": [],
     Completed: [],
   });
 
+  const [stageModal, setStageModal] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -170,41 +185,43 @@ const Task = () => {
     } else if (execute === "delete") {
       handleDelete(task.id);
       setActiveCardId(null);
+    } else if ((execute === "taskUpdate", task)) {
+      setStage(task.stage);
+      setTaskById(task.id);
+      setActiveCardId(null);
+      setStageModal(true);
     }
   };
 
-
-
-
-
-
-
-
-
-
-
-  // here is the delete function (need to work on the backend part)
   const handleDelete = async (taskId) => {
     try {
       const response = await axios.delete(`/task/delete/${taskId}`);
-      console.log("Delete response:", response.data);
+      if (response) {
+        fetchTasks();
+        console.log("Task deleted successfully");
+      }
     } catch (error) {
       console.error("Error deleting task:", error);
     }
-  }
+  };
 
-
-
-
-
-
-
-
-
-
-
-
-  
+  const handleTaskUpdate = async (data, difference) => {
+    if(difference == true){
+     setStage(Number(stage) + 1)
+    }else if(difference == false){
+       setStage(Number(stage) - 1)
+    }
+    try {
+      // Send only the fields you want to update
+      const response = await axios.patch(
+        `/task/taskUpdate/${taskById}`,
+        {data}
+      );
+      console.log("Task updated:", response.data);
+    } catch (error) {
+      console.error("Error updating task:", error);
+    }
+  };
 
   const fetchRequirements = async () => {
     try {
@@ -484,6 +501,75 @@ const Task = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Stage Modal */}
+      {stageModal && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md relative">
+            {/* Close Button */}
+            <button
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+              onClick={() => fetchTasks() && setStageModal(false)}
+            >
+              <X size={20} />
+            </button>
+
+            {/* Title */}
+            <h2 className="text-xl font-semibold mb-6">Update Stage</h2>
+
+            {/* Stage Circles */}
+            <div className="mt-4 mb-6 flex justify-between">
+              {[1, 2, 3].map((s) => (
+                <div
+                  key={s}
+                  className={`w-10 h-10 flex items-center justify-center rounded-full font-bold ${
+                    Number(stage) === s
+                      ? "bg-blue-500 text-white" // current stage
+                      : s < Number(stage)
+                      ? "bg-gray-300 text-gray-600" // previous stages
+                      : "bg-gray-100 text-gray-400" // future stages
+                  }`}
+                >
+                  {s}
+                </div>
+              ))}
+            </div>
+
+            {/* Current Stage */}
+            <p className="text-gray-700 text-xl mb-4">
+              Current stage: <span className="font-bold">{stage}</span>
+            </p>
+
+            {/* Stage Controls */}
+            <div className="flex justify-between">
+              {/* Previous Stage Button */}
+              {stage > 1 ? (
+                <button
+                  className="px-6 py-2 rounded bg-gray-400 text-white hover:bg-gray-500"
+                  onClick={() => handleTaskUpdate(Number(stage) - 1, false)}
+                >
+                  Move to Stage {Number(stage) - 1}
+                </button>
+              ) : (
+                <div></div>
+              )}
+
+              {/* Next Stage Button */}
+              {stage < 4 ? (
+                <button
+                  className="px-6 py-2 rounded bg-blue-500 text-white hover:bg-blue-600"
+                  onClick={() => handleTaskUpdate(Number(stage) + 1, true)}
+                >
+                  Move to Stage {Number(stage) + 1}
+                </button>
+              ) : (
+                <p className="text-green-600 font-semibold">
+                  This is the final stage.
+                </p>
+              )}
+            </div>
           </div>
         </div>
       )}
