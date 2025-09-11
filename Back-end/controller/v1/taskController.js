@@ -61,6 +61,7 @@ const getTask = async (req, res) => {
   }
 };
 
+
 const editTask = async (req, res) => {
   try {
     const user = req.user;
@@ -80,5 +81,40 @@ const editTask = async (req, res) => {
 }
 
 
-module.exports = {createTask, getTask, editTask}
+const deleteTask = async (req,res)=>{
+  try {
+    const user = req.user;
+    const taskId = req.params.id;
+    const existingTask = await task.findOne({ where: { id: taskId, staffId: user.id} });
+    if (!existingTask) {
+      return httpError(res, 404, "Task not found");
+    }  
+    await existingTask.update({softDelete:true});
+    return httpSuccess(res, 200, "Task deleted successfully");
+  } catch (error) {
+    console.error("Error in deleteTask:", error);
+    return httpError(res, 500, "Server error", error.message || error);
+  }
+}
+
+const taskStageUpdate = async (req,res)=>{
+  try {
+    const user = req.user;
+    const taskId = req.params.id;
+    const data = req.body;
+    const existingTask = await task.findOne({ where: { id: taskId, staffId: user.id} });
+    if (!existingTask) {
+      return httpError(res, 404, "Task not found");
+    }
+    console.log(existingTask.stage, data.data);
+    await existingTask.update({ stage: data.data });
+    return httpSuccess(res, 200, "Task stage updated successfully", existingTask);
+  } catch (error) {
+    console.log("Error in taskStageUpdate:", error);
+    return httpError(res, 500, "Server error", error.message || error);
+  }
+}
+
+
+module.exports = {createTask, getTask, editTask, deleteTask, taskStageUpdate}
 
