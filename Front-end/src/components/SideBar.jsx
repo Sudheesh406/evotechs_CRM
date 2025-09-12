@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import axios from "../instance/Axios";
 import { NavLink,useNavigate } from "react-router-dom";
 import {
   Home,
@@ -22,9 +23,12 @@ import {
   FolderKanban,
   Hourglass
 } from "lucide-react";
+import { s } from "framer-motion/client";
+import { use } from "react";
 
 const Sidebar = ({ closeSidebar }) => {
   const [openMenus, setOpenMenus] = useState({});
+  const [menuItems, setMenuItems] = useState();
   const navigate = useNavigate()
 
   const toggleMenu = (index) => {
@@ -34,7 +38,8 @@ const Sidebar = ({ closeSidebar }) => {
     }));
   };
 
-  const menuItems = [
+
+   const staffItems = [
     { title: "Home", icon: Home, path: "/" },
     {
       title: "Sales",
@@ -81,6 +86,85 @@ const Sidebar = ({ closeSidebar }) => {
     { title: "Projects", icon: FolderKanban, path: "/projects" },
   ];
 
+
+  //------------------------ Admin Items-------------------------//
+  //--------------------------------------------------------------//
+
+
+  const adminItems = [
+    {title: "Home", icon: Home, path: "/admin" },
+    {
+      title: "Sales",
+      icon: ClipboardList,
+      subMenu: [
+        { title: "Deals", path: "/sales/deals", icon: Briefcase },
+        { title: "Pending", path: "/sales/pending/task", icon: Hourglass },
+        { title: "Rework", path: "/sales/reworks", icon: RotateCcw },
+        { title: "Documents", path: "/sales/documents", icon: FileText },
+      ],
+    },
+    {
+      title: "Activities",
+      icon: Calendar,
+      subMenu: [
+        { title: "Tasks", path: "/activities/tasks", icon: ClipboardList },
+      ],
+    },
+    {
+      title: "Team",
+      icon: Boxes,
+      subMenu: [
+        { title: "Customise", path: "/team/customise", icon: CheckSquare },
+        { title: "Notacess", path: "/team/calendar", icon: Calendar },
+        { title: "Notacess", path: "/team/messages", icon: MessageSquare },
+      ],
+    },
+    {
+      title: "Workspace",
+      icon: Users,
+      subMenu: [
+        { title: "Attendance", path: "/workspace/attendance", icon: CheckSquare },
+        { title: "Calendar", path: "/workspace/calendar", icon: Calendar },
+        { title: "Messages", path: "/workspace/messages", icon: MessageSquare },
+      ],
+    },
+    { title: "Trash", icon: Trash2, path: "/trash" },
+    { title: "Services", icon: Wrench, path: "/services" },
+    { title: "Projects", icon: FolderKanban, path: "/projects" },
+  ]
+
+useEffect(() => {
+  async function initRole() {
+    try {
+      let role = localStorage.getItem("CRMsrtRolE");
+      // Normalize invalid values
+      if (!role || role === "undefined" || role === "null") {
+        role = null;
+      }
+      if (!role) {
+        const { data } = await axios.get("/auth/role");
+        if (data?.data?.role) {
+          role = data?.data?.role;
+          localStorage.setItem("CRMsrtRolE", role);
+        }
+      }
+      // Set menu
+      if (role === "admin") {
+        setMenuItems(adminItems);
+      } else {
+        setMenuItems(staffItems);
+      }
+    } catch (err) {
+      console.error("Error initializing role:", err);
+    }
+  }
+
+  initRole();
+}, []);
+
+  
+
+  
   return (
     <div className="flex flex-col justify-between h-screen bg-[#1F2A40] text-white w-64 shadow-lg">
       {/* Top + Menu Scrollable */}
@@ -92,7 +176,7 @@ const Sidebar = ({ closeSidebar }) => {
 
         {/* Menu */}
         <nav className="space-y-2 px-2">
-          {menuItems.map((item, i) => {
+          {menuItems?.map((item, i) => {
             const Icon = item.icon;
             const hasSubMenu = !!item.subMenu;
 

@@ -174,7 +174,7 @@ const Task = () => {
 
   const handleCardClick = (task, execute) => {
     if (execute === "view") {
-      navigate(`/task/view/${task.id}`);
+      navigate('/activities/tasks/person');
       setActiveCardId(null);
     } else if (execute === "edit") {
       setFormData({ ...task, id: task.id });
@@ -575,7 +575,7 @@ const Task = () => {
       )}
     </div>
   );
-  
+
 };
 
 export default Task;

@@ -2,6 +2,12 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from "react-route
 import { Menu } from "lucide-react";
 import { useState } from "react";
 
+
+import AdminDashboard from './pages/dashboard/AdminDashboard'
+import StaffPendingTask from "./pages/sales-pages/admin_sales_side/StaffPendingTask";
+import CreateTeam from "./pages/Team-work/admin_team_work_side/CreateTeam";
+
+
 import StaffDashboard from "./pages/dashboard/StaffDashboard";
 import Leads from "./pages/sales-pages/Leads";
 import Accounts from "./pages/sales-pages/Accounts";
@@ -67,6 +73,16 @@ function Layout() {
         )}
 
         <Routes>
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/sales/pending/task" element={<StaffPendingTask />} />
+          <Route path="/team/customise" element={<CreateTeam />} />
+
+
+
+
+
+
+
           <Route path="/" element={<StaffDashboard />} />
           <Route path="/sales/leads" element={<Leads />} />
           <Route path="/sales/contacts" element={<Contacts />} />

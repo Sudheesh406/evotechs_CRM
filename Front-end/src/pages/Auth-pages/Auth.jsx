@@ -67,6 +67,8 @@ const Auth = () => {
       console.log("response in login : ", response);
       setServerError(""); // clear error if success
       if(response?.data?.userDetails?.role === 'admin'){
+        // after login success
+        localStorage.setItem("CRMsrtRolE", "admin");
         navigate('/admin')
       }else if(response?.data?.userDetails?.role === 'staff'){
         navigate('/')
