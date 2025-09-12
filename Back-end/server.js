@@ -15,6 +15,7 @@ const meetingRoute = require("./routes/v1/meetingRoute");
 const callRoute = require("./routes/v1/callRoute");
 const RequirementRoute = require("./routes/v1/requirementRoute");
 const taskRoute = require("./routes/v1/taskRoute");
+const attendanceRoute = require("./routes/v1/attendanceRoute");
 
 // ====================
 // Middleware Setup
@@ -51,6 +52,9 @@ app.use("/api/requirement", RequirementRoute);
 
 // Handling Task
 app.use("/api/task", taskRoute);
+
+// Handling Attendance
+app.use("/api/attendance", attendanceRoute);
 
 
 

@@ -1,7 +1,8 @@
 
 const { httpSuccess,httpError} = require('../../utils/v1/httpResponse')
 const contacts = require('../../models/v1/Customer/contacts')
-const task = require('../../models/v1/Project/task')
+const task = require('../../models/v1/Project/task');
+const roleChecker = require('../../utils/v1/roleChecker');
 
 const createTask = async (req, res) => {
   try {
@@ -115,6 +116,37 @@ const taskStageUpdate = async (req,res)=>{
   }
 }
 
+//---------------pending task-----------------//
 
-module.exports = {createTask, getTask, editTask, deleteTask, taskStageUpdate}
+//-----admin---------//
+
+const getPendingTask = async (req, res) => {
+  try {
+    const user = req.user;
+    const access = roleChecker(user.id);
+    if (!access) {
+      return httpError(res, 403, "Access denied. Admins only.");
+    }
+
+    const allPendingTask = await task.findAll({
+      where: { stage: "pending", softDelete: false },
+      include: [
+        {
+          model: staff,
+          attributes: ["id", "staffName"], // only bring required fields
+        },
+      ],
+    });
+
+    return res.status(200).json(allPendingTask);
+  } catch (error) {
+    console.error("Error in getPendingTask:", error);
+    return httpError(res, 500, "Server error", error.message || error);
+  }
+};
+
+
+
+
+module.exports = {createTask, getTask, editTask, deleteTask, taskStageUpdate, getPendingTask}
 

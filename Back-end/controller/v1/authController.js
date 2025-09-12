@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const signup = require("../../models/v1/Authentication/authModel");
 const secretCode = require("../../models/v1/Authentication/secreatCode");
 const { httpSuccess, httpError } = require("../../utils/v1/httpResponse");
+const Signup = require("../../models/v1/Authentication/authModel");
 
 const handleSignup = async (req, res) => {
   try {
@@ -133,4 +134,19 @@ const handleLogin = async (req, res) => {
   }
 };
 
-module.exports = { handleSignup, handleLogin };
+
+const roleChecker = async (req,res)=>{
+  try {
+    const user = req.user;
+    const userDetails= await Signup.findOne({where:{id:user.id}});
+    if(!userDetails){
+      return httpError(res, 404, "User not found");
+    }
+    return httpSuccess(res, 200, "Role fetched successfully", {role:userDetails.role});
+  } catch (error) {
+    console.log('error found  in role checker',error);
+    return httpError(res, 500, "Server error", err.message);
+  }
+}
+
+module.exports = { handleSignup, handleLogin, roleChecker };

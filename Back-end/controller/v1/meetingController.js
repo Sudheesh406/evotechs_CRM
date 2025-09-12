@@ -8,7 +8,6 @@ const { Op } = require("sequelize");
 const moment = require("moment");
 dayjs.extend(customParseFormat);
 
-
 const createMeetings = async (req, res) => {
   try {
     const user = req.user;
@@ -101,7 +100,6 @@ const createMeetings = async (req, res) => {
   }
 };
 
-
 const getMeetings = async (req, res) => {
   const user = req.user;
 
@@ -113,7 +111,7 @@ const getMeetings = async (req, res) => {
 
     let where = {
       staffId: user.id,
-      softDelete: false, 
+      softDelete: false,
     };
 
     switch (filter) {
@@ -128,12 +126,22 @@ const getMeetings = async (req, res) => {
       case "Completed":
         where.status = "completed";
         break;
+
       case "Pending":
         where.status = "pending";
         break;
 
       case "Cancelled":
         where.status = "cancelled";
+        break;
+
+      case "This Week":
+        const startOfWeek = moment().startOf("week").format("YYYY-MM-DD");
+        const endOfWeek = moment().endOf("week").format("YYYY-MM-DD");
+
+        where.meetingDate = {
+          [Op.between]: [startOfWeek, endOfWeek],
+        };
         break;
 
       case "All":
@@ -159,7 +167,6 @@ const getMeetings = async (req, res) => {
   }
 };
 
-
 const editMeetings = async (req, res) => {
   const user = req.user;
   const newData = req.body.data;
@@ -183,7 +190,7 @@ const editMeetings = async (req, res) => {
       "startTime",
       "endTime",
       "phoneNumber",
-      "description"
+      "description",
     ];
     for (const field of requiredFields) {
       if (
@@ -196,8 +203,10 @@ const editMeetings = async (req, res) => {
 
     // ✅ Normalize time fields if provided
     if (newData.startTime) {
-      const formattedStartTime = dayjs(newData.startTime, ["h:mm A", "HH:mm"])
-        .isValid()
+      const formattedStartTime = dayjs(newData.startTime, [
+        "h:mm A",
+        "HH:mm",
+      ]).isValid()
         ? dayjs(newData.startTime, ["h:mm A", "HH:mm"]).format("HH:mm:ss")
         : null;
 
@@ -212,8 +221,10 @@ const editMeetings = async (req, res) => {
     }
 
     if (newData.endTime) {
-      const formattedEndTime = dayjs(newData.endTime, ["h:mm A", "HH:mm"])
-        .isValid()
+      const formattedEndTime = dayjs(newData.endTime, [
+        "h:mm A",
+        "HH:mm",
+      ]).isValid()
         ? dayjs(newData.endTime, ["h:mm A", "HH:mm"]).format("HH:mm:ss")
         : null;
 
@@ -230,7 +241,7 @@ const editMeetings = async (req, res) => {
     // ✅ Update contactId if phone number changed
     if (newData.phoneNumber) {
       const contact = await Contacts.findOne({
-        where: { phone: newData.phoneNumber, staffId: user.id }
+        where: { phone: newData.phoneNumber, staffId: user.id },
       });
       newData.contactId = contact ? contact.id : null;
     }
@@ -242,7 +253,6 @@ const editMeetings = async (req, res) => {
     return httpError(res, 500, "Server error", error.message);
   }
 };
-
 
 const deleteMeetings = async (req, res) => {
   try {
@@ -260,7 +270,7 @@ const deleteMeetings = async (req, res) => {
       return httpError(res, 404, "Meeting not found");
     }
 
-      if(meeting.staffId != user.id){
+    if (meeting.staffId != user.id) {
       return httpError(res, 403, "Access denied");
     }
 
@@ -271,12 +281,10 @@ const deleteMeetings = async (req, res) => {
       success: true,
       message: "Meeting deleted successfully (soft delete applied)",
     });
-    
   } catch (error) {
     console.error("error found in delete meetings", error);
     return httpError(res, 500, "Server error", error.message);
   }
 };
-
 
 module.exports = { createMeetings, getMeetings, editMeetings, deleteMeetings };

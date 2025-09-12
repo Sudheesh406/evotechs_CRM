@@ -1,4 +1,3 @@
-
 const calls = require("../../models/v1/Customer/calls");
 const Contacts = require("../../models/v1/Customer/contacts");
 const { signup } = require("../../models/v1/index");
@@ -12,47 +11,21 @@ dayjs.extend(customParseFormat);
 const createCalls = async (req, res) => {
   try {
     const user = req.user;
-    const {
-      name,
-      subject,
-      date,
-      time,
-      phoneNumber,
-      contactId,
-      description,
-    } = req.body.data;
+    const { name, subject, date, time, phoneNumber, contactId, description } =
+      req.body.data;
 
-    console.log(
-      "data:",
-      name,
-      subject,
-      date,
-      time,
-      phoneNumber,
-      description,
-    );
+    console.log("data:", name, subject, date, time, phoneNumber, description);
 
     // Validate required fields
-    if (
-      !name ||
-      !subject ||
-      !date ||
-      !time ||
-      !phoneNumber ||
-      !description
-    ) {
+    if (!name || !subject || !date || !time || !phoneNumber || !description) {
       return httpError(res, 400, "All fields are required");
     }
 
     // ✅ Convert times to MySQL TIME format (HH:mm:ss)
-    const formattedTime = dayjs(time, ["h:mm A", "HH:mm"]).format(
-      "HH:mm:ss"
-    );
+    const formattedTime = dayjs(time, ["h:mm A", "HH:mm"]).format("HH:mm:ss");
 
     // // Prevent invalid time values (e.g., if someone types letters)
-    if (
-      formattedTime === "Invalid Date" 
-    ) {
+    if (formattedTime === "Invalid Date") {
       return httpError(res, 400, "Invalid time format. Please use hh:mm AM/PM");
     }
 
@@ -66,13 +39,13 @@ const createCalls = async (req, res) => {
         return httpError(res, 404, "Contact not found for this staff");
       }
     }
-    
+
     // // Case 2: No contactId → try by phone number
     else if (phoneNumber) {
       customer = await Contacts.findOne({
         where: { phone: phoneNumber, staffId },
       });
-    //   // If not found → will just create without linking
+      //   // If not found → will just create without linking
     }
 
     // // Create meetings (with or without customer link)
@@ -94,7 +67,6 @@ const createCalls = async (req, res) => {
   }
 };
 
-
 const getCalls = async (req, res) => {
   const user = req.user;
 
@@ -102,11 +74,11 @@ const getCalls = async (req, res) => {
     const { filter } = req.body;
     const today = moment().format("YYYY-MM-DD");
 
-    // console.log(filter)
+    console.log(filter);
 
     let where = {
       staffId: user.id,
-      softDelete: false, 
+      softDelete: false,
     };
 
     switch (filter) {
@@ -121,12 +93,22 @@ const getCalls = async (req, res) => {
       case "Completed":
         where.status = "completed";
         break;
+
       case "Pending":
         where.status = "pending";
         break;
 
       case "Cancelled":
         where.status = "cancelled";
+        break;
+        
+      case "This Week":
+        const startOfWeek = moment().startOf("week").format("YYYY-MM-DD");
+        const endOfWeek = moment().endOf("week").format("YYYY-MM-DD");
+
+        where.date = {
+          [Op.between]: [startOfWeek, endOfWeek],
+        };
         break;
 
       case "All":
@@ -152,7 +134,6 @@ const getCalls = async (req, res) => {
   }
 };
 
-
 const editCalls = async (req, res) => {
   const user = req.user;
   const newData = req.body.data;
@@ -175,7 +156,7 @@ const editCalls = async (req, res) => {
       "date",
       "time",
       "phoneNumber",
-      "description"
+      "description",
     ];
     for (const field of requiredFields) {
       if (
@@ -188,8 +169,7 @@ const editCalls = async (req, res) => {
 
     // ✅ Normalize time fields if provided
     if (newData.time) {
-      const formattedTime = dayjs(newData.time, ["h:mm A", "HH:mm"])
-        .isValid()
+      const formattedTime = dayjs(newData.time, ["h:mm A", "HH:mm"]).isValid()
         ? dayjs(newData.time, ["h:mm A", "HH:mm"]).format("HH:mm:ss")
         : null;
 
@@ -206,7 +186,7 @@ const editCalls = async (req, res) => {
     // ✅ Update contactId if phone number changed
     if (newData.phoneNumber) {
       const contact = await Contacts.findOne({
-        where: { phone: newData.phoneNumber, staffId: user.id }
+        where: { phone: newData.phoneNumber, staffId: user.id },
       });
       newData.contactId = contact ? contact.id : null;
     }
@@ -218,7 +198,6 @@ const editCalls = async (req, res) => {
     return httpError(res, 500, "Server error", error.message);
   }
 };
-
 
 const deleteCalls = async (req, res) => {
   try {
@@ -236,7 +215,7 @@ const deleteCalls = async (req, res) => {
       return httpError(res, 404, "call not found");
     }
 
-      if(call.staffId != user.id){
+    if (call.staffId != user.id) {
       return httpError(res, 403, "Access denied");
     }
 
@@ -253,5 +232,4 @@ const deleteCalls = async (req, res) => {
   }
 };
 
-
-module.exports = { createCalls, getCalls, editCalls, deleteCalls};
+module.exports = { createCalls, getCalls, editCalls, deleteCalls };
