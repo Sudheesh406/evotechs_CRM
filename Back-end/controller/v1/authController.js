@@ -135,6 +135,25 @@ const handleLogin = async (req, res) => {
 };
 
 
+const logout = async(req,res)=>{
+  const user = req.user
+  console.log('user')
+  try {
+    if(user){
+      res.clearCookie("crm_checkin_pass", {
+      httpOnly: true,
+      secure: false,  // must match how you set it
+      sameSite: "lax",
+    });
+    return res.status(200).json({ message: "Logout successful" });
+    }else{
+     return res.status(500).json({ message: "some internal error found"});
+    }
+  } catch (error) {
+    console.log('error found in logout',error)
+  }
+}
+
 const roleChecker = async (req,res)=>{
   try {
     const user = req.user;
@@ -149,4 +168,4 @@ const roleChecker = async (req,res)=>{
   }
 }
 
-module.exports = { handleSignup, handleLogin, roleChecker };
+module.exports = { handleSignup, handleLogin, logout, roleChecker };
