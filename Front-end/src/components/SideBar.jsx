@@ -67,7 +67,7 @@ const Sidebar = ({ closeSidebar }) => {
       title: "Team",
       icon: Boxes,
       subMenu: [
-        { title: "Notacess", path: "/team/attendance", icon: CheckSquare },
+        { title: "Info", path: "/team/profile", icon: CheckSquare },
         { title: "Notacess", path: "/team/calendar", icon: Calendar },
         { title: "Notacess", path: "/team/messages", icon: MessageSquare },
       ],
@@ -163,6 +163,17 @@ useEffect(() => {
 }, []);
 
   
+const handleLogout = async ()=>{
+  try {
+    const response = await axios.patch('/auth/logout')
+    if(response){
+      localStorage.removeItem("CRMsrtRolE");
+      navigate('/login')
+    }
+  } catch (error) {
+    console.log('error found in logout',error)
+  }
+}
 
   
   return (
@@ -247,7 +258,7 @@ useEffect(() => {
           <span className="font-medium">Settings</span>
         </div>
         <div className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-[#2A3A5F] hover:text-[#E50914] cursor-pointer transition-all duration-200"
-         onClick={()=>navigate('/login')}>
+         onClick={()=>handleLogout()}>
           <LogOut className="w-5 h-5" />
           <span className="font-medium">Logout</span>
         </div>

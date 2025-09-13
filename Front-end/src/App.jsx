@@ -26,6 +26,7 @@ import Trash from "./pages/Trash-page/Trash"
 import TrashDetail from "./pages/staff-detail-page/TaskDetail"
 import Pending from "./pages/sales-pages/Pendings"
 import Rework from "./pages/sales-pages/Rework"
+import TeamProfile from "./pages/Team-work/TeamView"
 
 import Sidebar from "./components/SideBar";
 
@@ -99,6 +100,8 @@ function Layout() {
           <Route path="/workspace/calendar" element={<Calendar />} />
           <Route path="/workspace/messages" element={<Messages />} />
           <Route path="/workspace/attendance" element={<Attendance />} />
+          <Route path="/team/profile" element={<TeamProfile />} />
+
           <Route path="/trash" element={<Trash />} />
           <Route path="/login" element={<Auth />} />
         </Routes>
