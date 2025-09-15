@@ -174,7 +174,10 @@ const Task = () => {
 
   const handleCardClick = (task, execute) => {
     if (execute === "view") {
-      navigate('/activities/tasks/person');
+      const data = {'taskId': task.id ,'contactId': task.contactId }
+    const dataToSend =  encodeURIComponent(JSON.stringify({ data}));
+
+      navigate(`/activities/tasks/person/${dataToSend}`);
       setActiveCardId(null);
     } else if (execute === "edit") {
       setFormData({ ...task, id: task.id });

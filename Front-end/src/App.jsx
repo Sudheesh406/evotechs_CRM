@@ -1,12 +1,15 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
 import { Menu } from "lucide-react";
 import { useState } from "react";
 
-
-import AdminDashboard from './pages/dashboard/AdminDashboard'
+import AdminDashboard from "./pages/dashboard/AdminDashboard";
 import StaffPendingTask from "./pages/sales-pages/admin_sales_side/StaffPendingTask";
 import CreateTeam from "./pages/Team-work/admin_team_work_side/CreateTeam";
-
 
 import StaffDashboard from "./pages/dashboard/StaffDashboard";
 import Leads from "./pages/sales-pages/Leads";
@@ -22,11 +25,13 @@ import Calendar from "./pages/workspace-pages/Calendar";
 import Messages from "./pages/workspace-pages/Messages";
 import Attendance from "./pages/workspace-pages/Attendance";
 import Auth from "./pages/Auth-pages/Auth";
-import Trash from "./pages/Trash-page/Trash"
-import TrashDetail from "./pages/staff-detail-page/TaskDetail"
-import Pending from "./pages/sales-pages/Pendings"
-import Rework from "./pages/sales-pages/Rework"
-import TeamProfile from "./pages/Team-work/TeamView"
+import Trash from "./pages/Trash-page/Trash";
+import TaskDetail from "./pages/staff-detail-page/TaskDetail";
+import Pending from "./pages/sales-pages/Pendings";
+import Rework from "./pages/sales-pages/Rework";
+import TeamProfile from "./pages/Team-work/TeamView";
+import TeamWork from "./pages/Team-work/TeamWorkView";
+import TeamWorkDetails from "./pages/Team-work/TeamWorkDetails";
 
 import Sidebar from "./components/SideBar";
 
@@ -78,12 +83,6 @@ function Layout() {
           <Route path="/sales/pending/task" element={<StaffPendingTask />} />
           <Route path="/team/customise" element={<CreateTeam />} />
 
-
-
-
-
-
-
           <Route path="/" element={<StaffDashboard />} />
           <Route path="/sales/leads" element={<Leads />} />
           <Route path="/sales/contacts" element={<Contacts />} />
@@ -94,13 +93,15 @@ function Layout() {
           <Route path="/sales/documents" element={<Documents />} />
           <Route path="/sales/reworks" element={<Rework />} />
           <Route path="/activities/tasks" element={<Task />} />
-          <Route path="/activities/tasks/person" element={<TrashDetail />} />
+          <Route path="/activities/tasks/person/:data"element={<TaskDetail />}/>
           <Route path="/activities/meetings" element={<Meetings />} />
           <Route path="/activities/calls" element={<Calls />} />
           <Route path="/workspace/calendar" element={<Calendar />} />
           <Route path="/workspace/messages" element={<Messages />} />
           <Route path="/workspace/attendance" element={<Attendance />} />
           <Route path="/team/profile" element={<TeamProfile />} />
+          <Route path="/team/work/:id" element={<TeamWork />} />
+          <Route path="/team/work/manage/:data" element={<TeamWorkDetails />} />
 
           <Route path="/trash" element={<Trash />} />
           <Route path="/login" element={<Auth />} />
@@ -119,5 +120,3 @@ function App() {
 }
 
 export default App;
-
-

@@ -1,9 +1,35 @@
 import React, { useState } from "react";
 import { FileText, Phone, Users, CheckSquare, Paperclip, ArrowLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom"; // 👈 import useNavigate
+import { useNavigate, useParams } from "react-router-dom"; // 👈 import useNavigate
 
 export default function TaskDetail() {
   const navigate = useNavigate(); // 👈 initialize navigate
+const { data } = useParams(); // may be undefined if URL has no param
+
+  let parsed;
+  if (data) {
+    try {
+      parsed = JSON.parse(decodeURIComponent(data));
+    } catch (e) {
+      console.error("Could not parse data:", e);
+    }
+  }
+  if (!parsed) {
+    return <div>Loading or invalid data…</div>;
+  }
+   console.log(parsed)
+
+
+// customer fetching is pendingggg
+   const fetchCustomerDetails = async (req,res)=>{
+    try {
+      const response = await axios.get('/task/get')
+    } catch (error) {
+      console.log('error found in fetching customer details',error)
+    }
+   }
+
+
 
   const [workStages, setWorkStages] = useState({
     pending1: true,

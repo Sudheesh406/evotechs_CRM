@@ -1,7 +1,13 @@
 const { httpError, httpSuccess } = require("../../utils/v1/httpResponse");
 const roleChecker = require("../../utils/v1/roleChecker");
 const team = require("../../models/v1/Team_work/team");
+const teamHistory = require("../../models/v1/Team_work/teamManagementHistory");
+const requirement = require("../../models/v1/Project/requirements")
+const task = require('../../models/v1/Project/task')
+const {contacts} = require('../../models/v1')
 const { signup } = require("../../models/v1");
+
+const { Op } = require("sequelize"); // make sure to import Op
 
 const createTeamWork = async (req, res) => {
   try {
@@ -16,7 +22,11 @@ const createTeamWork = async (req, res) => {
     }
 
     // Validation (teamName + staffIds required)
-    if (!data.teamName || !Array.isArray(data.staffIds) || data.staffIds.length === 0) {
+    if (
+      !data.teamName ||
+      !Array.isArray(data.staffIds) ||
+      data.staffIds.length === 0
+    ) {
       return httpError(res, 400, "Missing required fields");
     }
 
@@ -41,7 +51,6 @@ const createTeamWork = async (req, res) => {
     return httpError(res, 500, "Failed to create team work");
   }
 };
-
 
 const getTeam = async (req, res) => {
   try {
@@ -93,7 +102,6 @@ const getTeam = async (req, res) => {
   }
 };
 
-
 const getStaff = async (req, res) => {
   try {
     const user = req.user;
@@ -125,7 +133,6 @@ const getStaff = async (req, res) => {
   }
 };
 
-
 const editTeam = async (req, res) => {
   try {
     const user = req.user;
@@ -140,7 +147,7 @@ const editTeam = async (req, res) => {
         "Access denied: do not have permission to edit team."
       );
     }
-    console.log(data)
+    console.log(data);
 
     if (
       !data ||
@@ -153,8 +160,8 @@ const editTeam = async (req, res) => {
       return httpError(res, 400, "Missing required fields");
     }
 
-    if(data.leaderId == 0){
-        data.leaderId = null
+    if (data.leaderId == 0) {
+      data.leaderId = null;
     }
     const existingTeam = await team.findOne({ where: { id } });
     if (!existingTeam) {
@@ -163,13 +170,11 @@ const editTeam = async (req, res) => {
 
     const updatedData = await existingTeam.update(data);
     return httpSuccess(res, 200, "Team updated successfully", updatedData);
-
   } catch (error) {
     console.log("error found in edit team", error);
     return httpError(res, 500, "Failed to edit team. Please try again later.");
   }
 };
-
 
 const deleteTeam = async (req, res) => {
   try {
@@ -185,7 +190,9 @@ const deleteTeam = async (req, res) => {
       );
     }
     // Find team by id
-    const dataForDelete = await team.findOne({ where: { id, softDelete: false } });
+    const dataForDelete = await team.findOne({
+      where: { id, softDelete: false },
+    });
     if (!dataForDelete) {
       return httpError(res, 404, "Team not found");
     }
@@ -194,14 +201,15 @@ const deleteTeam = async (req, res) => {
     const deletedData = await dataForDelete.update({ softDelete: true });
 
     return httpSuccess(res, 200, "Team deleted successfully", deletedData);
-
   } catch (error) {
     console.log("error found in delete team", error);
-    return httpError(res, 500, "Failed to delete team. Please try again later.");
+    return httpError(
+      res,
+      500,
+      "Failed to delete team. Please try again later."
+    );
   }
 };
-
-
 
 //----------------------staff----------------------//
 
@@ -219,33 +227,189 @@ const getTeamDetails = async (req, res) => {
     // Filter teams where current staff is a member
     const userTeams = await Promise.all(
       allTeams
-        .filter(t => t.staffIds.includes(userId))
-        .map(async t => {
+        .filter((t) => t.staffIds.includes(userId))
+        .map(async (t) => {
           // Fetch all members' details
           const members = await signup.findAll({
             where: {
-              id: t.staffIds
+              id: t.staffIds,
             },
-            attributes: ['id', 'name', 'email'] // only pick id, name, email
+            attributes: ["id", "name", "email"], // only pick id, name, email
           });
 
           return {
             ...t.dataValues, // or t.toJSON()
-            members // full details of team members
+            members, // full details of team members
           };
         })
     );
 
     return httpSuccess(res, 200, "Teams fetched successfully", userTeams);
-
   } catch (error) {
-    console.log('error found in getTeamDetails', error);
-    return httpError(res, 500, "Failed to fetch team details. Please try again later.");
+    console.log("error found in getTeamDetails", error);
+    return httpError(
+      res,
+      500,
+      "Failed to fetch team details. Please try again later."
+    );
+  }
+};
+
+const postTeamHistory = async (req, res) => {
+  try {
+    const { selectedTeam } = req.body;
+    const staff = req.user;
+
+    if (!selectedTeam?.id) {
+      return httpError(res, 400, "No team selected");
+    }
+
+    // Check if team exists
+    const existingTeam = await team.findOne({ where: { id: selectedTeam.id } });
+    if (!existingTeam) {
+      return httpError(res, 404, "Team not found");
+    }
+
+    // Check if staff belongs to this team
+    const staffIds = existingTeam.staffIds; // must be array or null
+    if (!Array.isArray(staffIds) || !staffIds.includes(staff.id)) {
+      return httpError(res, 403, "Staff is not part of this team");
+    }
+
+    await teamHistory.destroy({
+      where: { staffId: staff.id },
+    });
+
+    // Create team history
+    const history = await teamHistory.create({
+      teamName: selectedTeam.name,
+      description: selectedTeam.description || "",
+      staffId: staff.id,
+      teamId: selectedTeam.id,
+    });
+
+    if (!history) {
+      return httpError(res, 500, "Failed to create team history");
+    }
+
+    return httpSuccess(res, 201, "Team history created successfully", history);
+  } catch (error) {
+    console.error("Error in postTeamHistory:", error);
+    return httpError(
+      res,
+      500,
+      "Failed to create team history. Please try again later."
+    );
   }
 };
 
 
+const getSectors = async (req, res) => {
+  try {
+    const user = req.user;
+
+    // Get the user's team history
+    const history = await teamHistory.findOne({ where: { staffId: user.id } });
+    if (!history) {
+      return res.status(404).json({ message: "No history found for this user" });
+    }
+    const teamId = history.teamId;
+
+    // Get the team details
+    const teamDetails = await team.findOne({ where: { id: teamId } });
+    if (!teamDetails) {
+      return res.status(404).json({ message: "Team not found" });
+    }
+
+    const staffIds = teamDetails.staffIds; // array of staff IDs
+
+    // Fetch all requirements for these staff IDs
+    const requirements = await requirement.findAll({
+      where: {
+        staffId: {
+          [Op.in]: staffIds
+        }
+      }
+    });
+
+    // Remove duplicates by project
+    const uniqueRequirements = [];
+    const seenProjects = new Set();
+
+    requirements.forEach(req => {
+      const project = req.project || req.dataValues.project; // depending on raw option
+      if (!seenProjects.has(project)) {
+        seenProjects.add(project);
+        uniqueRequirements.push(req);
+      }
+    });
+
+    return res.json({ team: teamDetails, requirements: uniqueRequirements });
+    
+  } catch (error) {
+    console.log('Error in getSectors:', error);
+       return httpError(
+      res,
+      500,
+      "Failed to get sectors. Please try again later."
+    );
+  }
+};
 
 
+const getProjects = async (req, res) => {
+  try {
+    const { parsedData } = req.body;
+    const { staffIds, projectName } = parsedData;
 
-module.exports = { createTeamWork, getTeam, getStaff, editTeam, deleteTeam, getTeamDetails };
+    if (!Array.isArray(staffIds) || staffIds.length === 0) {
+      return res.status(400).json({ message: "staffIds must be a non-empty array" });
+    }
+
+    const whereCondition = {
+      staffId: { [Op.in]: staffIds }
+    };
+    if (projectName) {
+      whereCondition.requirement = projectName; // or actual column name
+    }
+
+    const tasks = await task.findAll({
+      where: whereCondition,
+      include: [
+        {
+          model: signup,
+            as: 'staff', 
+          attributes: ['name', 'email'] // select only name & email
+        },
+        {
+          model : contacts,
+          as:"customer"
+        }
+
+      ]
+    });
+
+    return res.status(200).json({ tasks });
+
+  } catch (error) {
+    console.error('error found in getting projects', error);
+    return httpError(
+      res,
+      500,
+      "Failed to get projects. Please try again later."
+    );
+  }
+};
+
+
+module.exports = {
+  createTeamWork,
+  getTeam,
+  getStaff,
+  editTeam,
+  deleteTeam,
+  getTeamDetails,
+  postTeamHistory,
+  getSectors,
+  getProjects
+};

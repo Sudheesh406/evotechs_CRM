@@ -6,6 +6,7 @@ const calls = require('./Customer/calls')
 const task = require('./Project/task')
 const attendance = require('./Work_space/attendance')
 const createTeam = require('./Team_work/team')
+const teamHistory = require('./Team_work/teamManagementHistory')
 
 // Define associations
 
@@ -53,5 +54,8 @@ createTeam.belongsTo(signup, { foreignKey: 'createdAdminId', as: 'creator' });
 signup.hasMany(createTeam, { foreignKey: 'createdAdminId', as: 'createdTeams' });
 
 
+teamHistory.belongsTo(signup, { foreignKey: 'staffId', as: 'staff' });
+signup.hasMany(teamHistory, { foreignKey: 'staffId', as: 'team' });
 
-module.exports = { Leads, signup, contacts, calls, meetings, task, attendance, createTeam };
+
+module.exports = { Leads, signup, contacts, calls, meetings, task, attendance, createTeam, teamHistory };

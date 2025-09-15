@@ -1,0 +1,7 @@
+const getSectors = async ()=>{
+  try {
+    
+  } catch (error) {
+    console.log('error found in getSectors',error)
+  }
+}

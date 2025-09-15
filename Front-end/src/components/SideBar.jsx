@@ -38,6 +38,7 @@ const Sidebar = ({ closeSidebar }) => {
     }));
   };
 
+const id = 0
 
    const staffItems = [
     { title: "Home", icon: Home, path: "/" },
@@ -68,7 +69,7 @@ const Sidebar = ({ closeSidebar }) => {
       icon: Boxes,
       subMenu: [
         { title: "Info", path: "/team/profile", icon: CheckSquare },
-        { title: "Notacess", path: "/team/calendar", icon: Calendar },
+        { title: "Projects", path: `/team/work/${id}`, icon: Calendar },
         { title: "Notacess", path: "/team/messages", icon: MessageSquare },
       ],
     },
