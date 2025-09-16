@@ -17,6 +17,7 @@ const RequirementRoute = require("./routes/v1/requirementRoute");
 const taskRoute = require("./routes/v1/taskRoute");
 const attendanceRoute = require("./routes/v1/attendanceRoute");
 const teamWorkRoute = require("./routes/v1/teamWorkRoute");
+const pendingRoute = require("./routes/v1/pendingRoute");
 
 // ====================
 // Middleware Setup
@@ -46,7 +47,7 @@ app.use("/api/customer", customerRoute);
 app.use("/api/meetings", meetingRoute);
 
 // Handling Calls
-app.use("/api/Calls", callRoute);
+app.use("/api/calls", callRoute);
 
 // Handling Requirements
 app.use("/api/requirement", RequirementRoute);
@@ -59,6 +60,9 @@ app.use("/api/attendance", attendanceRoute);
 
 // Handling Team Work
 app.use("/api/team", teamWorkRoute);
+
+// Handling Pending  Work
+app.use("/api/pending", pendingRoute);
 
 
 

@@ -199,6 +199,7 @@ const editCalls = async (req, res) => {
   }
 };
 
+
 const deleteCalls = async (req, res) => {
   try {
     const user = req.user;
@@ -232,4 +233,48 @@ const deleteCalls = async (req, res) => {
   }
 };
 
-module.exports = { createCalls, getCalls, editCalls, deleteCalls };
+
+const createCallFromTask = async (req,res)=>{
+  try {
+    const user = req.user;
+    const { name, subject, date, time, phoneNumber, contactId, description } =
+      req.body.data;
+
+    console.log("data:", name, subject, date, time, phoneNumber, description);
+
+    // Validate required fields
+    if (!name || !subject || !date || !time || !phoneNumber || !description) {
+      return httpError(res, 400, "All fields are required");
+    }
+
+    // ✅ Convert times to MySQL TIME format (HH:mm:ss)
+    const formattedTime = dayjs(time, ["h:mm A", "HH:mm"]).format("HH:mm:ss");
+
+    // // Prevent invalid time values (e.g., if someone types letters)
+    if (formattedTime === "Invalid Date") {
+      return httpError(res, 400, "Invalid time format. Please use hh:mm AM/PM");
+    }
+
+    const staffId = user.id;
+  
+
+    // // Create meetings (with or without customer link)
+    const result = await calls.create({
+      name,
+      subject,
+      date,
+      time: formattedTime, // ✅ Save in proper format
+      phoneNumber,
+      description,
+      staffId,
+      contactId
+    });
+
+    return httpSuccess(res, 201, "call created successfully", result);
+  } catch (error) {
+    console.error("Error in createCalls:", error);
+    return httpError(res, 500, "Server error", error.message);
+  }
+}
+
+module.exports = { createCalls, getCalls, editCalls, deleteCalls, createCallFromTask };

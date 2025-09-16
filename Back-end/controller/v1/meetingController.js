@@ -100,6 +100,7 @@ const createMeetings = async (req, res) => {
   }
 };
 
+
 const getMeetings = async (req, res) => {
   const user = req.user;
 
@@ -287,4 +288,75 @@ const deleteMeetings = async (req, res) => {
   }
 };
 
-module.exports = { createMeetings, getMeetings, editMeetings, deleteMeetings };
+
+const createMeetingFromTask = async (req,res)=>{
+  try {
+
+    console.log(req.body)
+    const user = req.user;
+    const {
+      name,
+      subject,
+      date,
+      startTime,
+      endTime,
+      phoneNumber,
+      contactId,
+      description,
+    } = req.body.data;
+
+    
+
+    // Validate required fields
+    if (
+      !name ||
+      !subject ||
+      !date ||
+      !startTime ||
+      !endTime ||
+      !phoneNumber ||
+      !description ||
+      !contactId
+    ) {
+      return httpError(res, 400, "All fields are required");
+    }
+
+    // ✅ Convert times to MySQL TIME format (HH:mm:ss)
+    const formattedStartTime = dayjs(startTime, ["h:mm A", "HH:mm"]).format(
+      "HH:mm:ss"
+    );
+    const formattedEndTime = dayjs(endTime, ["h:mm A", "HH:mm"]).format(
+      "HH:mm:ss"
+    );
+
+    // Prevent invalid time values (e.g., if someone types letters)
+    if (
+      formattedStartTime === "Invalid Date" ||
+      formattedEndTime === "Invalid Date"
+    ) {
+      return httpError(res, 400, "Invalid time format. Please use hh:mm AM/PM");
+    }
+
+    const staffId = user.id;
+   
+
+    const result = await meetings.create({
+      name,
+      subject,
+      meetingDate : date,
+      startTime: formattedStartTime, // ✅ Save in proper format
+      endTime: formattedEndTime,
+      phoneNumber,
+      description,
+      staffId,
+      contactId
+    });
+
+    return httpSuccess(res, 201, "meetings created successfully", result);
+  } catch (error) {
+    console.error("Error in createMeetings:", error);
+    return httpError(res, 500, "Server error", error.message);
+  }
+}
+
+module.exports = { createMeetings, getMeetings, editMeetings, deleteMeetings, createMeetingFromTask };
