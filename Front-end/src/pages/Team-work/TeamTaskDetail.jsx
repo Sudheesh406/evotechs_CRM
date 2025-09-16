@@ -14,7 +14,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 /* --- Main Component --- */
 export default function TaskDetail() {
-  const state = false
+  const state = true
   const navigate = useNavigate();
   const { data } = useParams();
 
@@ -34,6 +34,7 @@ export default function TaskDetail() {
   }
   if (!parsed) return <div>Loading or invalid data…</div>;
 
+
   // API state
   const [customer, setCustomer] = useState(null);
   const [calls, setCalls] = useState([]);
@@ -52,11 +53,11 @@ export default function TaskDetail() {
 
   // Notes state
   const [notes, setNotes] = useState("");
-
+  
   // Fetch customer details
   const fetchCustomerDetails = async () => {
     try {
-      const response = await axios.post("task/details/get", { parsed });
+      const response = await axios.post("task/team/details/get", { parsed });
       const apiData = response.data?.data || {};
       setCustomer(apiData.customerDetails || null);
       setCalls(apiData.callDetails || []);

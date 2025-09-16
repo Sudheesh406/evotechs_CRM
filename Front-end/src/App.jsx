@@ -32,6 +32,7 @@ import Rework from "./pages/sales-pages/Rework";
 import TeamProfile from "./pages/Team-work/TeamView";
 import TeamWork from "./pages/Team-work/TeamWorkView";
 import TeamWorkDetails from "./pages/Team-work/TeamWorkDetails";
+import TeamTaskDetails from "./pages/Team-work/TeamTaskDetail"
 
 import Sidebar from "./components/SideBar";
 
@@ -94,6 +95,7 @@ function Layout() {
           <Route path="/sales/reworks" element={<Rework />} />
           <Route path="/activities/tasks" element={<Task />} />
           <Route path="/activities/tasks/person/:data"element={<TaskDetail />}/>
+          <Route path="/activities/tasks/team/:data"element={<TeamTaskDetails />}/>
           <Route path="/activities/meetings" element={<Meetings />} />
           <Route path="/activities/calls" element={<Calls />} />
           <Route path="/workspace/calendar" element={<Calendar />} />
