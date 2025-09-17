@@ -39,6 +39,16 @@ const calls = sequelize.define(
       onUpdate: "CASCADE",
       onDelete: "SET NULL",
     },
+      TeamStaffId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: signup,
+        key: "id",
+      },
+      onUpdate: "CASCADE",
+      onDelete: "SET NULL",
+    },
     date: {
       type: DataTypes.DATEONLY,
       allowNull: false,

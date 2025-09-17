@@ -47,17 +47,22 @@ const task = sequelize.define(
       type: DataTypes.TEXT,
       allowNull: true,
     },
+    teamWork: {
+      type: DataTypes.JSON, // store array as JSON
+      allowNull: true,
+      defaultValue: [],
+    },
     stage: {
-      type: DataTypes.ENUM("1", "2", "3","4"),
+      type: DataTypes.ENUM("1", "2", "3", "4"),
       allowNull: false,
-      defaultValue: "1", 
+      defaultValue: "1",
     },
-      priority: {
-        type: DataTypes.ENUM("High", "Normal", "Low"),
-        defaultValue: "Normal",
-        allowNull: false,
+    priority: {
+      type: DataTypes.ENUM("High", "Normal", "Low"),
+      defaultValue: "Normal",
+      allowNull: false,
     },
-      finishBy: {
+    finishBy: {
       type: DataTypes.DATEONLY,
       allowNull: false,
     },

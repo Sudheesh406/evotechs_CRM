@@ -26,6 +26,10 @@ contacts.hasMany(meetings, { foreignKey: 'contactId', as: 'meetings' });
 meetings.belongsTo(signup, { foreignKey: 'staffId', as: 'staff' });
 signup.hasMany(meetings, { foreignKey: 'staffId', as: 'meetings' });
 
+// Meetings ↔ teamStaff
+meetings.belongsTo(signup, { foreignKey: 'TeamStaffId', as: 'teamStaff' });
+signup.hasMany(meetings, { foreignKey: 'TeamStaffId', as: 'teamMeetings' });
+
 // Calls ↔ Contacts
 calls.belongsTo(contacts, { foreignKey: 'contactId', as: 'customer' });
 contacts.hasMany(calls, { foreignKey: 'contactId', as: 'calls' });
@@ -33,6 +37,10 @@ contacts.hasMany(calls, { foreignKey: 'contactId', as: 'calls' });
 // Calls ↔ Staff
 calls.belongsTo(signup, { foreignKey: 'staffId', as: 'staff' });
 signup.hasMany(calls, { foreignKey: 'staffId', as: 'calls' });
+
+// Calls ↔ teamStaff
+calls.belongsTo(signup, { foreignKey: 'TeamStaffId', as: 'teamStaff' });
+signup.hasMany(calls, { foreignKey: 'TeamStaffId', as: 'teamCalls' });
 
 //task ↔ contacts
 task.belongsTo(contacts, { foreignKey: 'contactId', as: 'customer' });

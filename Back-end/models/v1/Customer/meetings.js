@@ -39,6 +39,16 @@ const meetings = sequelize.define(
       onUpdate: "CASCADE",
       onDelete: "SET NULL",
     },
+      TeamStaffId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: signup,
+        key: "id",
+      },
+      onUpdate: "CASCADE",
+      onDelete: "SET NULL",
+    },
     meetingDate: {
       type: DataTypes.DATEONLY,
       allowNull: false,

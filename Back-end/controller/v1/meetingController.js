@@ -100,7 +100,6 @@ const createMeetings = async (req, res) => {
   }
 };
 
-
 const getMeetings = async (req, res) => {
   const user = req.user;
 
@@ -111,7 +110,7 @@ const getMeetings = async (req, res) => {
     // console.log(filter)
 
     let where = {
-      staffId: user.id,
+      [Op.or]: [{ staffId: user.id }, { TeamStaffId: user.id }],
       softDelete: false,
     };
 
@@ -157,6 +156,11 @@ const getMeetings = async (req, res) => {
           as: "staff",
           attributes: ["id", "name"],
         },
+        {
+          model: signup,
+          as: "teamStaff",
+          attributes: ["id", "name"],
+        },
       ],
       order: [["meetingDate", "ASC"]],
     });
@@ -181,7 +185,13 @@ const editMeetings = async (req, res) => {
 
     const meeting = await meetings.findByPk(id);
     if (!meeting) return httpError(res, 404, "Meeting not found");
-    if (meeting.staffId != user.id) return httpError(res, 403, "Access denied");
+    
+    const isMainStaff = meeting.staffId === user.id;
+    const isTeamStaff = meeting.TeamStaffId === user.id;
+
+    if (!isMainStaff && !isTeamStaff) {
+      return httpError(res, 403, "Access denied");
+    }
 
     // ✅ Validation for required fields
     const requiredFields = [
@@ -242,7 +252,10 @@ const editMeetings = async (req, res) => {
     // ✅ Update contactId if phone number changed
     if (newData.phoneNumber) {
       const contact = await Contacts.findOne({
-        where: { phone: newData.phoneNumber, staffId: user.id },
+        where: {
+          phone: newData.phoneNumber,
+          [Op.or]: [{ staffId: user.id }, { TeamStaffId: user.id }],
+        },
       });
       newData.contactId = contact ? contact.id : null;
     }
@@ -254,6 +267,7 @@ const editMeetings = async (req, res) => {
     return httpError(res, 500, "Server error", error.message);
   }
 };
+
 
 const deleteMeetings = async (req, res) => {
   try {
@@ -271,7 +285,10 @@ const deleteMeetings = async (req, res) => {
       return httpError(res, 404, "Meeting not found");
     }
 
-    if (meeting.staffId != user.id) {
+    const isMainStaff = meeting.staffId === user.id;
+    const isTeamStaff = meeting.TeamStaffId === user.id;
+
+    if (!isMainStaff && !isTeamStaff) {
       return httpError(res, 403, "Access denied");
     }
 
@@ -289,10 +306,8 @@ const deleteMeetings = async (req, res) => {
 };
 
 
-const createMeetingFromTask = async (req,res)=>{
+const createMeetingFromTask = async (req, res) => {
   try {
-
-    console.log(req.body)
     const user = req.user;
     const {
       name,
@@ -304,8 +319,6 @@ const createMeetingFromTask = async (req,res)=>{
       contactId,
       description,
     } = req.body.data;
-
-    
 
     // Validate required fields
     if (
@@ -338,18 +351,17 @@ const createMeetingFromTask = async (req,res)=>{
     }
 
     const staffId = user.id;
-   
 
     const result = await meetings.create({
       name,
       subject,
-      meetingDate : date,
+      meetingDate: date,
       startTime: formattedStartTime, // ✅ Save in proper format
       endTime: formattedEndTime,
       phoneNumber,
       description,
       staffId,
-      contactId
+      contactId,
     });
 
     return httpSuccess(res, 201, "meetings created successfully", result);
@@ -357,6 +369,87 @@ const createMeetingFromTask = async (req,res)=>{
     console.error("Error in createMeetings:", error);
     return httpError(res, 500, "Server error", error.message);
   }
-}
+};
 
-module.exports = { createMeetings, getMeetings, editMeetings, deleteMeetings, createMeetingFromTask };
+
+const createTeamMeetingFromTask = async (req, res) => {
+  try {
+
+    const user = req.user;
+    const {
+      name,
+      subject,
+      date,
+      startTime,
+      endTime,
+      phoneNumber,
+      contactId,
+      staffId,
+      description,
+    } = req.body.data;
+
+    // Validate required fields
+    if (
+      !name ||
+      !subject ||
+      !date ||
+      !startTime ||
+      !endTime ||
+      !phoneNumber ||
+      !description ||
+      !contactId ||
+      !staffId
+    ) {
+      return httpError(res, 400, "All fields are required");
+    }
+
+
+    // ✅ Convert times to MySQL TIME format (HH:mm:ss)
+    const formattedStartTime = dayjs(startTime, ["h:mm A", "HH:mm"]).format(
+      "HH:mm:ss"
+    );
+    const formattedEndTime = dayjs(endTime, ["h:mm A", "HH:mm"]).format(
+      "HH:mm:ss"
+    );
+
+    // Prevent invalid time values (e.g., if someone types letters)
+    if (
+      formattedStartTime === "Invalid Date" ||
+      formattedEndTime === "Invalid Date"
+    ) {
+      return httpError(res, 400, "Invalid time format. Please use hh:mm AM/PM");
+    }
+
+  let TeamStaffId = null;
+    if (staffId != user.id) {
+      TeamStaffId = user.id;
+    }
+
+     const result = await meetings.create({
+      name,
+      subject,
+      meetingDate: date,
+      startTime: formattedStartTime, // ✅ Save in proper format
+      endTime: formattedEndTime,
+      phoneNumber,
+      description,
+      staffId,
+      contactId,
+      TeamStaffId
+    });
+    return httpSuccess(res, 201, "meetings created successfully", result);
+
+  } catch (error) {
+    console.error("Error in createTeamMeetingFromTask:", error);
+    return httpError(res, 500, "Server error", error.message);
+  }
+};
+
+module.exports = {
+  createMeetings,
+  getMeetings,
+  editMeetings,
+  deleteMeetings,
+  createMeetingFromTask,
+  createTeamMeetingFromTask,
+};

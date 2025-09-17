@@ -9,7 +9,8 @@ const {
   taskStageUpdate,
   getTaskDetails,
   updateStagesAndNotes,
-  getTeamTaskDetails
+  getTeamTaskDetails,
+  updateTeamStagesAndNotes
 } = require("../../controller/v1/taskController");
 
 Router.post("/create", authenticate, createTask);
@@ -22,5 +23,6 @@ Router.post("/details/get", authenticate, getTaskDetails);
 Router.post("/stages_notes", authenticate, updateStagesAndNotes);
 
 Router.post('/team/details/get',authenticate, getTeamTaskDetails)
+Router.post('/team/stages_notest',authenticate, updateTeamStagesAndNotes)
 
 module.exports = Router;

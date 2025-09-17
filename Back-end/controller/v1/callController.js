@@ -77,7 +77,7 @@ const getCalls = async (req, res) => {
     console.log(filter);
 
     let where = {
-      staffId: user.id,
+      [Op.or]: [{ staffId: user.id }, { TeamStaffId: user.id }],
       softDelete: false,
     };
 
@@ -101,7 +101,7 @@ const getCalls = async (req, res) => {
       case "Cancelled":
         where.status = "cancelled";
         break;
-        
+
       case "This Week":
         const startOfWeek = moment().startOf("week").format("YYYY-MM-DD");
         const endOfWeek = moment().endOf("week").format("YYYY-MM-DD");
@@ -121,6 +121,11 @@ const getCalls = async (req, res) => {
         {
           model: signup,
           as: "staff",
+          attributes: ["id", "name"],
+        },
+        {
+          model: signup,
+          as: "teamStaff",
           attributes: ["id", "name"],
         },
       ],
@@ -147,7 +152,13 @@ const editCalls = async (req, res) => {
 
     const call = await calls.findByPk(id);
     if (!call) return httpError(res, 404, "Call not found");
-    if (call.staffId != user.id) return httpError(res, 403, "Access denied");
+
+    const isMainStaff = call.staffId === user.id;
+    const isTeamStaff = call.TeamStaffId === user.id;
+
+    if (!isMainStaff && !isTeamStaff) {
+      return httpError(res, 403, "Access denied");
+    }
 
     // ✅ Validation for required fields
     const requiredFields = [
@@ -186,8 +197,12 @@ const editCalls = async (req, res) => {
     // ✅ Update contactId if phone number changed
     if (newData.phoneNumber) {
       const contact = await Contacts.findOne({
-        where: { phone: newData.phoneNumber, staffId: user.id },
+        where: {
+          phone: newData.phoneNumber,
+          [Op.or]: [{ staffId: user.id }, { TeamStaffId: user.id }],
+        },
       });
+
       newData.contactId = contact ? contact.id : null;
     }
 
@@ -198,7 +213,6 @@ const editCalls = async (req, res) => {
     return httpError(res, 500, "Server error", error.message);
   }
 };
-
 
 const deleteCalls = async (req, res) => {
   try {
@@ -216,7 +230,10 @@ const deleteCalls = async (req, res) => {
       return httpError(res, 404, "call not found");
     }
 
-    if (call.staffId != user.id) {
+     const isMainStaff = call.staffId === user.id;
+    const isTeamStaff = call.TeamStaffId === user.id;
+
+    if (!isMainStaff && !isTeamStaff) {
       return httpError(res, 403, "Access denied");
     }
 
@@ -233,8 +250,7 @@ const deleteCalls = async (req, res) => {
   }
 };
 
-
-const createCallFromTask = async (req,res)=>{
+const createCallFromTask = async (req, res) => {
   try {
     const user = req.user;
     const { name, subject, date, time, phoneNumber, contactId, description } =
@@ -256,7 +272,6 @@ const createCallFromTask = async (req,res)=>{
     }
 
     const staffId = user.id;
-  
 
     // // Create meetings (with or without customer link)
     const result = await calls.create({
@@ -267,7 +282,7 @@ const createCallFromTask = async (req,res)=>{
       phoneNumber,
       description,
       staffId,
-      contactId
+      contactId,
     });
 
     return httpSuccess(res, 201, "call created successfully", result);
@@ -275,6 +290,83 @@ const createCallFromTask = async (req,res)=>{
     console.error("Error in createCalls:", error);
     return httpError(res, 500, "Server error", error.message);
   }
-}
+};
 
-module.exports = { createCalls, getCalls, editCalls, deleteCalls, createCallFromTask };
+const createTeamCallFromTask = async (req, res) => {
+  try {
+    const user = req.user;
+    const {
+      name,
+      subject,
+      date,
+      time,
+      phoneNumber,
+      contactId,
+      description,
+      staffId,
+    } = req.body.data;
+
+    console.log(
+      "data:",
+      name,
+      subject,
+      date,
+      time,
+      phoneNumber,
+      description,
+      staffId
+    );
+
+    // Validate required fields
+    if (
+      !name ||
+      !subject ||
+      !date ||
+      !time ||
+      !phoneNumber ||
+      !description ||
+      !staffId
+    ) {
+      return httpError(res, 400, "All fields are required");
+    }
+
+    // ✅ Convert times to MySQL TIME format (HH:mm:ss)
+    const formattedTime = dayjs(time, ["h:mm A", "HH:mm"]).format("HH:mm:ss");
+
+    // // Prevent invalid time values (e.g., if someone types letters)
+    if (formattedTime === "Invalid Date") {
+      return httpError(res, 400, "Invalid time format. Please use hh:mm AM/PM");
+    }
+
+    let TeamStaffId = null;
+    if (staffId != user.id) {
+      TeamStaffId = user.id;
+    }
+
+    // // Create meetings (with or without customer link)
+    const result = await calls.create({
+      name,
+      subject,
+      date,
+      time: formattedTime, // ✅ Save in proper format
+      phoneNumber,
+      description,
+      staffId,
+      contactId,
+      TeamStaffId,
+    });
+
+    return httpSuccess(res, 201, "call created successfully", result);
+  } catch (error) {
+    console.log("error found in createTeamCallFromTask", error);
+  }
+};
+
+module.exports = {
+  createCalls,
+  getCalls,
+  editCalls,
+  deleteCalls,
+  createCallFromTask,
+  createTeamCallFromTask,
+};

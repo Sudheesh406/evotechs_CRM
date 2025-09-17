@@ -2,8 +2,11 @@ const { httpSuccess, httpError } = require("../../utils/v1/httpResponse");
 const contacts = require("../../models/v1/Customer/contacts");
 const task = require("../../models/v1/Project/task");
 const roleChecker = require("../../utils/v1/roleChecker");
-const  meetings = require("../../models/v1/Customer/meetings");
-const  calls = require("../../models/v1/Customer/calls");
+const meetings = require("../../models/v1/Customer/meetings");
+const calls = require("../../models/v1/Customer/calls");
+const team = require("../../models/v1/Team_work/team");
+const signup = require("../../models/v1/Authentication/authModel");
+const { Op, Sequelize } = require("sequelize");
 
 const createTask = async (req, res) => {
   try {
@@ -130,7 +133,6 @@ const taskStageUpdate = async (req, res) => {
   }
 };
 
-
 const getTaskDetails = async (req, res) => {
   try {
     // Validate input
@@ -142,7 +144,7 @@ const getTaskDetails = async (req, res) => {
     const { taskId, contactId } = parsed.data;
     const user = req.user;
 
-    if (!contactId ) {
+    if (!contactId) {
       return httpError(res, 400, "Missing contactId ");
     }
 
@@ -175,10 +177,12 @@ const getTaskDetails = async (req, res) => {
       : taskDetails;
 
     // Send response
-    return httpSuccess(res, 200, 'task details getted successfully',{   customerDetails,
+    return httpSuccess(res, 200, "task details getted successfully", {
+      customerDetails,
       meetingDetails,
       callDetails,
-      taskDetails: filteredTaskDetails});
+      taskDetails: filteredTaskDetails,
+    });
   } catch (error) {
     console.error("Error in getTaskDetails:", error);
     return httpError(res, 500, "Server error", error.message || error);
@@ -193,7 +197,9 @@ const updateStagesAndNotes = async (req, res) => {
 
     console.log(data);
 
-    const existingTask = await task.findOne({ where: { id: data.id, staffId: user.id } });
+    const existingTask = await task.findOne({
+      where: { id: data.id, staffId: user.id },
+    });
 
     if (!existingTask) {
       return res.status(404).json({
@@ -212,7 +218,6 @@ const updateStagesAndNotes = async (req, res) => {
       message: "Task stage and notes updated successfully",
       data: existingTask,
     });
-
   } catch (error) {
     console.error("Error in update stages and notes:", error);
     return res.status(500).json({
@@ -224,12 +229,11 @@ const updateStagesAndNotes = async (req, res) => {
 };
 
 
-
-const getTeamTaskDetails = async (req, res)=>{
- try {
+const getTeamTaskDetails = async (req, res) => {
+  try {
     // Validate input
     const { parsed } = req.body;
-    console.log(parsed)
+    console.log(parsed);
 
     if (!parsed || !parsed.contactId || !parsed.taskId) {
       return httpError(res, 400, "Missing or invalid request body");
@@ -238,15 +242,13 @@ const getTeamTaskDetails = async (req, res)=>{
     const { taskId, contactId } = parsed;
     const user = req.user;
 
-    if (!contactId ) {
+    if (!contactId) {
       return httpError(res, 400, "Missing contactId ");
     }
 
-    console.log("Request Data:", parsed);
-
     // Fetch customer details
     const customerDetails = await contacts.findOne({
-      where: { id: contactId},
+      where: { id: contactId },
     });
 
     if (!customerDetails) {
@@ -272,17 +274,89 @@ const getTeamTaskDetails = async (req, res)=>{
       : taskDetails;
 
     // Send response
-    return httpSuccess(res, 200, 'team task details getted successfully',{   customerDetails,
+    return httpSuccess(res, 200, "team task details getted successfully", {
+      customerDetails,
       meetingDetails,
       callDetails,
-      taskDetails: filteredTaskDetails});
+      taskDetails: filteredTaskDetails,
+    });
   } catch (error) {
     console.error("Error in get team task details:", error);
     return httpError(res, 500, "Server error", error.message || error);
   }
-}
+};
 
 
+const updateTeamStagesAndNotes = async (req, res) => {
+  try {
+    const { data } = req.body;
+    const user = req.user;
+    console.log("Input data:", data);
+
+    const existingTask = await task.findOne({ where: { id: data.id } });
+    if (!existingTask) return httpError(res, 404, "Task not found");
+
+    if (existingTask.staffId === user.id) {
+      await existingTask.update({ stage: data.stages, notes: data.notes });
+    } else {
+      const teamDetails = await team.findOne({
+        where: {
+          [Op.and]: [
+            Sequelize.where(
+              Sequelize.fn(
+                "JSON_CONTAINS",
+                Sequelize.col("staffIds"),
+                JSON.stringify(user.id)
+              ),
+              1
+            ),
+            Sequelize.where(
+              Sequelize.fn(
+                "JSON_CONTAINS",
+                Sequelize.col("staffIds"),
+                JSON.stringify(existingTask.staffId)
+              ),
+              1
+            ),
+          ],
+        },
+      });
+      if (!teamDetails) return httpError(res, 403, "No access");
+
+      const staffDetails = await signup.findOne({ where: { id: user.id } });
+      if (!staffDetails) return httpError(res, 404, "Staff not found");
+
+      const fullDetails = `Date: ${
+        new Date().toISOString().split("T")[0]
+      },    Staff Name: ${staffDetails.name},    Stage: ${
+        data.stages
+      }, notes: ${data.notes}`;
+      const updatedTeamWork = existingTask.teamWork
+        ? [...existingTask.teamWork, fullDetails]
+        : [fullDetails];
+
+      await existingTask.update({
+        stage: data.stages,
+        notes: data.notes,
+        teamWork: updatedTeamWork,
+      });
+    }
+
+    await existingTask.reload(); // ensure response has updated data
+    return res.status(200).json({
+      success: true,
+      message: "Task stage and notes updated successfully",
+      data: existingTask,
+    });
+  } catch (error) {
+    console.error("Error in update stages and notes:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message || error,
+    });
+  }
+};
 
 
 //---------------pending task-----------------//
@@ -323,5 +397,6 @@ module.exports = {
   getPendingTask,
   getTaskDetails,
   updateStagesAndNotes,
-  getTeamTaskDetails
+  getTeamTaskDetails,
+  updateTeamStagesAndNotes,
 };

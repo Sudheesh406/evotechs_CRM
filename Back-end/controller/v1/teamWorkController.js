@@ -222,7 +222,11 @@ const getTeamDetails = async (req, res) => {
     }
 
     // Fetch all teams
-    const allTeams = await team.findAll();
+    const allTeams = await team.findAll({
+      where: {
+        softDelete: false
+      },
+    });
 
     // Filter teams where current staff is a member
     const userTeams = await Promise.all(
@@ -254,6 +258,7 @@ const getTeamDetails = async (req, res) => {
     );
   }
 };
+
 
 const postTeamHistory = async (req, res) => {
   try {
@@ -316,7 +321,7 @@ const getSectors = async (req, res) => {
     const teamId = history.teamId;
 
     // Get the team details
-    const teamDetails = await team.findOne({ where: { id: teamId } });
+    const teamDetails = await team.findOne({ where: { id: teamId , softDelete:false } });
     if (!teamDetails) {
       return res.status(404).json({ message: "Team not found" });
     }
