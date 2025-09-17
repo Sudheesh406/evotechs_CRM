@@ -40,6 +40,7 @@ const Meetings = () => {
     { label: "Subject", key: "subject" },
     { label: "Contact Name", key: "name" },
     { label: "Host", key: "host" },
+    { label: "Team", key: "team" },
     { label: "Date", key: "meetingDate" },
     { label: "From", key: "startTime" },
     { label: "To", key: "endTime" },
@@ -200,6 +201,7 @@ const Meetings = () => {
       const response = await axios.post("/meetings/get", {
         filter: selectedFilter,
       });
+      console.log(response)
       const data = Array.isArray(response.data.data)
         ? response.data.data
         : [];
@@ -287,6 +289,9 @@ const Meetings = () => {
           renderCell={(key, row) => {
             if (key === "host") {
               return row.staff?.name ?? "-";
+            }
+            if (key === "team") {
+              return row.teamStaff?.name ?? "-";
             }
             if (key === "phoneNumber") {
               return (

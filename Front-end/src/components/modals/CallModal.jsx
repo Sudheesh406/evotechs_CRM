@@ -67,11 +67,11 @@ export default function CallModal({
     onClose();
   };
 
-
   const addNewCall = async (data) => {
     data.contactId = customer.id;
     data.name = customer.name;
     data.phoneNumber = customer.phone;
+
     try {
     if(!state){
         const response = await axios.post("/calls/create/from_task", { data });
@@ -79,9 +79,11 @@ export default function CallModal({
         onClose();
         console.log("response", response);
       }else if(state){
-        
-        // team --- work ---- is need to updated
-
+        data.staffId = taskDetails.staffId;
+        const response = await axios.post("/calls/create/from_task_team", { data });
+        if (onSubmitSuccess) await onSubmitSuccess();
+        onClose();
+        console.log("response", response);
       }
 
       } catch (error) {

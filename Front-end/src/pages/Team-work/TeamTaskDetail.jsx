@@ -14,7 +14,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 /* --- Main Component --- */
 export default function TaskDetail() {
-  const state = true
+  const state = true;
   const navigate = useNavigate();
   const { data } = useParams();
 
@@ -34,13 +34,13 @@ export default function TaskDetail() {
   }
   if (!parsed) return <div>Loading or invalid data…</div>;
 
-
   // API state
   const [customer, setCustomer] = useState(null);
   const [calls, setCalls] = useState([]);
   const [meetings, setMeetings] = useState([]);
   const [attachments, setAttachments] = useState([]); // API not providing attachments
   const [taskDetails, setTaskDetails] = useState([]);
+  const [teamWorkDetails, setTeamWorkDetails] = useState();
 
   // Stage state
   const [workStages, setWorkStages] = useState({
@@ -53,11 +53,12 @@ export default function TaskDetail() {
 
   // Notes state
   const [notes, setNotes] = useState("");
-  
+
   // Fetch customer details
   const fetchCustomerDetails = async () => {
     try {
       const response = await axios.post("task/team/details/get", { parsed });
+      console.log(response);
       const apiData = response.data?.data || {};
       setCustomer(apiData.customerDetails || null);
       setCalls(apiData.callDetails || []);
@@ -65,6 +66,7 @@ export default function TaskDetail() {
       setTaskDetails(apiData.taskDetails || []);
       setAttachments([]);
       setNotes(apiData.taskDetails?.[0]?.notes || "");
+      setTeamWorkDetails(apiData.taskDetails?.[0]?.teamWork || "");
     } catch (error) {
       console.log("error found in fetching customer details", error);
     }
@@ -94,7 +96,9 @@ export default function TaskDetail() {
     const originalStagesCount = parseInt(taskDetails[0].stage, 10) || 0;
     const checkedStagesCount = Object.values(workStages).filter(Boolean).length;
 
-    return notes !== originalNotes || checkedStagesCount !== originalStagesCount;
+    return (
+      notes !== originalNotes || checkedStagesCount !== originalStagesCount
+    );
   };
 
   // Save handler
@@ -102,26 +106,23 @@ export default function TaskDetail() {
     const checkedStagesCount = Object.values(workStages).filter(Boolean).length;
     console.log("Updated Notes:", notes);
     console.log("Checked Stages Count:", checkedStagesCount);
-     const taskId = taskDetails[0].id
-    updateStagesAndNotes(checkedStagesCount,notes,taskId )
+    const taskId = taskDetails[0].id;
+    updateStagesAndNotes(checkedStagesCount, notes, taskId);
     // Optional: update taskDetails so button disappears after save
-    setTaskDetails((prev) => {
-      if (!prev[0]) return prev;
-      return [{ ...prev[0], notes, stage: checkedStagesCount }, ...prev.slice(1)];
-    });
   };
 
-
-  const updateStagesAndNotes = async (stages,notes ,id)=>{
-    const data = {stages,notes,id}
+  const updateStagesAndNotes = async (stages, notes, id) => {
+    const data = { stages, notes, id };
     try {
-      const response = await axios.post('/task/stages_notes',{data})
-      console.log('response',response)
+      const response = await axios.post("/task/team/stages_notest", { data });
+      if (response) {
+        fetchCustomerDetails();
+      }
+      console.log("response", response);
     } catch (error) {
-      console.log('error found in update stage and notes',error);
-      
+      console.log("error found in update stage and notes", error);
     }
-  }
+  };
 
   return (
     <div className="min-h-[680px] bg-gray-50 p-6 space-y-8">
@@ -347,9 +348,25 @@ export default function TaskDetail() {
           <h3 className="text-xl font-semibold text-gray-800 mb-2">
             Connected Records
           </h3>
-          <div className="border border-gray-200 rounded-lg p-6 text-center text-gray-500 italic">
-            No records found
-          </div>
+
+          {teamWorkDetails?.length <= 0 ? (
+            <div className="border border-gray-200 rounded-lg p-6 text-center text-gray-500 italic">
+              No records found
+            </div>
+          ) : (
+            teamWorkDetails
+              ?.slice()
+              .reverse()
+              .map((item, index) => (
+                <div
+                  key={index}
+                  className="border border-gray-200 rounded-lg p-4 mb-2"
+                >
+                  {/* Render your item details here */}
+                  <p>{item}</p>
+                </div>
+              ))
+          )}
         </section>
       </div>
 

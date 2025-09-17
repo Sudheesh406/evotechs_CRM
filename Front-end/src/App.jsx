@@ -10,6 +10,7 @@ import { useState } from "react";
 import AdminDashboard from "./pages/dashboard/AdminDashboard";
 import StaffPendingTask from "./pages/sales-pages/admin_sales_side/StaffPendingTask";
 import CreateTeam from "./pages/Team-work/admin_team_work_side/CreateTeam";
+import AdminCalendar from "./pages/workspace-pages/admin_workspace_side/AdminCalender";
 
 import StaffDashboard from "./pages/dashboard/StaffDashboard";
 import Leads from "./pages/sales-pages/Leads";
@@ -83,6 +84,8 @@ function Layout() {
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/sales/pending/task" element={<StaffPendingTask />} />
           <Route path="/team/customise" element={<CreateTeam />} />
+          <Route path="/workspace/calendar/customise" element={<AdminCalendar />} />
+
 
           <Route path="/" element={<StaffDashboard />} />
           <Route path="/sales/leads" element={<Leads />} />

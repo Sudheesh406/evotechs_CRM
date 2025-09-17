@@ -80,10 +80,18 @@ export default function MeetingModal({
     data.name = customer.name;
     data.phoneNumber = customer.phone;
     try {
+      if(!state){
       const response = await axios.post("/meetings/create/from_task", { data });
       if (onSubmitSuccess) await onSubmitSuccess();
       onClose();
       console.log("response", response);
+      }else if(state){
+        data.staffId = taskDetails.staffId;
+        const response = await axios.post("/meetings/create/from_task_team", { data });
+        if (onSubmitSuccess) await onSubmitSuccess();
+        onClose();
+        console.log("response", response);
+      }
     } catch (error) {
       console.log("error in adding new Call", error);
     }

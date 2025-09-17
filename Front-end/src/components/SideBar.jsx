@@ -125,7 +125,7 @@ const id = 0
       icon: Users,
       subMenu: [
         { title: "Attendance", path: "/workspace/attendance", icon: CheckSquare },
-        { title: "Calendar", path: "/workspace/calendar", icon: Calendar },
+        { title: "Calendar", path: "/workspace/calendar/customise", icon: Calendar },
         { title: "Messages", path: "/workspace/messages", icon: MessageSquare },
       ],
     },
@@ -182,7 +182,7 @@ const handleLogout = async ()=>{
       {/* Top + Menu Scrollable */}
       <div className="flex flex-col overflow-y-auto flex-1">
         {/* Logo */}
-        <h1 className="text-[#E50914] text-2xl font-extrabold mb-8 p-6 tracking-wide">
+        <h1 className="text-[#E50914] text-2xl font-extrabold  p-6 tracking-wide">
           CRM Panel
         </h1>
 

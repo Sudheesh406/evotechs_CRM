@@ -39,6 +39,7 @@ const calls = () => {
     { label: "Subject", key: "subject" },
     { label: "Name", key: "name" },
     { label: "Host", key: "host" },
+    { label: "Team", key: "team" },
     { label: "Date", key: "date" },
     { label: "time", key: "time" },
     { label: "Phone Number", key: "phoneNumber" },
@@ -278,6 +279,9 @@ const calls = () => {
           renderCell={(key, row) => {
             if (key === "host") {
               return row.staff?.name ?? "-";
+            }
+              if (key === "team") {
+              return row.teamStaff?.name ?? "-";
             }
             if (key === "phoneNumber") {
               return (
