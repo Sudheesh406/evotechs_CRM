@@ -1,17 +1,6 @@
-// AdminCalendarManager.jsx
 import React, { useState, useEffect } from "react";
 import { X, Trash2, Edit2 } from "lucide-react";
 import axios from "../../../instance/Axios";
-
-/**
- * Seed data (replace by API fetch in real app)
- */
-const seedHolidays = [
-  { id: 1, date: "01/01/2025", description: "New Year Celebration", type: "holiday" },
-  { id: 2, date: "15/01/2025", description: "Pongal Festival", type: "holiday" },
-  { id: 3, date: "16/08/2025", description: "Maintenance of company", type: "maintenance" },
-  { id: 4, date: "28/08/2025", description: "Power cut", type: "maintenance" },
-];
 
 /* Helpers to convert between YYYY-MM-DD (input) and DD/MM/YYYY (display/storage) */
 const formatDateObjToDDMMYYYY = (date) => {
@@ -20,13 +9,15 @@ const formatDateObjToDDMMYYYY = (date) => {
   const year = date.getFullYear();
   return `${day}/${month}/${year}`;
 };
+const leaves = [];
+
 const formatInputToDDMMYYYY = (inputValue) => {
-  // expects "yyyy-mm-dd"
   if (!inputValue) return "";
   const [y, m, d] = inputValue.split("-");
   if (!y || !m || !d) return "";
   return `${d.padStart(2, "0")}/${m.padStart(2, "0")}/${y}`;
 };
+
 const ddmmyyyyToInput = (ddmmyyyy) => {
   if (!ddmmyyyy) return "";
   const parts = ddmmyyyy.split("/");
@@ -37,29 +28,52 @@ const ddmmyyyyToInput = (ddmmyyyy) => {
 
 export default function AdminCalendarManager() {
   const now = new Date();
-  const [holidays, setHolidays] = useState([]);
   const [displayedMonth, setDisplayedMonth] = useState(now.getMonth());
   const [displayedYear, setDisplayedYear] = useState(now.getFullYear());
+  const [holidays, setHolidays] = useState([]);
 
-  // form state (right panel)
+  // form state
   const [dateInput, setDateInput] = useState(""); // yyyy-mm-dd
   const [description, setDescription] = useState("");
-  const [type, setType] = useState("holiday"); // 'holiday' | 'maintenance'
+  const [type, setType] = useState("holiday");
   const [editingId, setEditingId] = useState(null);
 
-  // load initial data (replace with API GET)
+  // load data from backend
   useEffect(() => {
-    // TODO: replace this with fetch('/api/admin/holidays')...
-    // and set from response.
-    setHolidays(seedHolidays.slice().sort((a, b) => (a.date > b.date ? 1 : -1)));
+    fetchHolidays();
   }, []);
 
-  // calendar helpers
-  const monthStartDayIndex = new Date(displayedYear, displayedMonth, 1).getDay();
+  const fetchHolidays = async () => {
+    try {
+      const res = await axios.get("/calendar/get");
+      const holidaysArray = (res.data?.data || []).map((item) => ({
+        id: item.id,
+        date: formatInputToDDMMYYYY(item.holidayDate),
+        description: item.description,
+        type: item.holidayName || "holiday",
+      }));
+      setHolidays(holidaysArray.sort((a, b) => (a.date > b.date ? 1 : -1)));
+    } catch (err) {
+      console.error("Failed to load holidays", err);
+    }
+  };
+
+  const fetchLeaves = async ()=>{
+    try {
+      const response = await axios.get("/calender/get/leave/")
+    } catch (error) {
+    console.error("Failed to load holidays", err);
+    }
+  }
+
+  const monthStartDayIndex = new Date(
+    displayedYear,
+    displayedMonth,
+    1
+  ).getDay();
   const daysInMonth = new Date(displayedYear, displayedMonth + 1, 0).getDate();
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-  // build days with holiday lookup
   const daysArray = Array.from({ length: daysInMonth }, (_, i) => {
     const dayNum = i + 1;
     const dateObj = new Date(displayedYear, displayedMonth, dayNum);
@@ -73,7 +87,6 @@ export default function AdminCalendarManager() {
     };
   });
 
-  // month navigation (supports year roll)
   const handlePrevMonth = () => {
     if (displayedMonth === 0) {
       setDisplayedMonth(11);
@@ -87,7 +100,6 @@ export default function AdminCalendarManager() {
     } else setDisplayedMonth((m) => m + 1);
   };
 
-  // CRUD actions (client-side). Replace TODOs with API calls.
   const resetForm = () => {
     setDateInput("");
     setDescription("");
@@ -95,7 +107,8 @@ export default function AdminCalendarManager() {
     setEditingId(null);
   };
 
-  const upsertHoliday = () => {
+  /** Create or Update */
+  const upsertHoliday = async () => {
     if (!dateInput || !description.trim()) {
       alert("Please select a date and provide a description.");
       return;
@@ -104,25 +117,40 @@ export default function AdminCalendarManager() {
 
     if (editingId) {
       // Update existing
-      setHolidays((prev) =>
-        prev
-          .map((h) => (h.id === editingId ? { ...h, date: formatted, description, type } : h))
-          .sort((a, b) => (a.date > b.date ? 1 : -1))
-      );
-      // TODO: PUT /api/admin/holidays/:id
+      try {
+        const payload = { date: formatted, description, type };
+        await axios.put(`/calendar/update/${editingId}`, payload);
+        setHolidays((prev) =>
+          prev
+            .map((h) => (h.id === editingId ? { ...h, ...payload } : h))
+            .sort((a, b) => (a.date > b.date ? 1 : -1))
+        );
+        resetForm();
+      } catch (err) {
+        console.error("Update failed", err);
+      }
     } else {
       // Add new
-      const newItem = {
-        id: Date.now() + Math.floor(Math.random() * 9999),
-        date: formatted,
-        description,
-        type,
-      };
-      createHoliday(newItem)
-      setHolidays((prev) => [...prev, newItem].sort((a, b) => (a.date > b.date ? 1 : -1)));
-      // TODO: POST /api/admin/holidays
+      try {
+        const payload = { date: formatted, description, type };
+        const res = await axios.post("/calendar/create", payload);
+
+        // Ensure unique id for React key
+        const createdHoliday = {
+          id: res.data.id || Date.now(), // fallback id
+          date: formatInputToDDMMYYYY(res.data.holidayDate || dateInput),
+          description: res.data.description || description,
+          type: res.data.holidayName || type,
+        };
+
+        setHolidays((prev) =>
+          [...prev, createdHoliday].sort((a, b) => (a.date > b.date ? 1 : -1))
+        );
+        resetForm();
+      } catch (err) {
+        console.error("Create failed", err);
+      }
     }
-    resetForm();
   };
 
   const startEdit = (item) => {
@@ -132,14 +160,19 @@ export default function AdminCalendarManager() {
     setType(item.type || "holiday");
   };
 
-  const deleteHoliday = (id) => {
-    if (!confirm("Delete this holiday/maintenance entry?")) return;
-    setHolidays((prev) => prev.filter((h) => h.id !== id));
-    // TODO: DELETE /api/admin/holidays/:id
-    if (editingId === id) resetForm();
+  const deleteHoliday = async (id) => {
+    if (!window.confirm("Delete this holiday/maintenance entry?")) return;
+    try {
+      let response = await axios.delete(`/calendar/delete/${id}`);
+      if (response) {
+        setHolidays((prev) => prev.filter((h) => h.id !== id));
+        if (editingId === id) resetForm();
+      }
+    } catch (err) {
+      console.error("Delete failed", err);
+    }
   };
 
-  // When clicking a day in the calendar, prefill the right form for quick add/edit
   const onDayClick = (day) => {
     if (day.holidayItem) {
       startEdit(day.holidayItem);
@@ -152,25 +185,10 @@ export default function AdminCalendarManager() {
   };
 
 
-
-
-    const createHoliday = async (data)=>{
-      try {
-        const response = await axios.post('/calender/create',{data})
-        console.log('response',response)
-      } catch (error) {
-        console.log('error found in createHoliday',error)
-      }
-    }
-
-
-
-
-
   return (
     <div className="p-6 bg-gray-50 min-h-[600px]">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* LEFT: Calendar (2 / 3 columns) */}
+      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* LEFT: Calendar */}
         <div className="md:col-span-2 bg-white rounded-xl shadow p-6">
           <div className="flex items-center justify-between mb-4 gap-3">
             <div className="flex items-center gap-2">
@@ -187,33 +205,32 @@ export default function AdminCalendarManager() {
                 Next
               </button>
             </div>
-
             <h2 className="text-lg font-semibold text-gray-800">
-              {new Date(displayedYear, displayedMonth).toLocaleString("default", {
-                month: "long",
-                year: "numeric",
-              })}
+              {new Date(displayedYear, displayedMonth).toLocaleString(
+                "default",
+                {
+                  month: "long",
+                  year: "numeric",
+                }
+              )}
             </h2>
-
-            <div className="text-sm text-gray-600">Admin view — left: calendar</div>
+            <div className="text-sm text-gray-600"></div>
           </div>
 
-          {/* Weekdays */}
           <div className="grid grid-cols-7 text-center text-xs font-semibold text-gray-500 uppercase mb-3">
             {weekDays.map((wd) => (
               <div key={wd}>{wd}</div>
             ))}
           </div>
 
-          {/* Grid */}
           <div className="grid grid-cols-7 gap-2">
-            {/* empty slots before month start */}
             {Array.from({ length: monthStartDayIndex }).map((_, i) => (
               <div key={"empty-" + i} className="h-16" />
             ))}
 
             {daysArray.map((d) => {
-              const isMaintenance = d.holidayItem && d.holidayItem.type === "maintenance";
+              const isMaintenance =
+                d.holidayItem && d.holidayItem.type === "maintenance";
               const isHoliday = !!d.holidayItem;
               return (
                 <div
@@ -222,9 +239,9 @@ export default function AdminCalendarManager() {
                   className={`relative rounded-lg h-16 flex flex-col items-center justify-center text-sm cursor-pointer border shadow-sm transition
                     ${
                       isMaintenance
-                        ? "bg-purple-50 border-purple-300 text-purple-700"
+                        ? "bg-purple-500 border-purple-300 text-white"
                         : isHoliday
-                        ? "bg-red-50 border-red-300 text-red-700"
+                        ? "bg-red-500 border-red-300 text-white"
                         : "bg-white border-gray-200 hover:bg-gray-50"
                     }
                   `}
@@ -240,34 +257,81 @@ export default function AdminCalendarManager() {
             })}
           </div>
 
-          {/* Legend */}
           <div className="mt-6 flex flex-wrap gap-4 items-center text-gray-600 text-sm">
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-red-50 border border-red-300" />
+              <div className="w-4 h-4 rounded bg-red-500 border border-red-300" />
               <span>Holiday</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-purple-50 border border-purple-300" />
+              <div className="w-4 h-4 rounded bg-purple-500 border border-purple-300" />
               <span>Maintenance</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded bg-white border border-gray-200" />
               <span>Working day</span>
             </div>
-            <div className="ml-auto text-xs text-gray-500">Tip: click a day to edit or prefill the form</div>
+            <div className="ml-auto text-xs text-gray-500">
+              Tip: click a day to edit or prefill the form
+            </div>
           </div>
         </div>
 
-        {/* RIGHT: Create / Edit panel (1 / 3 columns) */}
+        {/* RIGHT: Create / Edit panel */}
+        <div className="bg-white rounded-xl shadow p-6 overflow-x-auto">
+          <h3 className="text-lg font-semibold mb-4">Leave Requests List</h3>
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead>
+              <tr className="text-left text-xs font-semibold text-gray-500 uppercase">
+                <th className="px-3 py-2">Employee</th>
+                <th className="px-3 py-2">Type</th>
+                <th className="px-3 py-2">Start</th>
+                <th className="px-3 py-2">End</th>
+                <th className="px-3 py-2">Reason</th>
+                <th className="px-3 py-2">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {leaves.length === 0 && (
+                <tr>
+                  <td colSpan="7" className="text-center py-4 text-gray-500">
+                    No leave requests found.
+                  </td>
+                </tr>
+              )}
+              {leaves.map((leave) => (
+                <tr key={leave.id} className="hover:bg-gray-50">
+                  <td className="px-3 py-2">{leave.employee}</td>
+                  <td className="px-3 py-2">{leave.leaveType}</td>
+                  <td className="px-3 py-2">{leave.startDate}</td>
+                  <td className="px-3 py-2">{leave.endDate}</td>
+                  <td className="px-3 py-2">{leave.reason}</td>
+                  <td className="px-3 py-2 flex gap-2">
+                    <button
+                      onClick={() => startEditLeave(leave)}
+                      className="p-1 rounded bg-yellow-200 text-yellow-800"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => deleteLeave(leave.id)}
+                      className="p-1 rounded bg-red-200 text-red-800"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
         <div className="bg-white rounded-xl shadow p-6 flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-800">
               {editingId ? "Edit Entry" : "Create Entry"}
             </h3>
             <button
-              onClick={() => {
-                resetForm();
-              }}
+              onClick={resetForm}
               className="p-1 rounded hover:bg-gray-100 text-gray-500"
               title="Clear"
             >
@@ -281,6 +345,7 @@ export default function AdminCalendarManager() {
               type="date"
               value={dateInput}
               onChange={(e) => setDateInput(e.target.value)}
+              min={new Date().toISOString().split("T")[0]}
               className="mt-1 w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 focus:outline-none"
             />
           </label>
@@ -295,7 +360,7 @@ export default function AdminCalendarManager() {
               <option value="holiday">Holiday</option>
               <option value="publicHoliday">Public Holiday</option>
               <option value="companyHoliday">Company Holiday</option>
-              <option value="maintaince">Maintaince</option>
+              <option value="maintenance">Maintenance</option>
             </select>
           </label>
 
@@ -314,15 +379,16 @@ export default function AdminCalendarManager() {
             <button
               onClick={upsertHoliday}
               className={`flex-1 py-2 rounded-lg font-medium transition ${
-                editingId ? "bg-yellow-500 hover:bg-yellow-600 text-white" : "bg-green-500 hover:bg-green-600 text-white"
+                editingId
+                  ? "bg-yellow-500 hover:bg-yellow-600 text-white"
+                  : "bg-green-500 hover:bg-green-600 text-white"
               }`}
             >
               {editingId ? "Update" : "Save"}
             </button>
+
             <button
-              onClick={() => {
-                resetForm();
-              }}
+              onClick={resetForm}
               className="py-2 px-3 rounded-lg border border-gray-200"
             >
               Cancel
@@ -330,43 +396,17 @@ export default function AdminCalendarManager() {
           </div>
 
           <hr />
+          {/* Delete button - only for non-working days (holidays/maintenance) */}
 
-          <div>
-            <h4 className="text-sm font-semibold text-gray-700 mb-2">All entries</h4>
-            <div className="max-h-56 overflow-auto divide-y">
-              {holidays.length === 0 && (
-                <div className="text-sm text-gray-500 py-3">No entries yet.</div>
-              )}
-              {holidays.map((h) => (
-                <div key={h.id} className="flex items-center justify-between py-2 gap-2">
-                  <div>
-                    <div className="text-sm font-medium">{h.date}</div>
-                    <div className="text-xs text-gray-500 truncate w-48">{h.description}</div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => startEdit(h)}
-                      className="p-1 rounded hover:bg-gray-100 text-gray-600"
-                      title="Edit"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => deleteHoliday(h.id)}
-                      className="p-1 rounded hover:bg-gray-100 text-red-500"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="text-xs text-gray-500 mt-auto">
-            Changes are local in this demo. Hook the add/update/delete handlers to your backend API to persist.
-          </div>
+          {editingId && type && type !== "workingDay" && (
+            <button
+              onClick={() => deleteHoliday(editingId)}
+              className="py-2 px-3 rounded-lg bg-red-500 text-white hover:bg-red-600"
+            >
+              Delete
+            </button>
+          )}
+          <div className="text-xs text-gray-500 mt-auto"></div>
         </div>
       </div>
     </div>
