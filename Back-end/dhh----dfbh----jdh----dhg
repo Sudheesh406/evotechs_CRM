@@ -5,3 +5,7 @@ const getSectors = async ()=>{
     console.log('error found in getSectors',error)
   }
 }
+
+
+//lead and contact also in team
+//complaints and (google review like works)

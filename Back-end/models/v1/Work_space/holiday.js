@@ -1,5 +1,7 @@
 const { DataTypes } = require("sequelize");
 const { sequelize } = require("../../../database/dbConfigue");
+const signup = require('../../../models/v1/Authentication/authModel')
+
 
 const holiday = sequelize.define(
   "holiday",
@@ -25,6 +27,16 @@ const holiday = sequelize.define(
     softDelete: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
+    },
+      createdAdminId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: signup,
+        key: "id",
+      },
+      onUpdate: "CASCADE",
+      onDelete: "SET NULL",
     },
   },
   {

@@ -1,69 +1,104 @@
-const Leads = require('./Customer/leads');
-const contacts = require('./Customer/contacts');
-const signup = require('./Authentication/authModel');
-const meetings = require('./Customer/meetings')
-const calls = require('./Customer/calls')
-const task = require('./Project/task')
-const attendance = require('./Work_space/attendance')
-const createTeam = require('./Team_work/team')
-const teamHistory = require('./Team_work/teamManagementHistory')
+const Leads = require("./Customer/leads");
+const contacts = require("./Customer/contacts");
+const signup = require("./Authentication/authModel");
+const meetings = require("./Customer/meetings");
+const calls = require("./Customer/calls");
+const task = require("./Project/task");
+const attendance = require("./Work_space/attendance");
+const createTeam = require("./Team_work/team");
+const teamHistory = require("./Team_work/teamManagementHistory");
+const holiday = require("./Work_space/holiday");
+const leaves = require('../../models/v1/Work_space/Leave')
 
 // Define associations
 
 // Leads ↔ Staff
-Leads.belongsTo(signup, { foreignKey: 'staffId', as: 'assignedStaff' });
-signup.hasMany(Leads, { foreignKey: 'staffId', as: 'leads' });
+Leads.belongsTo(signup, { foreignKey: "staffId", as: "assignedStaff" });
+signup.hasMany(Leads, { foreignKey: "staffId", as: "leads" });
 
 // Contacts ↔ Staff
-contacts.belongsTo(signup, { foreignKey: 'staffId', as: 'assignedStaff' });
-signup.hasMany(contacts, { foreignKey: 'staffId', as: 'contacts' });
+contacts.belongsTo(signup, { foreignKey: "staffId", as: "assignedStaff" });
+signup.hasMany(contacts, { foreignKey: "staffId", as: "contacts" });
 
 // Meetings ↔ Contacts
-meetings.belongsTo(contacts, { foreignKey: 'contactId', as: 'customer' });
-contacts.hasMany(meetings, { foreignKey: 'contactId', as: 'meetings' });
+meetings.belongsTo(contacts, { foreignKey: "contactId", as: "customer" });
+contacts.hasMany(meetings, { foreignKey: "contactId", as: "meetings" });
 
 // Meetings ↔ Staff
-meetings.belongsTo(signup, { foreignKey: 'staffId', as: 'staff' });
-signup.hasMany(meetings, { foreignKey: 'staffId', as: 'meetings' });
+meetings.belongsTo(signup, { foreignKey: "staffId", as: "staff" });
+signup.hasMany(meetings, { foreignKey: "staffId", as: "meetings" });
 
 // Meetings ↔ teamStaff
-meetings.belongsTo(signup, { foreignKey: 'TeamStaffId', as: 'teamStaff' });
-signup.hasMany(meetings, { foreignKey: 'TeamStaffId', as: 'teamMeetings' });
+meetings.belongsTo(signup, { foreignKey: "TeamStaffId", as: "teamStaff" });
+signup.hasMany(meetings, { foreignKey: "TeamStaffId", as: "teamMeetings" });
 
 // Calls ↔ Contacts
-calls.belongsTo(contacts, { foreignKey: 'contactId', as: 'customer' });
-contacts.hasMany(calls, { foreignKey: 'contactId', as: 'calls' });
+calls.belongsTo(contacts, { foreignKey: "contactId", as: "customer" });
+contacts.hasMany(calls, { foreignKey: "contactId", as: "calls" });
 
 // Calls ↔ Staff
-calls.belongsTo(signup, { foreignKey: 'staffId', as: 'staff' });
-signup.hasMany(calls, { foreignKey: 'staffId', as: 'calls' });
+calls.belongsTo(signup, { foreignKey: "staffId", as: "staff" });
+signup.hasMany(calls, { foreignKey: "staffId", as: "calls" });
 
 // Calls ↔ teamStaff
-calls.belongsTo(signup, { foreignKey: 'TeamStaffId', as: 'teamStaff' });
-signup.hasMany(calls, { foreignKey: 'TeamStaffId', as: 'teamCalls' });
+calls.belongsTo(signup, { foreignKey: "TeamStaffId", as: "teamStaff" });
+signup.hasMany(calls, { foreignKey: "TeamStaffId", as: "teamCalls" });
 
 //task ↔ contacts
-task.belongsTo(contacts, { foreignKey: 'contactId', as: 'customer' });
-contacts.hasMany(task, { foreignKey: 'contactId', as: 'tasks' });
+task.belongsTo(contacts, { foreignKey: "contactId", as: "customer" });
+contacts.hasMany(task, { foreignKey: "contactId", as: "tasks" });
 
 //task ↔ staff
-task.belongsTo(signup, { foreignKey: 'staffId', as: 'staff' });
-signup.hasMany(task, { foreignKey: 'staffId', as: 'tasks' });
+task.belongsTo(signup, { foreignKey: "staffId", as: "staff" });
+signup.hasMany(task, { foreignKey: "staffId", as: "tasks" });
 
 //attendance ↔ staff
-attendance.belongsTo(signup, { foreignKey: 'staffId', as: 'staff' });
-signup.hasMany(attendance, { foreignKey: 'staffId', as: 'attendances' });
+attendance.belongsTo(signup, { foreignKey: "staffId", as: "staff" });
+signup.hasMany(attendance, { foreignKey: "staffId", as: "attendances" });
 
 //team ↔ staff (leaderId and createdAdminId)
-createTeam.belongsTo(signup, { foreignKey: 'leaderId', as: 'leader' });
-signup.hasMany(createTeam, { foreignKey: 'leaderId', as: 'ledTeams' });
+createTeam.belongsTo(signup, { foreignKey: "leaderId", as: "leader" });
+signup.hasMany(createTeam, { foreignKey: "leaderId", as: "ledTeams" });
 
-createTeam.belongsTo(signup, { foreignKey: 'createdAdminId', as: 'creator' });
-signup.hasMany(createTeam, { foreignKey: 'createdAdminId', as: 'createdTeams' });
+createTeam.belongsTo(signup, { foreignKey: "createdAdminId", as: "creator" });
+signup.hasMany(createTeam, {
+  foreignKey: "createdAdminId",
+  as: "createdTeams",
+});
+
+//teamHistory ↔ staff
+teamHistory.belongsTo(signup, { foreignKey: "staffId", as: "staff" });
+signup.hasMany(teamHistory, { foreignKey: "staffId", as: "team" });
+
+//holiday ↔ staff
+
+holiday.belongsTo(signup, { foreignKey: "createdAdminId", as: "creator" });
+signup.hasMany(holiday, {
+  foreignKey: "createdAdminId",
+  as: "createdholidays",
+});
+
+//leaves ↔ staff
+leaves.belongsTo(signup, { foreignKey: "staffId", as: "staff" });
+signup.hasMany(leaves, { foreignKey: "staffId", as: "leaves" });
+
+leaves.belongsTo(signup, { foreignKey: "createdAdminId", as: "creator" });
+signup.hasMany(leaves, {
+  foreignKey: "createdAdminId",
+  as: "createdLeaves",
+});
 
 
-teamHistory.belongsTo(signup, { foreignKey: 'staffId', as: 'staff' });
-signup.hasMany(teamHistory, { foreignKey: 'staffId', as: 'team' });
-
-
-module.exports = { Leads, signup, contacts, calls, meetings, task, attendance, createTeam, teamHistory };
+module.exports = {
+  Leads,
+  signup,
+  contacts,
+  calls,
+  meetings,
+  task,
+  attendance,
+  createTeam,
+  teamHistory,
+  holiday,
+  leaves
+};

@@ -396,6 +396,7 @@ const getProjects = async (req, res) => {
 
     return res.status(200).json({ tasks });
 
+    
   } catch (error) {
     console.error('error found in getting projects', error);
     return httpError(
