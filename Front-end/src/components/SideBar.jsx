@@ -124,9 +124,9 @@ const id = 0
       title: "Workspace",
       icon: Users,
       subMenu: [
-        { title: "Attendance", path: "/workspace/attendance", icon: CheckSquare },
+        { title: "Attendance", path: "/workspace/attendance/view", icon: CheckSquare },
         { title: "Calendar", path: "/workspace/calendar/customise", icon: Calendar },
-        { title: "Messages", path: "/workspace/messages", icon: MessageSquare },
+        { title: "Messages", path: "/workspace/message/port", icon: MessageSquare },
       ],
     },
     { title: "Trash", icon: Trash2, path: "/trash" },

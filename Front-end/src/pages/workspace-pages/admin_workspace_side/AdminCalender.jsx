@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Trash2, Edit2 } from "lucide-react";
+import { X } from "lucide-react";
 import axios from "../../../instance/Axios";
 
 /* Helpers to convert between YYYY-MM-DD (input) and DD/MM/YYYY (display/storage) */
@@ -9,7 +9,6 @@ const formatDateObjToDDMMYYYY = (date) => {
   const year = date.getFullYear();
   return `${day}/${month}/${year}`;
 };
-const leaves = [];
 
 const formatInputToDDMMYYYY = (inputValue) => {
   if (!inputValue) return "";
@@ -30,7 +29,9 @@ export default function AdminCalendarManager() {
   const now = new Date();
   const [displayedMonth, setDisplayedMonth] = useState(now.getMonth());
   const [displayedYear, setDisplayedYear] = useState(now.getFullYear());
+
   const [holidays, setHolidays] = useState([]);
+  const [leaves, setLeaves] = useState([]); // ✅ state for leave requests
 
   // form state
   const [dateInput, setDateInput] = useState(""); // yyyy-mm-dd
@@ -38,14 +39,15 @@ export default function AdminCalendarManager() {
   const [type, setType] = useState("holiday");
   const [editingId, setEditingId] = useState(null);
 
-  // load data from backend
   useEffect(() => {
-    fetchHolidays();
-  }, []);
+    fetchHolidays(displayedYear, displayedMonth + 1);
+    fetchLeaves(displayedYear, displayedMonth + 1); // month is 1-based
+  }, [displayedMonth, displayedYear]);
 
-  const fetchHolidays = async () => {
+  // Fetch holidays
+  const fetchHolidays = async (year, month) => {
     try {
-      const res = await axios.get("/calendar/get");
+      const res = await axios.post("/calendar/get", { year, month });
       const holidaysArray = (res.data?.data || []).map((item) => ({
         id: item.id,
         date: formatInputToDDMMYYYY(item.holidayDate),
@@ -58,13 +60,25 @@ export default function AdminCalendarManager() {
     }
   };
 
-  const fetchLeaves = async ()=>{
+  // Fetch leave requests
+  const fetchLeaves = async (year, month) => {
     try {
-      const response = await axios.get("/calender/get/leave/")
+      const response = await axios.post("/calendar/get/leave", { year, month });
+      const leavesArray = (response.data || []).map((item) => ({
+        id: item.id,
+        employee: item?.staff?.name,
+        leaveType: item.leaveType,
+        startDate: formatInputToDDMMYYYY(item.leaveDate),
+        endDate: formatInputToDDMMYYYY(item.endDate),
+        reason: item.description,
+        category: item.category,
+        status: item.status || "Pending",
+      }));
+      setLeaves(leavesArray);
     } catch (error) {
-    console.error("Failed to load holidays", err);
+      console.error("Failed to load leaves", error);
     }
-  }
+  };
 
   const monthStartDayIndex = new Date(
     displayedYear,
@@ -78,13 +92,19 @@ export default function AdminCalendarManager() {
     const dayNum = i + 1;
     const dateObj = new Date(displayedYear, displayedMonth, dayNum);
     const formatted = formatDateObjToDDMMYYYY(dateObj);
+
     const holidayItem = holidays.find((h) => h.date === formatted);
-    return {
-      day: dayNum,
-      dateObj,
-      formatted,
-      holidayItem,
-    };
+
+    // Get approved leaves for this day
+    const approvedLeaves = leaves.filter((l) => {
+      if (l.status !== "Approve") return false;
+      const start = ddmmyyyyToInput(l.startDate);
+      const end = ddmmyyyyToInput(l.endDate);
+      const current = ddmmyyyyToInput(formatted);
+      return current >= start && current <= end;
+    });
+
+    return { day: dayNum, dateObj, formatted, holidayItem, approvedLeaves };
   });
 
   const handlePrevMonth = () => {
@@ -116,31 +136,26 @@ export default function AdminCalendarManager() {
     const formatted = formatInputToDDMMYYYY(dateInput);
 
     if (editingId) {
-      // Update existing
       try {
         const payload = { date: formatted, description, type };
         await axios.put(`/calendar/update/${editingId}`, payload);
         setHolidays((prev) =>
-          prev
-            .map((h) => (h.id === editingId ? { ...h, ...payload } : h))
-            .sort((a, b) => (a.date > b.date ? 1 : -1))
+          prev.map((h) => (h.id === editingId ? { ...h, ...payload } : h))
         );
         resetForm();
       } catch (err) {
         console.error("Update failed", err);
       }
     } else {
-      // Add new
       try {
         const payload = { date: formatted, description, type };
-        const res = await axios.post("/calendar/create", payload);
-
-        // Ensure unique id for React key
+        const {data} = await axios.post("/calendar/create", payload);
+        console.log(data)
         const createdHoliday = {
-          id: res.data.id || Date.now(), // fallback id
-          date: formatInputToDDMMYYYY(res.data.holidayDate || dateInput),
-          description: res.data.description || description,
-          type: res.data.holidayName || type,
+          id: data.id,
+          date: formatInputToDDMMYYYY(data.holidayDate || dateInput),
+          description: data.description || description,
+          type: data.holidayName || type,
         };
 
         setHolidays((prev) =>
@@ -163,11 +178,9 @@ export default function AdminCalendarManager() {
   const deleteHoliday = async (id) => {
     if (!window.confirm("Delete this holiday/maintenance entry?")) return;
     try {
-      let response = await axios.delete(`/calendar/delete/${id}`);
-      if (response) {
-        setHolidays((prev) => prev.filter((h) => h.id !== id));
-        if (editingId === id) resetForm();
-      }
+      await axios.delete(`/calendar/delete/${id}`);
+      setHolidays((prev) => prev.filter((h) => h.id !== id));
+      if (editingId === id) resetForm();
     } catch (err) {
       console.error("Delete failed", err);
     }
@@ -184,12 +197,23 @@ export default function AdminCalendarManager() {
     }
   };
 
+  const handleStatusChange = async (id, newStatus) => {
+    try {
+      await axios.put(`/calendar/leave/status/${id}`, { status: newStatus });
+      setLeaves((prev) =>
+        prev.map((l) => (l.id === id ? { ...l, status: newStatus } : l))
+      );
+    } catch (err) {
+      console.error("Failed to update status", err);
+      alert("Failed to update status");
+    }
+  };
 
   return (
     <div className="p-6 bg-gray-50 min-h-[600px]">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* LEFT: Calendar */}
-        <div className="md:col-span-2 bg-white rounded-xl shadow p-6">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-6">
+        {/* Calendar */}
+        <div className="md:col-span-12 bg-white rounded-xl shadow p-6">
           <div className="flex items-center justify-between mb-4 gap-3">
             <div className="flex items-center gap-2">
               <button
@@ -197,12 +221,6 @@ export default function AdminCalendarManager() {
                 className="px-3 py-2 rounded-lg bg-orange-500 text-white hover:bg-orange-600 transition"
               >
                 Prev
-              </button>
-              <button
-                onClick={handleNextMonth}
-                className="px-3 py-2 rounded-lg bg-orange-500 text-white hover:bg-orange-600 transition"
-              >
-                Next
               </button>
             </div>
             <h2 className="text-lg font-semibold text-gray-800">
@@ -214,7 +232,12 @@ export default function AdminCalendarManager() {
                 }
               )}
             </h2>
-            <div className="text-sm text-gray-600"></div>
+            <button
+              onClick={handleNextMonth}
+              className="px-3 py-2 rounded-lg bg-orange-500 text-white hover:bg-orange-600 transition"
+            >
+              Next
+            </button>
           </div>
 
           <div className="grid grid-cols-7 text-center text-xs font-semibold text-gray-500 uppercase mb-3">
@@ -229,22 +252,36 @@ export default function AdminCalendarManager() {
             ))}
 
             {daysArray.map((d) => {
+              const isSunday = d.dateObj.getDay() === 0;
               const isMaintenance =
                 d.holidayItem && d.holidayItem.type === "maintenance";
               const isHoliday = !!d.holidayItem;
+
+              let cellClass = "bg-white border-gray-200 hover:bg-gray-50";
+              if (isSunday || isHoliday)
+                cellClass = "bg-red-500 border-red-300 text-white";
+              if (isMaintenance)
+                cellClass = "bg-purple-500 border-purple-300 text-white";
+
+              if (
+                d.approvedLeaves.length > 0 &&
+                !isSunday &&
+                !isHoliday &&
+                !isMaintenance
+              ) {
+                const hasFullDay = d.approvedLeaves.some(
+                  (l) => l.leaveType === "Full Day"
+                );
+                cellClass = hasFullDay
+                  ? "bg-blue-800 border-blue-500 text-white"
+                  : "bg-orange-500 border-orange-300 text-white";
+              }
+
               return (
                 <div
                   key={d.formatted}
                   onClick={() => onDayClick(d)}
-                  className={`relative rounded-lg h-16 flex flex-col items-center justify-center text-sm cursor-pointer border shadow-sm transition
-                    ${
-                      isMaintenance
-                        ? "bg-purple-500 border-purple-300 text-white"
-                        : isHoliday
-                        ? "bg-red-500 border-red-300 text-white"
-                        : "bg-white border-gray-200 hover:bg-gray-50"
-                    }
-                  `}
+                  className={`relative rounded-lg h-16 flex flex-col items-center justify-center text-sm cursor-pointer border shadow-sm transition ${cellClass}`}
                 >
                   <div className="font-medium">{d.day}</div>
                   {d.holidayItem && (
@@ -252,32 +289,27 @@ export default function AdminCalendarManager() {
                       {d.holidayItem.description}
                     </div>
                   )}
+                  {d.approvedLeaves.map((l, idx) => (
+                    <div
+                      key={idx}
+                      className="text-[10px] px-1 text-center mt-1 w-full truncate"
+                    >
+                      <div className="flex flex-col">
+                        <span>{l.employee}</span>
+                        <span>
+                          ({l.category} - {l.leaveType})
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               );
             })}
           </div>
-
-          <div className="mt-6 flex flex-wrap gap-4 items-center text-gray-600 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-red-500 border border-red-300" />
-              <span>Holiday</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-purple-500 border border-purple-300" />
-              <span>Maintenance</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-white border border-gray-200" />
-              <span>Working day</span>
-            </div>
-            <div className="ml-auto text-xs text-gray-500">
-              Tip: click a day to edit or prefill the form
-            </div>
-          </div>
         </div>
 
-        {/* RIGHT: Create / Edit panel */}
-        <div className="bg-white rounded-xl shadow p-6 overflow-x-auto">
+        {/* Leave Requests Table */}
+        <div className="md:col-span-8 bg-white rounded-xl shadow p-6 overflow-x-auto">
           <h3 className="text-lg font-semibold mb-4">Leave Requests List</h3>
           <table className="min-w-full divide-y divide-gray-200">
             <thead>
@@ -287,7 +319,8 @@ export default function AdminCalendarManager() {
                 <th className="px-3 py-2">Start</th>
                 <th className="px-3 py-2">End</th>
                 <th className="px-3 py-2">Reason</th>
-                <th className="px-3 py-2">Status</th>
+                <th className="px-3 py-2">Category</th>
+                <th className="px-3 py-2">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -305,19 +338,19 @@ export default function AdminCalendarManager() {
                   <td className="px-3 py-2">{leave.startDate}</td>
                   <td className="px-3 py-2">{leave.endDate}</td>
                   <td className="px-3 py-2">{leave.reason}</td>
-                  <td className="px-3 py-2 flex gap-2">
-                    <button
-                      onClick={() => startEditLeave(leave)}
-                      className="p-1 rounded bg-yellow-200 text-yellow-800"
+                  <td className="px-3 py-2">{leave.category}</td>
+                  <td className="px-3 py-2 flex flex-col gap-2">
+                    <select
+                      value={leave.status}
+                      onChange={(e) =>
+                        handleStatusChange(leave.id, e.target.value)
+                      }
+                      className="border border-gray-300 rounded-lg p-1 text-sm"
                     >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => deleteLeave(leave.id)}
-                      className="p-1 rounded bg-red-200 text-red-800"
-                    >
-                      Delete
-                    </button>
+                      <option value="Pending">Pending</option>
+                      <option value="Approve">Approve</option>
+                      <option value="Reject">Reject</option>
+                    </select>
                   </td>
                 </tr>
               ))}
@@ -325,7 +358,8 @@ export default function AdminCalendarManager() {
           </table>
         </div>
 
-        <div className="bg-white rounded-xl shadow p-6 flex flex-col gap-4">
+        {/* Create / Edit panel */}
+        <div className="md:col-span-4 bg-white rounded-xl shadow p-6 flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-800">
               {editingId ? "Edit Entry" : "Create Entry"}
@@ -345,7 +379,6 @@ export default function AdminCalendarManager() {
               type="date"
               value={dateInput}
               onChange={(e) => setDateInput(e.target.value)}
-              min={new Date().toISOString().split("T")[0]}
               className="mt-1 w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 focus:outline-none"
             />
           </label>
@@ -395,9 +428,6 @@ export default function AdminCalendarManager() {
             </button>
           </div>
 
-          <hr />
-          {/* Delete button - only for non-working days (holidays/maintenance) */}
-
           {editingId && type && type !== "workingDay" && (
             <button
               onClick={() => deleteHoliday(editingId)}
@@ -406,7 +436,6 @@ export default function AdminCalendarManager() {
               Delete
             </button>
           )}
-          <div className="text-xs text-gray-500 mt-auto"></div>
         </div>
       </div>
     </div>

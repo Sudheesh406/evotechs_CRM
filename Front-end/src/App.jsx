@@ -11,6 +11,8 @@ import AdminDashboard from "./pages/dashboard/AdminDashboard";
 import StaffPendingTask from "./pages/sales-pages/admin_sales_side/StaffPendingTask";
 import CreateTeam from "./pages/Team-work/admin_team_work_side/CreateTeam";
 import AdminCalendar from "./pages/workspace-pages/admin_workspace_side/AdminCalender";
+import AdminAttendanceView from "./pages/workspace-pages/admin_workspace_side/AdminAttendanceView";
+import AdminMessagePortal from "./pages/workspace-pages/admin_workspace_side/AdminMessagePortal";
 
 import StaffDashboard from "./pages/dashboard/StaffDashboard";
 import Leads from "./pages/sales-pages/Leads";
@@ -33,7 +35,7 @@ import Rework from "./pages/sales-pages/Rework";
 import TeamProfile from "./pages/Team-work/TeamView";
 import TeamWork from "./pages/Team-work/TeamWorkView";
 import TeamWorkDetails from "./pages/Team-work/TeamWorkDetails";
-import TeamTaskDetails from "./pages/Team-work/TeamTaskDetail"
+import TeamTaskDetails from "./pages/Team-work/TeamTaskDetail";
 
 import Sidebar from "./components/SideBar";
 
@@ -85,6 +87,8 @@ function Layout() {
           <Route path="/sales/pending/task" element={<StaffPendingTask />} />
           <Route path="/team/customise" element={<CreateTeam />} />
           <Route path="/workspace/calendar/customise" element={<AdminCalendar />} />
+          <Route path="/workspace/attendance/view" element={<AdminAttendanceView />} />
+          <Route path="/workspace/message/port" element={<AdminMessagePortal />} />
 
 
           <Route path="/" element={<StaffDashboard />} />
