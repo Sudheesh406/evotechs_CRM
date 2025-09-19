@@ -2,7 +2,7 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('leave', {
+    await queryInterface.createTable('leaves', {
       id: {
         type: Sequelize.INTEGER,
         autoIncrement: true,
@@ -28,7 +28,7 @@ module.exports = {
         allowNull: false,
       },
       description: {
-        type: Sequelize.TEXT,
+       type: Sequelize.ENUM('Personal', 'Family', 'Medical', 'Emergency', 'Vacation'),
         allowNull: true,
       },
       status: {
@@ -69,6 +69,6 @@ module.exports = {
   },
 
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable('leave');
+    await queryInterface.dropTable('leaves');
   },
 };

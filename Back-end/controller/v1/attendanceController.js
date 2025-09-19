@@ -1,6 +1,21 @@
 const { httpError, httpSuccess } = require("../../utils/v1/httpResponse");
 const Attendance = require("../../models/v1/Work_space/attendance");
 const { Op } = require("sequelize");
+const { signup } = require("../../models/v1");
+const Signup = require("../../models/v1/Authentication/authModel");
+const roleChecker = require("../../utils/v1/roleChecker")
+// Helper to convert 12-hour to 24-hour format
+
+function convertTo24Hour(time12h) {
+  const [time, modifier] = time12h.split(" "); // "09:30", "AM"
+  let [hours, minutes] = time.split(":");
+  hours = parseInt(hours, 10);
+
+  if (modifier === "PM" && hours !== 12) hours += 12;
+  if (modifier === "AM" && hours === 12) hours = 0;
+
+  return `${hours.toString().padStart(2, "0")}:${minutes}:00`;
+}
 
 const attendanceRegister = async (req, res) => {
   try {
@@ -39,11 +54,14 @@ const attendanceRegister = async (req, res) => {
       return httpError(res, 400, "Invalid shedule value");
     }
 
+    // Convert to 24-hour format before saving
+    const time24 = convertTo24Hour(timeValue);
+
     const newAttendance = await Attendance.create({
       staffId: user.id,
       attendanceDate: details.date,
       type: details.shedule,
-      time: timeValue,
+      time: time24, // Save in railway time
     });
 
     if (!newAttendance) {
@@ -62,6 +80,19 @@ const attendanceRegister = async (req, res) => {
   }
 };
 
+// Helper to convert 12-hour to 24-hour format
+function convertTo24Hour(time12h) {
+  if (!time12h) return null;
+  const [time, modifier] = time12h.split(" "); // "09:30", "AM"
+  let [hours, minutes] = time.split(":");
+  hours = parseInt(hours, 10);
+
+  if (modifier === "PM" && hours !== 12) hours += 12;
+  if (modifier === "AM" && hours === 12) hours = 0;
+
+  return `${hours.toString().padStart(2, "0")}:${minutes}:00`;
+}
+
 const attendanceEdit = async (req, res) => {
   try {
     const { entryTime, exitTime, shedule } = req.body;
@@ -75,16 +106,21 @@ const attendanceEdit = async (req, res) => {
     // Only allow editing for today's date
     const todayStr = new Date().toISOString().split("T")[0];
     if (date !== todayStr) {
-      return httpError(res, 403, "You can only edit attendance for the current date");
+      return httpError(
+        res,
+        403,
+        "You can only edit attendance for the current date"
+      );
     }
 
     if (!entryTime && !exitTime) {
       return httpError(res, 400, "No fields to update");
     }
 
-    // Determine schedule type and update accordingly
+    let attendanceRecord;
+
     if (shedule === "entry") {
-      const attendanceRecord = await Attendance.findOne({
+      attendanceRecord = await Attendance.findOne({
         where: {
           attendanceDate: date,
           type: "entry",
@@ -94,14 +130,23 @@ const attendanceEdit = async (req, res) => {
       });
 
       if (!attendanceRecord) {
-        return httpError(res, 404, "Entry attendance record not found for today");
+        return httpError(
+          res,
+          404,
+          "Entry attendance record not found for today"
+        );
       }
 
-      await attendanceRecord.update({ time: entryTime });
-      return httpSuccess(res, 200, "Entry time updated successfully", attendanceRecord);
-
+      const time24 = convertTo24Hour(entryTime);
+      await attendanceRecord.update({ time: time24 });
+      return httpSuccess(
+        res,
+        200,
+        "Entry time updated successfully",
+        attendanceRecord
+      );
     } else if (shedule === "exit") {
-      const attendanceRecord = await Attendance.findOne({
+      attendanceRecord = await Attendance.findOne({
         where: {
           attendanceDate: date,
           type: "exit",
@@ -111,22 +156,29 @@ const attendanceEdit = async (req, res) => {
       });
 
       if (!attendanceRecord) {
-        return httpError(res, 404, "Exit attendance record not found for today");
+        return httpError(
+          res,
+          404,
+          "Exit attendance record not found for today"
+        );
       }
 
-      await attendanceRecord.update({ time: exitTime });
-      return httpSuccess(res, 200, "Exit time updated successfully", attendanceRecord);
-
+      const time24 = convertTo24Hour(exitTime);
+      await attendanceRecord.update({ time: time24 });
+      return httpSuccess(
+        res,
+        200,
+        "Exit time updated successfully",
+        attendanceRecord
+      );
     } else {
       return httpError(res, 400, "Invalid schedule type");
     }
-
   } catch (error) {
     console.error("Error editing attendance:", error);
     return httpError(res, 500, "Internal Server Error");
   }
 };
-
 
 const handleDelete = async (req, res) => {
   try {
@@ -140,7 +192,11 @@ const handleDelete = async (req, res) => {
     // Only allow deleting for today's date
     const todayStr = new Date().toISOString().split("T")[0];
     if (date !== todayStr) {
-      return httpError(res, 403, "You can only delete attendance for the current date");
+      return httpError(
+        res,
+        403,
+        "You can only delete attendance for the current date"
+      );
     }
 
     // Permanently delete attendance records for the user on that date
@@ -156,13 +212,20 @@ const handleDelete = async (req, res) => {
     }
 
     return httpSuccess(res, 200, "Attendance record deleted permanently");
-
   } catch (error) {
     console.error("Error in handleDelete:", error);
     return httpError(res, 500, "Internal Server Error");
   }
 };
 
+function formatTo12Hour(time24) {
+  if (!time24) return null;
+  const [hoursStr, minutes] = time24.split(":");
+  let hours = parseInt(hoursStr, 10);
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12 || 12;
+  return `${hours.toString().padStart(2, "0")}:${minutes} ${ampm}`;
+}
 
 const attendanceGet = async (req, res) => {
   try {
@@ -190,11 +253,19 @@ const attendanceGet = async (req, res) => {
       ],
     });
 
+    // Convert time to 12-hour format
+    const formattedRecords = attendanceRecords.map((record) => {
+      return {
+        ...record.get(), // get raw data values
+        time: formatTo12Hour(record.time),
+      };
+    });
+
     return httpSuccess(
       res,
       200,
       "Attendance records fetched successfully",
-      attendanceRecords
+      formattedRecords
     );
   } catch (error) {
     console.error("Error in attendanceGet:", error);
@@ -202,5 +273,138 @@ const attendanceGet = async (req, res) => {
   }
 };
 
+const getStaffList = async (req, res) => {
+  try {
+    const user = req.user;
 
-module.exports = { attendanceRegister, attendanceGet, attendanceEdit, handleDelete };
+    const admin = await roleChecker(user.id);
+    if (!admin) {
+      return httpError(res, 403, "Access denied");
+    }
+
+    // Fetch only id and name columns for staff role
+    const staffList = await Signup.findAll({
+      where: { role: "staff" },
+      attributes: ["id", "name"], 
+    });
+
+    return httpSuccess(res, 200, "staff list fetched successfully", staffList);
+  } catch (error) {
+    console.error("Error in getStaffList:", error);
+    return httpError(res, 500, "Internal Server Error");
+  }
+};
+
+
+// convert "HH:mm:ss" → "hh:mm AM/PM"
+function formatToAmPm(timeStr) {
+  if (!timeStr) return null;
+  const [hourStr, minuteStr] = timeStr.split(":");
+  let hour = parseInt(hourStr, 10);
+  const minute = minuteStr;
+  const ampm = hour >= 12 ? "PM" : "AM";
+  hour = hour % 12;
+  if (hour === 0) hour = 12;
+  return `${hour}:${minute} ${ampm}`;
+}
+
+// get total minutes between two HH:mm:ss strings
+function getMinutesBetween(start, end) {
+  if (!start || !end) return 0;
+  const [sh, sm] = start.split(":").map(Number);
+  const [eh, em] = end.split(":").map(Number);
+  const startMinutes = sh * 60 + sm;
+  const endMinutes = eh * 60 + em;
+  return endMinutes - startMinutes;
+}
+
+// convert minutes → "H hrs M mins"
+function formatMinutesToHoursMins(minutes) {
+  if (minutes <= 0) return null;
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hrs > 0 && mins > 0) return `${hrs} hrs ${mins} mins`;
+  if (hrs > 0) return `${hrs} hrs`;
+  return `${mins} mins`;
+}
+
+const getStaffAttendance = async (req, res) => {
+  try {
+    const user = req.user;
+
+    const admin = await roleChecker(user.id);
+    if (!admin) {
+      return httpError(res, 403, "Access denied");
+    }
+
+    const { staffId, month, year } = req.body;
+    if (!staffId || !month || !year) {
+      return httpError(res, 400, "staffId, month and year are required");
+    }
+
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+
+    const attendanceRecords = await Attendance.findAll({
+      where: {
+        staffId,
+        attendanceDate: {
+          [Op.between]: [startDate, endDate],
+        },
+        softDelete: false,
+      },
+      order: [
+        ["attendanceDate", "ASC"],
+        ["time", "ASC"],
+      ],
+    });
+
+    const grouped = {};
+    attendanceRecords.forEach((rec) => {
+      const dateKey = rec.attendanceDate;
+      if (!grouped[dateKey]) {
+        grouped[dateKey] = {
+          date: dateKey,
+          entryTime: null,
+          exitTime: null,
+          workingHours: null,
+        };
+      }
+      if (rec.type === "entry") {
+        grouped[dateKey].entryTime = rec.time;
+      } else if (rec.type === "exit") {
+        grouped[dateKey].exitTime = rec.time;
+      }
+    });
+
+    // calculate working hours and format times
+    const finalResult = Object.values(grouped).map((item) => {
+      let workingMinutes = 0;
+      if (item.entryTime && item.exitTime) {
+        workingMinutes = getMinutesBetween(item.entryTime, item.exitTime);
+      }
+      return {
+        date: item.date, // still YYYY-MM-DD
+        entryTime: item.entryTime ? formatToAmPm(item.entryTime) : null,
+        exitTime: item.exitTime ? formatToAmPm(item.exitTime) : null,
+        workingHours: workingMinutes ? formatMinutesToHoursMins(workingMinutes) : null,
+      };
+    });
+
+    return httpSuccess(res, 200, "Attendance fetched successfully", finalResult);
+  } catch (error) {
+    console.error("error found in get staff attendance", error);
+    return httpError(res, 500, "Internal Server Error");
+  }
+};
+
+
+module.exports = {
+  attendanceRegister,
+  attendanceGet,
+  attendanceEdit,
+  handleDelete,
+  getStaffAttendance,
+  getStaffList,
+  getStaffList
+};

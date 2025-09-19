@@ -100,6 +100,7 @@ const createMeetings = async (req, res) => {
   }
 };
 
+
 const getMeetings = async (req, res) => {
   const user = req.user;
 
@@ -171,6 +172,7 @@ const getMeetings = async (req, res) => {
     return httpError(res, 500, "Server error", error.message);
   }
 };
+
 
 const editMeetings = async (req, res) => {
   const user = req.user;

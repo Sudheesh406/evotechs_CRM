@@ -28,8 +28,18 @@ const leaves = sequelize.define(
       type: DataTypes.DATEONLY,
       allowNull: false,
     },
+    endDate: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+    },
     description: {
-      type: DataTypes.TEXT,
+      type: DataTypes.ENUM(
+        "Personal",
+        "Family",
+        "Medical",
+        "Emergency",
+        "Vacation"
+      ),
       allowNull: true,
     },
     status: {
