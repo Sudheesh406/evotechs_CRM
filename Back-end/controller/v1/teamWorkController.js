@@ -275,11 +275,14 @@ const postTeamHistory = async (req, res) => {
       return httpError(res, 404, "Team not found");
     }
 
-    // Check if staff belongs to this team
-    const staffIds = existingTeam.staffIds; // must be array or null
-    if (!Array.isArray(staffIds) || !staffIds.includes(staff.id)) {
-      return httpError(res, 403, "Staff is not part of this team");
-    }
+    const acess = await signup.findOne({where:{id : staff.id}});
+      if(acess && acess.role != 'admin'){
+        // Check if staff belongs to this team
+        const staffIds = existingTeam.staffIds; // must be array or null
+        if (!Array.isArray(staffIds) || !staffIds.includes(staff.id)) {
+          return httpError(res, 403, "Staff is not part of this team");
+        }
+      }
 
     await teamHistory.destroy({
       where: { staffId: staff.id },
@@ -364,6 +367,7 @@ const getSectors = async (req, res) => {
 
 const getProjects = async (req, res) => {
   try {
+    const user = req.user
     const { parsedData } = req.body;
     const { staffIds, projectName } = parsedData;
 
@@ -393,8 +397,15 @@ const getProjects = async (req, res) => {
 
       ]
     });
+     
+    let admin = null
+    const access = roleChecker(user.id);
+    if (access) {
+     admin = true
+    }
 
-    return res.status(200).json({ tasks });
+
+    return res.status(200).json({ tasks, admin });
 
     
   } catch (error) {
@@ -408,6 +419,8 @@ const getProjects = async (req, res) => {
 };
 
 
+
+
 module.exports = {
   createTeamWork,
   getTeam,
@@ -417,5 +430,5 @@ module.exports = {
   getTeamDetails,
   postTeamHistory,
   getSectors,
-  getProjects
+  getProjects,
 };

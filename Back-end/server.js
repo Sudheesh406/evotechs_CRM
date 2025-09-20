@@ -19,6 +19,7 @@ const attendanceRoute = require("./routes/v1/attendanceRoute");
 const teamWorkRoute = require("./routes/v1/teamWorkRoute");
 const pendingRoute = require("./routes/v1/pendingRoute");
 const calendarRoute = require("./routes/v1/calendarRoute");
+const completedRoute = require("./routes/v1/completedRoute");
 
 // ====================
 // Middleware Setup
@@ -67,6 +68,9 @@ app.use("/api/pending", pendingRoute);
 
 // Handling calendar  Work
 app.use("/api/calendar", calendarRoute);
+
+// Handling completed  Work
+app.use("/api/completed", completedRoute);
 
 
 

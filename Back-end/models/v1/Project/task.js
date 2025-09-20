@@ -70,6 +70,14 @@ const task = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    rework: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    newUpdate: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
   },
   {
     tableName: "task",

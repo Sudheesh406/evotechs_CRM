@@ -10,7 +10,7 @@ const {
   getTeamDetails,
   postTeamHistory,
   getSectors,
-  getProjects
+  getProjects,
 } = require("../../controller/v1/teamWorkController");
 
 Router.post("/create", authenticate, createTeamWork);

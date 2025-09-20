@@ -148,7 +148,6 @@ const getTaskDetails = async (req, res) => {
       return httpError(res, 400, "Missing contactId ");
     }
 
-    console.log("Request Data:", parsed.data);
 
     // Fetch customer details
     const customerDetails = await contacts.findOne({
@@ -189,7 +188,6 @@ const getTaskDetails = async (req, res) => {
   }
 };
 
-
 const updateStagesAndNotes = async (req, res) => {
   try {
     const { data } = req.body;
@@ -227,7 +225,6 @@ const updateStagesAndNotes = async (req, res) => {
     });
   }
 };
-
 
 const getTeamTaskDetails = async (req, res) => {
   try {
@@ -285,7 +282,6 @@ const getTeamTaskDetails = async (req, res) => {
     return httpError(res, 500, "Server error", error.message || error);
   }
 };
-
 
 const updateTeamStagesAndNotes = async (req, res) => {
   try {
@@ -358,7 +354,6 @@ const updateTeamStagesAndNotes = async (req, res) => {
   }
 };
 
-
 //---------------pending task-----------------//
 
 //-----admin---------//
@@ -372,7 +367,10 @@ const getPendingTask = async (req, res) => {
     }
 
     const allPendingTask = await task.findAll({
-      where: { stage: "pending", softDelete: false },
+      where: {
+        stage: { [Op.ne]: 4 }, // stages not equal to 4
+        softDelete: false,
+      },
       include: [
         {
           model: staff,
@@ -388,6 +386,212 @@ const getPendingTask = async (req, res) => {
   }
 };
 
+
+const getTaskDetailForAdmin = async (req, res) => {
+  try {
+    // Validate input
+    const { parsed } = req.body;
+    if (!parsed || !parsed.data) {
+      return httpError(res, 400, "Missing or invalid request body");
+    }
+
+    const { taskId, contactId, staffId } = parsed.data;
+
+    const user = req.user;
+
+    const access = roleChecker(user.id);
+    if (!access) {
+      return httpError(res, 403, "Access denied. Admins only.");
+    }
+
+    if (!contactId) {
+      return httpError(res, 400, "Missing contactId ");
+    }
+
+    // Fetch customer details
+    const customerDetails = await contacts.findOne({
+      where: { id: contactId, staffId },
+    });
+    if (!customerDetails) {
+      return httpError(res, 404, "Customer not found for this staff");
+    }
+
+    // Fetch related data
+    const [meetingDetails, callDetails, taskDetails] = await Promise.all([
+      meetings.findAll({
+        where: { contactId, staffId },
+      }),
+      calls.findAll({
+        where: { contactId, staffId },
+      }),
+      task.findAll({
+        where: { contactId, staffId },
+      }),
+    ]);
+
+    // Optionally filter task by taskId if provided
+    const filteredTaskDetails = taskId
+      ? taskDetails.filter((t) => t.id === Number(taskId))
+      : taskDetails;
+
+    // Send response
+    return httpSuccess(res, 200, "task details getted successfully", {
+      customerDetails,
+      meetingDetails,
+      callDetails,
+      taskDetails: filteredTaskDetails,
+    });
+  } catch (error) {
+    console.error("Error in getting task details for admin:", error);
+    return httpError(res, 500, "Server error", error.message || error);
+  }
+};
+
+
+const updateStagesByAdmin = async (req, res) => {
+  try {
+    const data = req.body;
+    console.log(data)
+    const user = req.user;
+    const access = roleChecker(user.id);
+    if (!access) {
+      return httpError(res, 403, "Access denied. Admins only.");
+    }
+
+    const existingTask = await task.findOne({
+      where: { id: data.taskId},
+    });
+
+    if (!existingTask) {
+      return res.status(404).json({
+        success: false,
+        message: "Task not found for this user",
+      });
+    }
+
+    if(existingTask.stage == 4){
+      await existingTask.update({
+        stage: '3',
+      });
+    }else{
+        await existingTask.update({
+        stage: data.stage,
+        rework: false
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Task stage and notes updated successfully",
+      data: existingTask,
+    });
+
+  } catch (error) {
+    console.error("Error in update stages :", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message || error,
+    });
+  }
+};
+
+
+const reworkUpdate = async (req, res) => {
+  try {
+    const { id } = req.body;
+
+    const user = req.user;
+    const access = roleChecker(user.id);
+    if (!access) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Admins only.",
+      });
+    }
+
+    const existing = await task.findOne({ where: { id } });
+
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        message: "Task not found",
+      });
+    }
+
+    // determine new rework value
+    const newRework = !existing.rework;
+
+    // build update object
+    const updateFields = { rework: newRework };
+
+    // if we are turning rework ON, also reset newUpdate
+    if (newRework === true) {
+      updateFields.newUpdate = false;
+    }
+
+    const updatedTask = await existing.update(updateFields);
+
+    return res.status(200).json({
+      success: true,
+      message: `Rework set to ${updatedTask.rework}`,
+      data: updatedTask,
+    });
+
+  } catch (error) {
+    console.error("Error in updating rework:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message || error,
+    });
+  }
+};
+
+
+
+const newUpdate = async (req, res) => {
+  try {
+    const {id}  = req.body;
+    const user = req.user;
+    
+    const existing = await task.findOne({ where: { id ,staffId : user.id} });
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        message: "Task not found",
+      });
+    }
+
+    if(existing.staffId == user.id){
+      const updatedTask = await existing.update({ newUpdate: !existing.newUpdate });
+      // Toggle the new update flag
+  
+      return res.status(200).json({
+        success: true,
+        message: `new update set to ${updatedTask.rework}`,
+        data: updatedTask,
+      });
+    }else{
+       return res.status(403).json({
+        success: false,
+        message: "Access denied.",
+      });
+    }
+
+
+  } catch (error) {
+    console.error("Error in updating new Update:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message || error,
+    });
+  }
+};
+
+
+
 module.exports = {
   createTask,
   getTask,
@@ -399,4 +603,8 @@ module.exports = {
   updateStagesAndNotes,
   getTeamTaskDetails,
   updateTeamStagesAndNotes,
+  getTaskDetailForAdmin,
+  updateStagesByAdmin,
+  reworkUpdate,
+  newUpdate
 };
