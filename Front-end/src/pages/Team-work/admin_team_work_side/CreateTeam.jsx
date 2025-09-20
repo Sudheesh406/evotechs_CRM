@@ -1,7 +1,9 @@
+import { useNavigate } from "react-router-dom";
 import axios from "../../../instance/Axios";
 import React, { useState, useEffect } from "react";
 
 function CreateTeam() {
+  const navigate = useNavigate()
   const [staffs, setStaffs] = useState([]);
   const [selectedStaff, setSelectedStaff] = useState([]);
   const [teamName, setTeamName] = useState("");
@@ -187,6 +189,24 @@ function CreateTeam() {
     t.name?.toLowerCase().includes(teamSearch.toLowerCase())
   );
 
+
+  const handleTeamViewHistory = async (selectedTeam) => {
+    try {
+      if(selectedTeam){
+        const response = await axios.post('/team/history/post',{
+          selectedTeam
+        })
+        if(response){
+          console.log(response)
+          navigate(`/team/work/port${selectedTeam.id}`)
+        }
+      }
+    } catch (error) {
+      console.log('error found in team history',error)
+    }
+  };
+
+
   return (
     <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-7xl mx-auto"
 >
@@ -225,6 +245,12 @@ function CreateTeam() {
                     </span>
                   </h3>
                   <div className="space-x-2">
+                    <button
+                      onClick={() => handleTeamViewHistory(team)}
+                      className="text-sm px-2 py-1 rounded border border-gray-400 text-gray-700 hover:underline"
+                    >
+                      View
+                    </button>
                     <button
                       onClick={() => handleEditTeam(team)}
                       className="text-sm px-2 py-1 rounded border border-gray-400 text-gray-700 hover:underline"

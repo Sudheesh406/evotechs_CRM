@@ -20,6 +20,7 @@ export default function TeamWorkDetails() {
   const navigate = useNavigate();
   const parsedData = JSON.parse(decodeURIComponent(data));
   const projectName = parsedData.projectName;
+  const [role, setRole] = useState(false)
 
   const [works, setWorks] = useState([]);
 
@@ -40,6 +41,9 @@ export default function TeamWorkDetails() {
           staff: task.staff?.name ?? "",
           staffEmail: task.staff?.email ?? "",
         }));
+        if(response.data?.admin){
+          setRole(true)
+        }
         setWorks(tableData);
       }
     } catch (error) {
@@ -63,7 +67,7 @@ export default function TeamWorkDetails() {
   };
 
   const handleRowClick = (row) => {
-    const payload = { taskId: row.id, contactId: row.contactId };
+    const payload = { taskId: row.id, contactId: row.contactId , role};
     const dataToSend = encodeURIComponent(JSON.stringify(payload));
     navigate(`/activities/tasks/team/${dataToSend}`);
   };

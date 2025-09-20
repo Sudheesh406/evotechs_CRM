@@ -34,6 +34,10 @@ export default function TaskDetail() {
   }
   if (!parsed) return <div>Loading or invalid data…</div>;
 
+
+    const isUpdate = parsed?.data.update
+    const newUpdate = parsed?.data.clear
+
   // API state
   const [customer, setCustomer] = useState(null);
   const [calls, setCalls] = useState([]);
@@ -121,6 +125,30 @@ export default function TaskDetail() {
       
     }
   }
+  
+
+ const updateWork = async () => {
+  try {
+    // Safely get the task ID
+    const id = taskDetails[0]?.id
+    console.log("Task data:", id);
+
+    // Call the API to toggle rework
+    if(id){
+      const response = await axios.patch("/task/rework/finish", { id });
+  
+      if (response?.data?.success) {
+        console.log("Rework updated successfully:", response.data);
+        navigate(-1); // Go back one page
+      } else {
+        console.warn("Failed to update rework:", response?.data?.message);
+      }
+    }
+  } catch (error) {
+    console.error("Failed to set rework:", error);
+    alert("Failed to set rework"); // optional user feedback
+  }
+};
 
   return (
     <div className="min-h-[680px] bg-gray-50 p-6 space-y-8">
@@ -141,7 +169,22 @@ export default function TaskDetail() {
           <h2 className="text-xl font-semibold text-gray-800">
             Customer Details
           </h2>
-          <p className="text-xs text-gray-500"></p>
+            {isUpdate && !newUpdate &&
+          <button
+            className="px-4 py-2 bg-orange-500 text-white text-sm rounded-lg hover:bg-blue-700 transition"
+            onClick={() => updateWork()}
+          >
+            Update
+          </button>
+          }
+            {isUpdate && newUpdate &&
+          <button
+            className="px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-blue-700 transition"
+            onClick={() => updateWork()}
+          >
+            Reject
+          </button>
+          }
         </div>
 
         {/* Personal Details */}

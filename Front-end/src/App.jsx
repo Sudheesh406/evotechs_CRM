@@ -36,6 +36,11 @@ import TeamProfile from "./pages/Team-work/TeamView";
 import TeamWork from "./pages/Team-work/TeamWorkView";
 import TeamWorkDetails from "./pages/Team-work/TeamWorkDetails";
 import TeamTaskDetails from "./pages/Team-work/TeamTaskDetail";
+import StaffTaskDetails from "./pages/sales-pages/admin_sales_side/StaffTaskDetails";
+import StaffTaskVerification from "./pages/sales-pages/admin_sales_side/StaffTaskVerification";
+import CompletedTask from "./pages/sales-pages/admin_sales_side/CompletedTask";
+import ReworkTask from "./pages/sales-pages/admin_sales_side/ReworkTask";
+import ProjectTeam from "./pages/Team-work/admin_team_work_side/ProjectTeam"
 
 import Sidebar from "./components/SideBar";
 
@@ -89,6 +94,12 @@ function Layout() {
           <Route path="/workspace/calendar/customise" element={<AdminCalendar />} />
           <Route path="/workspace/attendance/view" element={<AdminAttendanceView />} />
           <Route path="/workspace/message/port" element={<AdminMessagePortal />} />
+          <Route path="/activities/task/port/:data" element={<StaffTaskDetails />} />
+          <Route path="/sales/resolved" element={<StaffTaskVerification />} />
+          <Route path="/sales/completed" element={<CompletedTask />} />
+          <Route path="/sales/rework/port" element={<ReworkTask />} />
+          <Route path="/team/work/port/:id" element={<ProjectTeam />} />
+
 
 
           <Route path="/" element={<StaffDashboard />} />

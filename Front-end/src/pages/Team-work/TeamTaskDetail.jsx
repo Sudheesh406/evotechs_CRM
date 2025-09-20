@@ -34,11 +34,13 @@ export default function TaskDetail() {
   }
   if (!parsed) return <div>Loading or invalid data…</div>;
 
+  const action = parsed?.role; // ← read-only flag
+
   // API state
   const [customer, setCustomer] = useState(null);
   const [calls, setCalls] = useState([]);
   const [meetings, setMeetings] = useState([]);
-  const [attachments, setAttachments] = useState([]); // API not providing attachments
+  const [attachments, setAttachments] = useState([]);
   const [taskDetails, setTaskDetails] = useState([]);
   const [teamWorkDetails, setTeamWorkDetails] = useState();
 
@@ -49,7 +51,10 @@ export default function TaskDetail() {
     pending3: false,
     pending4: false,
   });
-  const toggleStage = (k) => setWorkStages((s) => ({ ...s, [k]: !s[k] }));
+  const toggleStage = (k) => {
+    if (action) return; // block if read-only
+    setWorkStages((s) => ({ ...s, [k]: !s[k] }));
+  };
 
   // Notes state
   const [notes, setNotes] = useState("");
@@ -58,7 +63,6 @@ export default function TaskDetail() {
   const fetchCustomerDetails = async () => {
     try {
       const response = await axios.post("task/team/details/get", { parsed });
-      console.log(response);
       const apiData = response.data?.data || {};
       setCustomer(apiData.customerDetails || null);
       setCalls(apiData.callDetails || []);
@@ -103,12 +107,10 @@ export default function TaskDetail() {
 
   // Save handler
   const handleSave = () => {
+    if (action) return; // block if read-only
     const checkedStagesCount = Object.values(workStages).filter(Boolean).length;
-    console.log("Updated Notes:", notes);
-    console.log("Checked Stages Count:", checkedStagesCount);
     const taskId = taskDetails[0].id;
     updateStagesAndNotes(checkedStagesCount, notes, taskId);
-    // Optional: update taskDetails so button disappears after save
   };
 
   const updateStagesAndNotes = async (stages, notes, id) => {
@@ -118,7 +120,6 @@ export default function TaskDetail() {
       if (response) {
         fetchCustomerDetails();
       }
-      console.log("response", response);
     } catch (error) {
       console.log("error found in update stage and notes", error);
     }
@@ -143,7 +144,6 @@ export default function TaskDetail() {
           <h2 className="text-xl font-semibold text-gray-800">
             Customer Details
           </h2>
-          <p className="text-xs text-gray-500"></p>
         </div>
 
         {/* Personal Details */}
@@ -184,6 +184,7 @@ export default function TaskDetail() {
                     className="accent-blue-600"
                     checked={workStages[k]}
                     onChange={() => toggleStage(k)}
+                    disabled={action}
                   />
                   Stage {i + 1}
                 </label>
@@ -201,11 +202,12 @@ export default function TaskDetail() {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Type a description or note..."
+            disabled={action}
           />
         </div>
 
         {/* Save Button */}
-        {hasChanges() && (
+        {!action && hasChanges() && (
           <div className="mt-4 w-full flex justify-end">
             <button
               onClick={handleSave}
@@ -225,47 +227,48 @@ export default function TaskDetail() {
             <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
               <FileText className="w-5 h-5 text-gray-600" /> Attachments
             </h3>
-            <div className="relative">
-              <button
-                onClick={() => setAddMenuOpen((o) => !o)}
-                className=" bg-blue-500 text-white px-3 py-1 mb-2 rounded-lg hover:bg-blue-600 transition"
-              >
-                Add New ▾
-              </button>
+            {!action && (
+              <div className="relative">
+                <button
+                  onClick={() => setAddMenuOpen((o) => !o)}
+                  className=" bg-blue-500 text-white px-3 py-1 mb-2 rounded-lg hover:bg-blue-600 transition"
+                >
+                  Add New ▾
+                </button>
 
-              {/* Dropdown menu */}
-              {addMenuOpen && (
-                <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                  <button
-                    onClick={() => {
-                      setAddMenuOpen(false);
-                      console.log("Attach new document clicked");
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                  >
-                    📎 Attach document
-                  </button>
-                  <button
-                    onClick={() => {
-                      setAddMenuOpen(false);
-                      setShowCallModal(true); // open modal
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                  >
-                    📞 Add new call
-                  </button>
-                  <button
-                    onClick={() => {
-                      setAddMenuOpen(false);
-                      setShowMeetingModal(true); // open modal
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                  >
-                    💻 Add new Meeting
-                  </button>
-                </div>
-              )}
-            </div>
+                {addMenuOpen && (
+                  <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                    <button
+                      onClick={() => {
+                        setAddMenuOpen(false);
+                        console.log("Attach new document clicked");
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                    >
+                      📎 Attach document
+                    </button>
+                    <button
+                      onClick={() => {
+                        setAddMenuOpen(false);
+                        setShowCallModal(true);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                    >
+                      📞 Add new call
+                    </button>
+                    <button
+                      onClick={() => {
+                        setAddMenuOpen(false);
+                        setShowMeetingModal(true);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                    >
+                      💻 Add new Meeting
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <CustomTable
             columns={[
@@ -343,12 +346,11 @@ export default function TaskDetail() {
           />
         </section>
 
-        {/* Connected Records (empty state) */}
+        {/* Connected Records */}
         <section>
           <h3 className="text-xl font-semibold text-gray-800 mb-2">
             Connected Records
           </h3>
-
           {teamWorkDetails?.length <= 0 ? (
             <div className="border border-gray-200 rounded-lg p-6 text-center text-gray-500 italic">
               No records found
@@ -362,7 +364,6 @@ export default function TaskDetail() {
                   key={index}
                   className="border border-gray-200 rounded-lg p-4 mb-2"
                 >
-                  {/* Render your item details here */}
                   <p>{item}</p>
                 </div>
               ))
@@ -370,8 +371,8 @@ export default function TaskDetail() {
         </section>
       </div>
 
-      {/* 👇 Modal at the end */}
-      {showCallModal && (
+      {/* 👇 Modals only if not read-only */}
+      {!action && showCallModal && (
         <CallModal
           onClose={() => setShowCallModal(false)}
           taskDetails={taskDetails[0]}
@@ -380,7 +381,7 @@ export default function TaskDetail() {
           onSubmitSuccess={fetchCustomerDetails}
         />
       )}
-      {showMeetingModal && (
+      {!action && showMeetingModal && (
         <MeetingModal
           onClose={() => setShowMeetingModal(false)}
           taskDetails={taskDetails[0]}

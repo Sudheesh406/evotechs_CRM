@@ -21,7 +21,8 @@ import {
   Trash2,
   Wrench,
   FolderKanban,
-  Hourglass
+  Hourglass,
+  Eye 
 } from "lucide-react";
 import { s } from "framer-motion/client";
 import { use } from "react";
@@ -70,7 +71,7 @@ const id = 0
       subMenu: [
         { title: "Info", path: "/team/profile", icon: CheckSquare },
         { title: "Projects", path: `/team/work/${id}`, icon: Calendar },
-        { title: "Notacess", path: "/team/messages", icon: MessageSquare },
+        // { title: "Notacess", path: "/team/messages", icon: MessageSquare },
       ],
     },
     {
@@ -100,7 +101,9 @@ const id = 0
       subMenu: [
         { title: "Deals", path: "/sales/deals", icon: Briefcase },
         { title: "Pending", path: "/sales/pending/task", icon: Hourglass },
-        { title: "Rework", path: "/sales/reworks", icon: RotateCcw },
+        { title: "Completed", path: "/sales/completed", icon: Building },
+        { title: "Resolved", path: "/sales/resolved", icon: Eye  },
+        { title: "Rework", path: "/sales/rework/port", icon: RotateCcw  },
         { title: "Documents", path: "/sales/documents", icon: FileText },
       ],
     },
@@ -116,8 +119,8 @@ const id = 0
       icon: Boxes,
       subMenu: [
         { title: "Customise", path: "/team/customise", icon: CheckSquare },
-        { title: "Notacess", path: "/team/calendar", icon: Calendar },
-        { title: "Notacess", path: "/team/messages", icon: MessageSquare },
+        { title: "Projects", path: `/team/work/${id}`, icon: Calendar },
+        // { title: "Notacess", path: "/team/messages", icon: MessageSquare },
       ],
     },
     {
