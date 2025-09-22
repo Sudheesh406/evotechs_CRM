@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import axios from "../../instance/Axios";
 import Table2 from "../../components/Table2";
 import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
+
 
 export default function Reworks() {
   const [reworks, setReworks] = useState([]);
@@ -44,6 +46,7 @@ export default function Reworks() {
       setReworks(tasks);
   
     } catch (error) {
+       Swal.fire('Error', 'Failed to get reworks.', 'error');
       console.error("error found in get reworks", error);
     }
   };

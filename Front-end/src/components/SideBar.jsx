@@ -130,11 +130,13 @@ const id = 0
         { title: "Attendance", path: "/workspace/attendance/view", icon: CheckSquare },
         { title: "Calendar", path: "/workspace/calendar/customise", icon: Calendar },
         { title: "Messages", path: "/workspace/message/port", icon: MessageSquare },
+        { title: "Todo", path: "/workspace/todo", icon: FolderKanban },
+
       ],
     },
     { title: "Trash", icon: Trash2, path: "/trash" },
-    { title: "Services", icon: Wrench, path: "/services" },
-    { title: "Projects", icon: FolderKanban, path: "/projects" },
+    // { title: "Services", icon: Wrench, path: "/services" },
+    // { title: "Projects", icon: FolderKanban, path: "/projects" },
   ]
 
 useEffect(() => {

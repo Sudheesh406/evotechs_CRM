@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { ChevronDown, Phone, X, Edit, Trash, CheckCircle } from "lucide-react";
 import DataTable from "../../components/Table2";
 import axios from "../../instance/Axios";
+import Swal from "sweetalert2";
+
 
 const contacts = () => {
   const [leads, setLeads] = useState([]);
@@ -118,65 +120,128 @@ const handleChange = (e) => {
 
 
   // Create or Update
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    const newErrors = {};
-    Object.keys(formData).forEach((key) => {
-      if (!formData[key].trim()) {
-        newErrors[key] = "This field is required";
-      }
+  // ✅ Validation
+  const newErrors = {};
+  Object.keys(formData).forEach((key) => {
+    if (!formData[key].trim()) {
+      newErrors[key] = "This field is required";
+    }
+  });
+  if (Object.keys(newErrors).length > 0) {
+    setErrors(newErrors);
+    return;
+  }
+
+  // 🔍 No changes check when editing
+  if (editingId && JSON.stringify(formData) === JSON.stringify(originalData)) {
+    Swal.fire({
+      title: "No changes!",
+      text: "You didn't modify any fields.",
+      icon: "info",
+      confirmButtonColor: "#3085d6",
     });
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
+    return;
+  }
 
-    // 🔍 Validate no changes when editing
-    if (
-      editingId &&
-      JSON.stringify(formData) === JSON.stringify(originalData)
-    ) {
-      alert("No changes were made.");
-      return;
-    }
+  try {
+    if (editingId) {
+      await axios.put(`/customer/contact/update/${editingId}`, formData);
 
-    try {
-      if (editingId) {
-        await axios.put(`/customer/contact/update/${editingId}`, formData);
-      } else {
-        await axios.post("/customer/contact/create", formData);
-      }
-
-      setIsModalOpen(false);
-      setEditingId(null);
-      setFormData({
-        name: "",
-        description: "",
-        email: "",
-        phone: "",
-        source: "",
-        priority: "",
-        amount: "",
+      Swal.fire({
+        title: "Updated!",
+        text: "Contact has been successfully updated.",
+        icon: "success",
+        confirmButtonColor: "#3085d6",
       });
-      setOriginalData(null);
-      getLeads(page);
-    } catch (error) {
-      console.log("error found in save", error);
+    } else {
+      await axios.post("/customer/contact/create", formData);
+
+      Swal.fire({
+        title: "Created!",
+        text: "Contact has been successfully created.",
+        icon: "success",
+        confirmButtonColor: "#3085d6",
+      });
     }
-  };
+
+    // Reset form & close modal
+    setIsModalOpen(false);
+    setEditingId(null);
+    setFormData({
+      name: "",
+      description: "",
+      email: "",
+      phone: "",
+      source: "",
+      priority: "",
+      amount: "",
+    });
+    setOriginalData(null);
+    getLeads(page);
+  } catch (error) {
+    console.log("error found in save", error);
+
+    // Check for specific Axios error (e.g., duplicate)
+    if (error.response?.status === 409) {
+      Swal.fire({
+        title: "Error!",
+        text: "This contact already exists. Please check contacts and trash.",
+        icon: "error",
+        confirmButtonColor: "#d33",
+      });
+      return;
+    }
+
+    // Generic error
+    Swal.fire({
+      title: "Error!",
+      text: "Something went wrong while saving.",
+      icon: "error",
+      confirmButtonColor: "#d33",
+    });
+  }
+};
+
 
   // Delete contact
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this contact?")) return;
-    try {
-      await axios.delete(`/customer/contact/delete/${id}`);
-      alert("Moved to Trash");
-      getLeads(page);
-    } catch (error) {
-      console.log("Error deleting contact", error);
+const handleDelete = async (id) => {
+  Swal.fire({
+    title: "Are you sure?",
+    text: "This contact will be moved to Trash!",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
+    confirmButtonText: "Yes, delete it!",
+    cancelButtonText: "Cancel",
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      try {
+        await axios.delete(`/customer/contact/delete/${id}`);
+
+        Swal.fire({
+          title: "Deleted!",
+          text: "The contact has been moved to Trash.",
+          icon: "success",
+          confirmButtonColor: "#3085d6",
+        }).then(() => {
+          getLeads(page); // Refresh the list after user clicks OK
+        });
+      } catch (error) {
+        console.log("Error deleting contact", error);
+        Swal.fire({
+          title: "Error!",
+          text: "Something went wrong while deleting the contact.",
+          icon: "error",
+          confirmButtonColor: "#d33",
+        });
+      }
     }
-  };
+  });
+};
 
 
   const totalPages = Math.ceil(totalCount / limit);

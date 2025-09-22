@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { ChevronDown, Phone, X } from "lucide-react";
 import DataTable from "../../components/Table2";
 import axios from "../../instance/Axios";
+import Swal from "sweetalert2";
 
 const Meetings = () => {
   const [filter, setFilter] = useState("Today's");
@@ -10,6 +11,7 @@ const Meetings = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [originalData, setOriginalData] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const dropdownRef = useRef(null);
 
@@ -50,12 +52,35 @@ const Meetings = () => {
   ];
 
   const timeOptions = [
-    "6:00 AM","6:30 AM","7:00 AM","7:30 AM","8:00 AM",
-    "8:30 AM","9:00 AM","9:30 AM","10:00 AM","10:30 AM",
-    "11:00 AM","11:30 AM","12:00 PM","12:30 PM","1:00 PM",
-    "1:30 PM","2:00 PM","2:30 PM","3:00 PM","3:30 PM",
-    "4:00 PM","4:30 PM","5:00 PM","5:30 PM","6:00 PM",
-    "6:30 PM","7:00 PM","7:30 PM","8:00 PM",
+    "6:00 AM",
+    "6:30 AM",
+    "7:00 AM",
+    "7:30 AM",
+    "8:00 AM",
+    "8:30 AM",
+    "9:00 AM",
+    "9:30 AM",
+    "10:00 AM",
+    "10:30 AM",
+    "11:00 AM",
+    "11:30 AM",
+    "12:00 PM",
+    "12:30 PM",
+    "1:00 PM",
+    "1:30 PM",
+    "2:00 PM",
+    "2:30 PM",
+    "3:00 PM",
+    "3:30 PM",
+    "4:00 PM",
+    "4:30 PM",
+    "5:00 PM",
+    "5:30 PM",
+    "6:00 PM",
+    "6:30 PM",
+    "7:00 PM",
+    "7:30 PM",
+    "8:00 PM",
   ];
 
   // helpers
@@ -128,7 +153,12 @@ const Meetings = () => {
 
     if (isEditing) {
       if (!isFormChanged()) {
-        alert("No changes detected. Please modify a field before updating.");
+        Swal.fire({
+          title: "No changes!",
+          text: "You didn't modify any fields.",
+          icon: "info",
+          confirmButtonColor: "#3085d6",
+        });
         return;
       }
       UpdateMeeting(editingId, formData);
@@ -143,9 +173,23 @@ const Meetings = () => {
       if (response) {
         closeForm();
         getMeetings(filter);
+        Swal.fire({
+          icon: "success",
+          title: "Meeting Created!",
+          text: "The meeting has been created successfully.",
+          timer: 2000,
+          showConfirmButton: false,
+        });
       }
     } catch (error) {
       console.log("error found in CreateMeeting", error);
+      Swal.fire({
+        icon: "error",
+        title: "Failed to Create Meeting",
+        text: error.response?.data?.message || "Please try again later.",
+      });
+    } finally {
+      setLoading(false); // stop loading
     }
   };
 
@@ -155,9 +199,24 @@ const Meetings = () => {
       if (response) {
         closeForm();
         getMeetings(filter);
+
+        Swal.fire({
+          icon: "success",
+          title: "Meeting Updated!",
+          text: "The meeting has been updated successfully.",
+          timer: 2000,
+          showConfirmButton: false,
+        });
       }
     } catch (error) {
       console.log("error found in UpdateMeeting", error);
+      Swal.fire({
+        icon: "error",
+        title: "Failed to Update Meeting",
+        text: error.response?.data?.message || "Please try again later.",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -198,15 +257,35 @@ const Meetings = () => {
 
   const getMeetings = async (selectedFilter) => {
     try {
+      // Show loading alert
+      Swal.fire({
+        title: "Getting meetings...",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
+
       const response = await axios.post("/meetings/get", {
         filter: selectedFilter,
       });
-      console.log(response)
-      const data = Array.isArray(response.data.data)
-        ? response.data.data
-        : [];
+
+      console.log(response);
+      const data = Array.isArray(response.data.data) ? response.data.data : [];
       setMeetings(data);
+
+      Swal.close();
     } catch (error) {
+      Swal.close(); // Close loading if error occurs
+
+      Swal.fire({
+        icon: "error",
+        title: "Failed to get meetings",
+        text:
+          error.response?.data?.message ||
+          "Something went wrong. Please try again.",
+      });
+
       console.log("error", error);
       setMeetings([]);
     }
@@ -214,11 +293,51 @@ const Meetings = () => {
 
   const handleDelete = async (id) => {
     try {
-      const result = await axios.delete(`/meetings/delete/${id}`);
-      if (result) {
-        getMeetings(filter); // ✅ refresh after delete
+      // Show confirmation dialog
+      const result = await Swal.fire({
+        title: "Are you sure?",
+        text: "This meeting will be deleted permanently!",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#3085d6",
+        confirmButtonText: "Yes, delete it!",
+      });
+
+      if (result.isConfirmed) {
+        // Show loading while deleting
+        Swal.fire({
+          title: "Deleting...",
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          },
+        });
+        const response = await axios.delete(`/meetings/delete/${id}`);
+        Swal.close(); // close loading
+
+        // Show success message
+        Swal.fire({
+          icon: "success",
+          title: "Deleted!",
+          text: "The meeting has been deleted successfully.",
+          confirmButtonText: "OK",
+          showConfirmButton: false,
+        }).then(() => {
+          getMeetings(filter);
+        });
       }
     } catch (error) {
+      Swal.close(); // close loading if error
+
+      Swal.fire({
+        icon: "error",
+        title: "Failed to delete",
+        text:
+          error.response?.data?.message ||
+          "Something went wrong. Please try again.",
+      });
+
       console.log("error found delete", error);
     }
   };
@@ -242,7 +361,10 @@ const Meetings = () => {
     <div className="bg-gray-50 min-h-[680px] p-4">
       {/* Top bar */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
-        <div className="flex flex-wrap items-center gap-2 relative" ref={dropdownRef}>
+        <div
+          className="flex flex-wrap items-center gap-2 relative"
+          ref={dropdownRef}
+        >
           <button
             onClick={() => setOpen(!open)}
             className="border rounded px-3 py-1 flex items-center gap-1 bg-white shadow-sm w-full sm:w-auto"
@@ -349,9 +471,7 @@ const Meetings = () => {
           }}
         />
       ) : (
-        <div className="text-center text-gray-500 py-8">
-          No meetings found
-        </div>
+        <div className="text-center text-gray-500 py-8">No meetings found</div>
       )}
 
       {/* Modal form */}
@@ -391,7 +511,9 @@ const Meetings = () => {
 
               {/* Subject */}
               <div className="flex flex-col">
-                <label className="block text-sm font-medium mb-1">Subject</label>
+                <label className="block text-sm font-medium mb-1">
+                  Subject
+                </label>
                 <input
                   type="text"
                   name="subject"
@@ -408,7 +530,9 @@ const Meetings = () => {
 
               {/* Meeting Date */}
               <div className="flex flex-col">
-                <label className="block text-sm font-medium mb-1">Meeting Date</label>
+                <label className="block text-sm font-medium mb-1">
+                  Meeting Date
+                </label>
                 <input
                   type="date"
                   name="meetingDate"
@@ -425,7 +549,9 @@ const Meetings = () => {
 
               {/* Start Time */}
               <div className="flex flex-col">
-                <label className="block text-sm font-medium mb-1">Start Time</label>
+                <label className="block text-sm font-medium mb-1">
+                  Start Time
+                </label>
                 <input
                   list="startTime-options"
                   name="startTime"
@@ -448,7 +574,9 @@ const Meetings = () => {
 
               {/* End Time */}
               <div className="flex flex-col">
-                <label className="block text-sm font-medium mb-1">End Time</label>
+                <label className="block text-sm font-medium mb-1">
+                  End Time
+                </label>
                 <input
                   list="endTime-options"
                   name="endTime"
@@ -471,7 +599,9 @@ const Meetings = () => {
 
               {/* Phone Number */}
               <div className="flex flex-col">
-                <label className="block text-sm font-medium mb-1">Phone Number</label>
+                <label className="block text-sm font-medium mb-1">
+                  Phone Number
+                </label>
                 <input
                   type="text"
                   name="phoneNumber"
@@ -489,7 +619,9 @@ const Meetings = () => {
               {/* Status (only in Edit mode) */}
               {isEditing && (
                 <div className="flex flex-col">
-                  <label className="block text-sm font-medium mb-1">Status</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Status
+                  </label>
                   <select
                     name="status"
                     value={formData.status}
@@ -511,7 +643,9 @@ const Meetings = () => {
 
               {/* Description */}
               <div className="flex flex-col md:col-span-2">
-                <label className="block text-sm font-medium mb-1">Description</label>
+                <label className="block text-sm font-medium mb-1">
+                  Description
+                </label>
                 <textarea
                   name="description"
                   value={formData.description}

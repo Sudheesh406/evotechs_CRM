@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import Table2 from "../../components/Table2";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "../../instance/Axios";
+import Swal from "sweetalert2";
 
 const columns = [
   { key: "date", label: "Date" },
@@ -25,31 +26,51 @@ export default function TeamWorkDetails() {
   const [works, setWorks] = useState([]);
 
   const getProject = async () => {
-    try {
-      const response = await axios.post("/team/projects/post", { parsedData });
-      if (response?.data?.tasks) {
-        const tableData = response.data.tasks.map((task) => ({
-          date: new Date(task.createdAt).toLocaleDateString(),
-          id: task.id,
-          contactId: task.customer?.id ?? "",
-          customer: task.customer?.name ?? "",
-          amount: task.customer?.amount ?? "",
-          finishBy: task.finishBy,
-          priority: task.priority,
-          email: task.customer?.email ?? "",
-          phone: task.phone ?? "",
-          staff: task.staff?.name ?? "",
-          staffEmail: task.staff?.email ?? "",
-        }));
-        if(response.data?.admin){
-          setRole(true)
-        }
-        setWorks(tableData);
+  // Show loading alert
+  Swal.fire({
+    title: "Getting Projects...",
+    didOpen: () => {
+      Swal.showLoading();
+    },
+    allowOutsideClick: false,
+  });
+
+  try {
+    const response = await axios.post("/team/projects/post", { parsedData });
+
+    if (response?.data?.tasks) {
+      const tableData = response.data.tasks.map((task) => ({
+        date: new Date(task.createdAt).toLocaleDateString(),
+        id: task.id,
+        contactId: task.customer?.id ?? "",
+        customer: task.customer?.name ?? "",
+        amount: task.customer?.amount ?? "",
+        finishBy: task.finishBy,
+        priority: task.priority,
+        email: task.customer?.email ?? "",
+        phone: task.phone ?? "",
+        staff: task.staff?.name ?? "",
+        staffEmail: task.staff?.email ?? "",
+      }));
+
+      if (response.data?.admin) {
+        console.log(response)
+        setRole(true);
       }
-    } catch (error) {
-      console.error("error found in get project", error);
+
+      setWorks(tableData);
     }
-  };
+
+    // Close loading and optionally show success
+    Swal.close();
+    // Optional success toast
+    // Swal.fire({ icon: 'success', title: 'Projects fetched successfully!', toast: true, timer: 1500, position: 'top-end', showConfirmButton: false });
+  } catch (error) {
+    console.error("error found in get project", error);
+    Swal.fire('Error', 'Failed to get projects. Please try again.', 'error');
+  }
+};
+
 
   useEffect(() => {
     getProject();

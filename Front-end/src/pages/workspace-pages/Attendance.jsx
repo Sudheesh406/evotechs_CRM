@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { LogIn, LogOut, X } from "lucide-react";
 import axios from "../../instance/Axios";
+import Swal from "sweetalert2";
 
 const presetTimes = [
   "08:00 AM",
@@ -66,7 +67,10 @@ export default function Attendance() {
         setShowEntryDropdown(false);
       if (exitRef.current && !exitRef.current.contains(event.target))
         setShowExitDropdown(false);
-      if (modalEntryRef.current && !modalEntryRef.current.contains(event.target))
+      if (
+        modalEntryRef.current &&
+        !modalEntryRef.current.contains(event.target)
+      )
         setShowModalEntryDropdown(false);
       if (modalExitRef.current && !modalExitRef.current.contains(event.target))
         setShowModalExitDropdown(false);
@@ -76,18 +80,40 @@ export default function Attendance() {
   }, []);
 
   const fetchAttendance = async () => {
+    // Show loading alert
+    Swal.fire({
+      title: "Getting attendance...",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+
     try {
       const response = await axios.get("/attendance/get");
+
       const grouped = {};
       response.data.data.forEach((record) => {
         const date = record.attendanceDate;
-        if (!grouped[date]) grouped[date] = { id: date, date, entry: "", exit: "" };
+        if (!grouped[date])
+          grouped[date] = { id: date, date, entry: "", exit: "" };
         if (record.type === "entry") grouped[date].entry = record.time;
         if (record.type === "exit") grouped[date].exit = record.time;
       });
+
       setAttendanceList(Object.values(grouped));
+
+      // Close loading alert
+      Swal.close();
     } catch (error) {
-      console.error("Error fetching attendance:", error);
+      console.error("Error getting attendance:", error);
+
+      // Show error alert
+      Swal.fire({
+        icon: "error",
+        title: "Failed to get attendance",
+        text: "Please try again later",
+      });
     }
   };
 
@@ -96,11 +122,43 @@ export default function Attendance() {
   }, []);
 
   const handleAttendance = async (data) => {
+    // Show loading alert
+    Swal.fire({
+      title: "Saving attendance...",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+
     try {
       await axios.post("/attendance/register", data);
+
+      // Close loading
+      Swal.close();
+
+      // Show success message
+      Swal.fire({
+        icon: "success",
+        title: "Attendance saved",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+
+      // Refresh attendance list
       fetchAttendance();
     } catch (error) {
       console.error("Error saving attendance:", error);
+
+      // Close loading in case of error
+      Swal.close();
+
+      // Show error alert
+      Swal.fire({
+        icon: "error",
+        title: "Failed to save attendance",
+        text: "Please try again later",
+      });
     }
   };
 
@@ -130,15 +188,64 @@ export default function Attendance() {
     setIsModalOpen(true);
   };
 
-  const handleAttendanceDelete = async (record) => {
+const handleAttendanceDelete = async (record) => {
+  // Show confirmation before deleting
+  const result = await Swal.fire({
+    title: 'Are you sure?',
+    text: `Do you want to delete attendance for ${record.name || 'this record'}?`,
+    icon: 'warning',
+    showCancelButton: true,
+    cancelButtonText: 'Cancel',
+    confirmButtonText: 'Yes, delete it!',
+  });
+
+  if (result.isConfirmed) {
     try {
-      await axios.delete(`/attendance/delete/${record.id}`);
-      fetchAttendance();
+    // Show loading while deleting
+    Swal.fire({
+      title: 'Deleting...',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+
+    await axios.delete(`/attendance/delete/${record.id}`);
+
+    Swal.close(); // Close the loading modal
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Deleted!',
+      text: 'Attendance record has been deleted.',
+    }).then(() => {
+      // Refresh the page after user clicks OK
+      window.location.reload();
+    })
+    
+    
+    ; // Refresh attendance list
     } catch (error) {
+      Swal.close(); // Ensure loading is closed
+      if (error.response?.status === 403) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Forbidden',
+          text: 'You do not have permission to delete this record.',
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Failed to delete',
+          text: 'Please try again later.',
+        });
+      }
       console.error("Error deleting attendance:", error);
       setErrorMessage("Failed to delete");
     }
-  };
+  }
+};
+
 
   const handleModalSubmit = async () => {
     setErrorMessage("");
@@ -315,14 +422,14 @@ export default function Attendance() {
                     <td className="p-3 border-b">
                       <div className="flex gap-2 text-sm">
                         <button
-                          className="px-2 py-1 rounded border border-gray-400 text-gray-700 hover:underline"
+                          className="px-2 py-1 rounded border border-gray-400 text-gray-700 hover:underline disabled:bg-gray-200 disabled:text-gray-400 disabled:border-gray-300"
                           disabled={!isToday}
                           onClick={() => handleAttendanceEdit(record)}
                         >
                           Edit
                         </button>
                         <button
-                          className="px-2 py-1 rounded border border-gray-400 text-gray-700 hover:underline"
+                          className="px-2 py-1 rounded border border-gray-400 text-gray-700 hover:underline disabled:bg-gray-200 disabled:text-gray-400 disabled:border-gray-300"
                           disabled={!isToday}
                           onClick={() => handleAttendanceDelete(record)}
                         >
@@ -335,7 +442,10 @@ export default function Attendance() {
               })
             ) : (
               <tr>
-                <td colSpan="4" className="text-center p-6 text-gray-500 italic">
+                <td
+                  colSpan="4"
+                  className="text-center p-6 text-gray-500 italic"
+                >
                   No records yet
                 </td>
               </tr>

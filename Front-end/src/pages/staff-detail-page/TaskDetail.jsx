@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import axios from "../../instance/Axios";
 import CallModal from "../../components/modals/CallModal";
 import MeetingModal from "../../components/modals/MeetingModal";
+import Swal from "sweetalert2";
+
 import {
   FileText,
   Phone,
@@ -69,6 +71,7 @@ export default function TaskDetail() {
       setAttachments([]);
       setNotes(apiData.taskDetails?.[0]?.notes || "");
     } catch (error) {
+       Swal.fire('Error', 'Failed to get customer details.', 'error');
       console.log("error found in fetching customer details", error);
     }
   };
@@ -115,38 +118,99 @@ export default function TaskDetail() {
   };
 
 
-  const updateStagesAndNotes = async (stages,notes ,id)=>{
-    const data = {stages,notes,id}
-    try {
-      const response = await axios.post('/task/stages_notes',{data})
-      console.log('response',response)
-    } catch (error) {
-      console.log('error found in update stage and notes',error);
-      
-    }
+const updateStagesAndNotes = async (stages, notes, id) => {
+  const data = { stages, notes, id };
+
+  try {
+    // 🔄 Show loading
+    Swal.fire({
+      title: 'Updating...',
+      text: 'Please wait while we update stages and notes',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+
+    // ✅ Make API call
+    const response = await axios.post('/task/stages_notes', { data });
+
+    // 🔔 Show success alert
+    Swal.fire({
+      icon: 'success',
+      title: 'Updated!',
+      text: 'Stages and notes have been successfully updated.',
+      timer: 2000,
+      showConfirmButton: false,
+    });
+
+    console.log('response', response);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating stages and notes', error);
+
+    // ❌ Show error alert
+    Swal.fire({
+      icon: 'error',
+      title: 'Failed!',
+      text: 'Failed to update stages and notes. Please try again later.',
+    });
+    fetchCustomerDetails();
   }
-  
+};
 
  const updateWork = async () => {
   try {
     // Safely get the task ID
-    const id = taskDetails[0]?.id
+    const id = taskDetails[0]?.id;
     console.log("Task data:", id);
 
-    // Call the API to toggle rework
-    if(id){
-      const response = await axios.patch("/task/rework/finish", { id });
-  
-      if (response?.data?.success) {
-        console.log("Rework updated successfully:", response.data);
+    if (!id) {
+      Swal.fire({
+        icon: "warning",
+        title: "Task not found",
+        text: "No task ID available to update.",
+      });
+      return;
+    }
+
+    // Show loading while API request is in progress
+    Swal.fire({
+      title: "Updating rework...",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+
+    const response = await axios.patch("/task/rework/finish", { id });
+
+    Swal.close(); // Close the loading alert
+
+    if (response?.data?.success) {
+      Swal.fire({
+        icon: "success",
+        title: "Success!",
+        text: "Rework updated successfully.",
+        timer: 2000,
+        showConfirmButton: false,
+      }).then(() => {
         navigate(-1); // Go back one page
-      } else {
-        console.warn("Failed to update rework:", response?.data?.message);
-      }
+      });
+    } else {
+      Swal.fire({
+        icon: "error",
+        title: "Failed",
+        text: response?.data?.message || "Failed to update rework.",
+      });
     }
   } catch (error) {
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "Failed to set rework. Please try again later.",
+    });
     console.error("Failed to set rework:", error);
-    alert("Failed to set rework"); // optional user feedback
   }
 };
 

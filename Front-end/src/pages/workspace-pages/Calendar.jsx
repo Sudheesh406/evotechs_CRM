@@ -167,57 +167,58 @@ export default function HolidayCalendar() {
 
       {/* Leave Request Modal */}
       {showLeaveModal && (
-  <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/20 backdrop-blur-[2px]">
-    <div className="bg-white rounded-xl shadow-lg w-96 p-6">
-      {/* Modal Header */}
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold text-gray-800">Request Leave</h3>
-        <button
-          onClick={() => setShowLeaveModal(false)}
-          className="text-gray-500 hover:text-gray-800 transition"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </div>
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/20 backdrop-blur-[2px]">
+          <div className="bg-white rounded-xl shadow-lg w-96 p-6">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">
+                Request Leave
+              </h3>
+              <button
+                onClick={() => setShowLeaveModal(false)}
+                className="text-gray-500 hover:text-gray-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-      {/* Date Input */}
-      <label className="block mb-3">
-        <span className="text-sm font-medium text-gray-700">Date</span>
-        <input
-          type="date"
-          value={leaveDate}
-          onChange={(e) => setLeaveDate(e.target.value)}
-          className="mt-1 w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 focus:outline-none"
-        />
-      </label>
+            {/* Date Input */}
+            <label className="block mb-3">
+              <span className="text-sm font-medium text-gray-700">Date</span>
+              <input
+                type="date"
+                value={leaveDate}
+                onChange={(e) => setLeaveDate(e.target.value)}
+                className="mt-1 w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 focus:outline-none"
+              />
+            </label>
 
-      {/* Reason Input */}
-      <label className="block mb-4">
-        <span className="text-sm font-medium text-gray-700">Reason</span>
-        <textarea
-          rows="3"
-          value={leaveReason}
-          onChange={(e) => setLeaveReason(e.target.value)}
-          placeholder="Enter your reason"
-          className="mt-1 w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 focus:outline-none"
-        />
-      </label>
+            {/* Reason Input */}
+            <label className="block mb-4">
+              <span className="text-sm font-medium text-gray-700">Reason</span>
+              <textarea
+                rows="3"
+                value={leaveReason}
+                onChange={(e) => setLeaveReason(e.target.value)}
+                placeholder="Enter your reason"
+                className="mt-1 w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 focus:outline-none"
+              />
+            </label>
 
-      {/* Submit Button */}
-      <button
-        className="w-full py-2 bg-blue-100 text-gray-800 rounded-lg hover:bg-blue-200 font-medium transition"
-        onClick={() => {
-          setShowLeaveModal(false);
-          setLeaveDate("");
-          setLeaveReason("");
-        }}
-      >
-        Submit
-      </button>
-    </div>
-  </div>
-)}
-
+            {/* Submit Button */}
+            <button
+              className="w-full py-2 bg-blue-100 text-gray-800 rounded-lg hover:bg-blue-200 font-medium transition"
+              onClick={() => {
+                setShowLeaveModal(false);
+                setLeaveDate("");
+                setLeaveReason("");
+              }}
+            >
+              Submit
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

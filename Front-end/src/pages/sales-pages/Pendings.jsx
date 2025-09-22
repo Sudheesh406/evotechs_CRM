@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "../../instance/Axios";
 import Table2 from "../../components/Table2";
 import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
 
 export default function Pendings() {
   const [pendingWorks, setPendingWorks] = useState([]);
@@ -40,6 +41,7 @@ export default function Pendings() {
       setPendingWorks(tasks);
     } catch (error) {
       console.error("error found in pending task", error);
+       Swal.fire('Error', 'Failed to get pendings.', 'error');
     }
   };
 

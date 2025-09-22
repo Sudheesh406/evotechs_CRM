@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import axios from "../../instance/Axios";
+import Swal from "sweetalert2";
+import "sweetalert2/dist/sweetalert2.min.css";
 
 export default function Personalize() {
   const [lists, setLists] = useState([]);
@@ -9,7 +11,10 @@ export default function Personalize() {
   const [editingId, setEditingId] = useState(null);
   const [menuOpenId, setMenuOpenId] = useState(null);
   const [formErrors, setFormErrors] = useState({ title: "", items: [], general: "" });
-  const [originalData, setOriginalData] = useState({ title: "", items: [] }); // store original data
+  const [originalData, setOriginalData] = useState({ title: "", items: [] });
+
+  const modalRef = useRef(null);
+  const dropdownRefs = useRef({});
 
   const addItemField = () => setNewItems([...newItems, ""]);
 
@@ -35,19 +40,31 @@ export default function Personalize() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this list?")) return;
-    try {
-      const response = await axios.delete(`/requirement/delete/${id}`);
-      console.log(response)
-      if(response){
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: "This will permanently delete the list.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, delete it!'
+    });
 
-        setLists(lists.filter((list) => list.id !== id));
+    if (result.isConfirmed) {
+      try {
+        const response = await axios.delete(`/requirement/delete/${id}`);
+        if (response) {
+          setLists(lists.filter((list) => list.id !== id));
+          Swal.fire('Deleted!', 'Your list has been deleted.', 'success');
+        }
+      } catch (error) {
+        Swal.fire('Error', 'Failed to delete the list.', 'error');
+        console.log("Error deleting requirement:", error);
       }
-    } catch (error) {
-      console.log("Error deleting requirement:", error);
     }
   };
 
+  
   const handleSubmit = async () => {
     let errors = { title: "", items: [], general: "" };
     let hasError = false;
@@ -61,7 +78,6 @@ export default function Personalize() {
     errors.items = trimmedItems.map((item) => (item === "" ? "Item is required" : ""));
     if (errors.items.some((e) => e !== "")) hasError = true;
 
-    // Check for changes only if editing
     if (editingId && !hasError) {
       const titleUnchanged = newListTitle.trim() === originalData.title.trim();
       const itemsUnchanged =
@@ -84,22 +100,31 @@ export default function Personalize() {
       if (editingId) {
         const response = await axios.put(`/requirement/edit/${editingId}`, data);
         setLists(lists.map((list) => (list.id === editingId ? response.data.data : list)));
+        Swal.fire('Success', 'List updated successfully!', 'success');
       } else {
         const response = await axios.post("/requirement/create", data);
-        console.log(response)
-       setLists([...lists, response.data.data]);
+        setLists([...lists, response.data.data]);
+        Swal.fire('Success', 'List created successfully!', 'success');
       }
 
-      // Reset modal
-      setShowModal(false);
-      setNewListTitle("");
-      setNewItems([""]);
-      setEditingId(null);
-      setOriginalData({ title: "", items: [] });
-      setFormErrors({ title: "", items: [], general: "" });
+      resetForm();
     } catch (error) {
+      if (error.response && error.response.status === 409) {
+        Swal.fire('Error', 'A list with this title already exists. Please check your Requirements or trash', 'error');
+      } else {
+        Swal.fire('Error', 'Something went wrong.', 'error');
+      }
       console.log("Error in handleSubmit:", error);
     }
+  };
+
+  const resetForm = () => {
+    setShowModal(false);
+    setNewListTitle("");
+    setNewItems([""]);
+    setEditingId(null);
+    setOriginalData({ title: "", items: [] });
+    setFormErrors({ title: "", items: [], general: "" });
   };
 
   const getRequirements = async () => {
@@ -109,6 +134,7 @@ export default function Personalize() {
         setLists(response.data.data);
       }
     } catch (error) {
+      Swal.fire('Error', 'Failed to get requirements.', 'error');
       console.log("Error in getRequirements:", error);
     }
   };
@@ -116,6 +142,22 @@ export default function Personalize() {
   useEffect(() => {
     getRequirements();
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showModal && modalRef.current && !modalRef.current.contains(event.target)) {
+        resetForm();
+      }
+      if (menuOpenId) {
+        const dropdownEl = dropdownRefs.current[menuOpenId];
+        if (dropdownEl && !dropdownEl.contains(event.target)) {
+          setMenuOpenId(null);
+        }
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showModal, menuOpenId]);
 
   return (
     <div className="p-6 bg-gray-50 ">
@@ -147,12 +189,15 @@ export default function Personalize() {
                       onClick={() =>
                         setMenuOpenId(menuOpenId === list.id ? null : list.id)
                       }
-                      className="ml-2 text-gray-400 hover:text-gray-700"
+                      className="ml-2 text-gray-400 hover:text-gray-700 py-2 px-4 text-xl"
                     >
                       ⋮
                     </button>
                     {menuOpenId === list.id && (
-                      <div className="absolute top-8 right-2 bg-white border rounded shadow-md z-50">
+                      <div
+                        ref={(el) => (dropdownRefs.current[list.id] = el)}
+                        className="absolute top-8 right-2 bg-white border rounded shadow-md z-50"
+                      >
                         <button
                           onClick={() => handleEditClick(list)}
                           className="block px-4 py-2 text-sm hover:bg-gray-100 w-full text-left"
@@ -195,15 +240,12 @@ export default function Personalize() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-[1px] flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg w-96 p-6 relative">
-            {/* Close Button */}
+        <div
+          className="fixed inset-0 bg-black/30 backdrop-blur-[1px] flex items-center justify-center z-50"
+        >
+          <div ref={modalRef} className="bg-white rounded-lg shadow-lg w-96 p-6 relative">
             <button
-              onClick={() => {
-                setShowModal(false);
-                setEditingId(null);
-                setFormErrors({ title: "", items: [], general: "" });
-              }}
+              onClick={resetForm}
               className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 hover:bg-gray-300 w-[24px]"
             >
               ✕
@@ -262,11 +304,7 @@ export default function Personalize() {
             </div>
             <div className="mt-6 flex justify-end gap-2">
               <button
-                onClick={() => {
-                  setShowModal(false);
-                  setEditingId(null);
-                  setFormErrors({ title: "", items: [], general: "" });
-                }}
+                onClick={resetForm}
                 className="px-4 py-2 rounded border hover:bg-gray-100"
               >
                 Cancel

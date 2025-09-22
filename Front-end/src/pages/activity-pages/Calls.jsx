@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { ChevronDown, Phone, X } from "lucide-react";
 import DataTable from "../../components/Table2";
 import axios from "../../instance/Axios";
+import Swal from "sweetalert2";
 
 const calls = () => {
   const [filter, setFilter] = useState("Today's");
@@ -10,6 +11,7 @@ const calls = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [originalData, setOriginalData] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const dropdownRef = useRef(null);
 
@@ -119,7 +121,12 @@ const calls = () => {
 
     if (isEditing) {
       if (!isFormChanged()) {
-        alert("No changes detected. Please modify a field before updating.");
+        Swal.fire({
+          title: "No changes!",
+          text: "You didn't modify any fields.",
+          icon: "info",
+          confirmButtonColor: "#3085d6",
+        });
         return;
       }
       UpdateCall(editingId, formData);
@@ -129,26 +136,58 @@ const calls = () => {
   };
 
   const CreateCall = async (data) => {
+    setLoading(true); // start loading
     try {
       const response = await axios.post("/calls/create", { data });
-      if (response) {
+      if (response?.data?.success) {
         closeForm();
         getCalls(filter);
+
+        Swal.fire({
+          icon: "success",
+          title: "Call Created!",
+          text: "The call has been created successfully.",
+          timer: 2000,
+          showConfirmButton: false,
+        });
       }
     } catch (error) {
       console.log("error found in CreateCalls", error);
+      Swal.fire({
+        icon: "error",
+        title: "Failed to Create Call",
+        text: error.response?.data?.message || "Please try again later.",
+      });
+    } finally {
+      setLoading(false); // stop loading
     }
   };
 
   const UpdateCall = async (id, data) => {
+    setLoading(true);
     try {
       const response = await axios.put(`/calls/edit/${id}`, { data });
-      if (response) {
+      if (response?.data?.success) {
         closeForm();
         getCalls(filter);
+
+        Swal.fire({
+          icon: "success",
+          title: "Call Updated!",
+          text: "The call has been updated successfully.",
+          timer: 2000,
+          showConfirmButton: false,
+        });
       }
     } catch (error) {
       console.log("error found in UpdateCalls", error);
+      Swal.fire({
+        icon: "error",
+        title: "Failed to Update Call",
+        text: error.response?.data?.message || "Please try again later.",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -187,25 +226,88 @@ const calls = () => {
 
   const getCalls = async (selectedFilter) => {
     try {
+      // Show loading alert
+      Swal.fire({
+        title: "Getting calls...",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
+
       const response = await axios.post("/calls/get", {
         filter: selectedFilter,
       });
+
       const data = Array.isArray(response.data.data) ? response.data.data : [];
       setCalls(data);
+
+      Swal.close(); // Close loading on success
     } catch (error) {
-      console.log("error", error);
+      Swal.close(); // Close loading if error occurs
+
+      Swal.fire({
+        icon: "error",
+        title: "Failed to get calls",
+        text:
+          error.response?.data?.message ||
+          "Something went wrong. Please try again.",
+      });
+
       setCalls([]);
+      console.log("error", error);
     }
   };
 
   const handleDelete = async (id) => {
     try {
-      console.log("id", id);
-      const result = await axios.delete(`/calls/delete/${id}`);
-      if (result) {
-        getCalls(filter); // ✅ refresh after delete
+      // Show confirmation dialog
+      const result = await Swal.fire({
+        title: "Are you sure?",
+        text: "This call will be deleted permanently!",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#3085d6",
+        confirmButtonText: "Yes, delete it!",
+      });
+
+      if (result.isConfirmed) {
+        // Show loading while deleting
+        Swal.fire({
+          title: "Deleting...",
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          },
+        });
+
+        await axios.delete(`/calls/delete/${id}`);
+
+        Swal.close(); // close loading
+
+        // Show success message
+        Swal.fire({
+          icon: "success",
+          title: "Deleted!",
+          text: "The call has been deleted successfully.",
+          confirmButtonText: "OK",
+          showConfirmButton: false,
+        }).then(() => {
+          getCalls(filter);
+        });
       }
     } catch (error) {
+      Swal.close(); // close loading if error
+
+      Swal.fire({
+        icon: "error",
+        title: "Failed to delete",
+        text:
+          error.response?.data?.message ||
+          "Something went wrong. Please try again.",
+      });
+
       console.log("error found delete", error);
     }
   };
@@ -280,7 +382,7 @@ const calls = () => {
             if (key === "host") {
               return row.staff?.name ?? "-";
             }
-              if (key === "team") {
+            if (key === "team") {
               return row.teamStaff?.name ?? "-";
             }
             if (key === "phoneNumber") {
@@ -403,6 +505,7 @@ const calls = () => {
                   name="date"
                   value={formData.date}
                   onChange={handleChange}
+                  min={new Date().toISOString().split("T")[0]} // Prevent past dates
                   className={`w-full border rounded px-3 py-2 ${
                     errors.date ? "border-red-500" : "border-gray-300"
                   }`}
@@ -498,12 +601,15 @@ const calls = () => {
                 )}
               </div>
 
-              <div className="md:col-span-2">
+              <div className="md:col-span-2 w-full flex justify-end">
                 <button
                   type="submit"
-                  className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+                  disabled={loading}
+                  className={`px-4 py-2 rounded bg-blue-500 text-white hover:bg-blue-600 ${
+                    loading ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                 >
-                  {isEditing ? "Update" : "Submit"}
+                  {loading ? "Submitting..." : "Submit"}
                 </button>
               </div>
             </form>

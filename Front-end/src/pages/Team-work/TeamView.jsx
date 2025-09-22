@@ -1,46 +1,77 @@
 import React, { useEffect, useState } from "react";
 import axios from "../../instance/Axios";
 import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
+
 
 function TeamView() {
   const [teams, setTeams] = useState([]);
   const [selectedTeam, setSelectedTeam] = useState(null);
   const navigate = useNavigate();
 
-  async function getTeam() {
-    try {
-      const response = await axios.get("/team/details/get");
-      if (response.data.success) {
-        const mappedTeams = response.data.data.map((team) => ({
-          id: team.id,
-          name: team.teamName,
-          description: team.teamDescription,
-          members: team.members || [],
-          leader: team.leader || null, // include leader if available
-        }));
-        setTeams(mappedTeams);
-      }
-    } catch (error) {
-      console.log("Error fetching teams:", error);
+
+async function getTeam() {
+  try {
+    // Show loading alert
+    Swal.fire({
+      title: "Getting teams...",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+
+    const response = await axios.get("/team/details/get");
+
+    if (response.data.success) {
+      const mappedTeams = response.data.data.map((team) => ({
+        id: team.id,
+        name: team.teamName,
+        description: team.teamDescription,
+        members: team.members || [],
+        leader: team.leader || null,
+      }));
+      setTeams(mappedTeams);
+
+      // Close loading alert once done
+      Swal.close();
+    } else {
+      Swal.fire({
+        icon: "error",
+        title: "Failed to get teams",
+        text: response.data.message || "Unknown error",
+      });
     }
+  } catch (error) {
+    console.log("Error getting teams:", error);
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "Failed to get teams. Please try again later.",
+    });
   }
+}
 
 
-  const handleTeamViewHistory = async (selectedTeam) => {
-    try {
-      if(selectedTeam){
-        const response = await axios.post('/team/history/post',{
-          selectedTeam
-        })
-        if(response){
-          console.log(response)
-          navigate(`/team/work/${selectedTeam.id}`)
-        }
-      }
-    } catch (error) {
-      console.log('error found in team history',error)
+ const handleTeamViewHistory = async (selectedTeam) => {
+  if (!selectedTeam) return;
+
+  try {
+    const response = await axios.post('/team/history/post', { selectedTeam });
+
+    if (response) {
+      console.log(response);
+      navigate(`/team/work/${selectedTeam.id}`);
     }
-  };
+  } catch (error) {
+    console.log('Error found in team history:', error);
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Failed to get team history. Please try again later.'
+    });
+  }
+};
 
 
   useEffect(() => {

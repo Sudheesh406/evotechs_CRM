@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { ChevronDown, Phone, X, Edit, Trash, CheckCircle } from "lucide-react";
 import DataTable from "../../components/Table2";
 import axios from "../../instance/Axios";
+import Swal from 'sweetalert2';
 
 const Leads = () => {
   const [leads, setLeads] = useState([]);
@@ -87,7 +88,7 @@ const Leads = () => {
         phone: "",
         source: "",
         priority: "",
-        amount:"",
+        amount: "",
       });
       setOriginalData(null);
     }
@@ -101,93 +102,190 @@ const Leads = () => {
   };
 
   // Handle form input
-const handleChange = (e) => {
-  const { name, value } = e.target;
-  let newValue = value;
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    let newValue = value;
 
-  // Strictly allow only numbers for phone & amount
-  if (name === "phone" || name === "amount") {
-    newValue = value.replace(/[^0-9]/g, ""); // remove anything that's not a digit
+    // Strictly allow only numbers for phone & amount
+    if (name === "phone" || name === "amount") {
+      newValue = value.replace(/[^0-9]/g, ""); // remove anything that's not a digit
+    }
+    setFormData((prev) => ({ ...prev, [name]: newValue }));
+    setErrors((prev) => ({
+      ...prev,
+      [name]: newValue.trim() === "" ? "This field is required" : "",
+    }));
+  };
+
+
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  const newErrors = {};
+  Object.keys(formData).forEach((key) => {
+    if (!formData[key].trim()) {
+      newErrors[key] = "This field is required";
+    }
+  });
+  if (Object.keys(newErrors).length > 0) {
+    setErrors(newErrors);
+    return;
   }
-  setFormData((prev) => ({ ...prev, [name]: newValue }));
-  setErrors((prev) => ({
-    ...prev,
-    [name]: newValue.trim() === "" ? "This field is required" : "",
-  }));
+
+  // 🔍 Validate no changes when editing
+  if (
+    editingId &&
+    JSON.stringify(formData) === JSON.stringify(originalData)
+  ) {
+    Swal.fire({
+      title: "No changes!",
+      text: "You didn't modify any fields.",
+      icon: "info",
+      confirmButtonColor: "#3085d6",
+    });
+    return;
+  }
+
+  try {
+    if (editingId) {
+      await axios.put(`/customer/lead/update/${editingId}`, formData);
+      // ✅ SweetAlert after successful edit
+      Swal.fire({
+        title: "Updated!",
+        text: "Lead has been successfully updated.",
+        icon: "success",
+        confirmButtonColor: "#3085d6",
+      });
+    } else {
+      await axios.post("/customer/lead/create", formData);
+
+      Swal.fire({
+        title: "Created!",
+        text: "Lead has been successfully created.",
+        icon: "success",
+        confirmButtonColor: "#3085d6",
+      });
+    }
+
+    // Reset form & close modal
+    setIsModalOpen(false);
+    setEditingId(null);
+    setFormData({
+      name: "",
+      description: "",
+      email: "",
+      phone: "",
+      source: "",
+      priority: "",
+      amount: "",
+    });
+    setOriginalData(null);
+    getLeads(page);
+} catch (error) {
+  console.log("error found in save", error);
+
+  // Check for specific status
+  if (error.response?.status === 409) { // use error.response.status for axios
+    Swal.fire({
+      title: "Error!",
+      text: "This record already exists. Please check leads and trash.",
+      icon: "error",
+      confirmButtonColor: "#d33",
+    });
+    return; // exit so the generic alert doesn't show
+  }
+
+  // Generic error
+  Swal.fire({
+    title: "Error!",
+    text: "Something went wrong while saving.",
+    icon: "error",
+    confirmButtonColor: "#d33",
+  });
+}
 };
 
 
-  // Create or Update
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    const newErrors = {};
-    Object.keys(formData).forEach((key) => {
-      if (!formData[key].trim()) {
-        newErrors[key] = "This field is required";
-      }
-    });
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
-    // 🔍 Validate no changes when editing
-    if (
-      editingId &&
-      JSON.stringify(formData) === JSON.stringify(originalData)
-    ) {
-      alert("No changes were made.");
-      return;
-    }
-
-    try {
-      if (editingId) {
-        await axios.put(`/customer/lead/update/${editingId}`, formData);
-      } else {
-        await axios.post("/customer/lead/create", formData);
-      }
-
-      setIsModalOpen(false);
-      setEditingId(null);
-      setFormData({
-        name: "",
-        description: "",
-        email: "",
-        phone: "",
-        source: "",
-        priority: "",
-        amount: "",
-      });
-      setOriginalData(null);
-      getLeads(page);
-    } catch (error) {
-      console.log("error found in save", error);
-    }
-  };
-
   // Delete Lead
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this lead?")) return;
-    try {
-      await axios.delete(`/customer/lead/delete/${id}`);
-      alert("Moved to Trash");
-      getLeads(page);
-    } catch (error) {
-      console.log("Error deleting lead", error);
-    }
-  };
+const handleDelete = async (id) => {
+  Swal.fire({
+    title: "Are you sure?",
+    text: "This lead will be moved to Trash!",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
+    confirmButtonText: "Yes, delete it!",
+    cancelButtonText: "Cancel",
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      try {
+        await axios.delete(`/customer/lead/delete/${id}`);
 
-  const handleApprove = async (id) => {
-  if (!window.confirm("Are you sure you want to Confirm this lead?")) return;
-    try {
-      await axios.patch(`/customer/lead/confirm/${id}`);
-      alert("Moved to Contacts");
-      getLeads(page);
-    } catch (error) {
-      console.log("error found in handleApprove", error);
+        Swal.fire({
+          title: "Deleted!",
+          text: "The lead has been moved to Trash.",
+          icon: "success",
+          confirmButtonColor: "#3085d6",
+        });
+
+        getLeads(page); // refresh the list
+      } catch (error) {
+        console.log("Error deleting lead", error);
+
+        Swal.fire({
+          title: "Error!",
+          text: "Something went wrong while deleting.",
+          icon: "error",
+          confirmButtonColor: "#d33",
+        });
+      }
     }
-  };
+  });
+};
+
+
+const handleApprove = async (id) => {
+  try {
+    const result = await Swal.fire({
+      title: 'Approve this lead?',
+      text: 'This will convert the lead into a contact.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, approve it!'
+    });
+
+    if (result.isConfirmed) {
+      // Wait for the API to finish so errors can be caught
+      await axios.patch(`/customer/lead/confirm/${id}`);
+      // Refresh your list
+      getLeads(page);
+
+      // Optional success message
+      Swal.fire(
+        'Approved!',
+        'The lead has been converted into a contact.',
+        'success'
+      );
+    }
+  } catch (error) {
+    if (error?.response?.status === 400) {
+      Swal.fire({
+        title: 'Already Exists',
+        text: 'This record already exists. Please check contacts and trash.',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
+    } else {
+      console.error('error found in handleApprove', error);
+      Swal.fire('Error', 'Something went wrong.', 'error');
+    }
+  }
+};
+
 
   const totalPages = Math.ceil(totalCount / limit);
 

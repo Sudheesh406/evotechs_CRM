@@ -7,12 +7,14 @@ import {
 import { Menu } from "lucide-react";
 import { useState } from "react";
 
+
 import AdminDashboard from "./pages/dashboard/AdminDashboard";
 import StaffPendingTask from "./pages/sales-pages/admin_sales_side/StaffPendingTask";
 import CreateTeam from "./pages/Team-work/admin_team_work_side/CreateTeam";
 import AdminCalendar from "./pages/workspace-pages/admin_workspace_side/AdminCalender";
 import AdminAttendanceView from "./pages/workspace-pages/admin_workspace_side/AdminAttendanceView";
 import AdminMessagePortal from "./pages/workspace-pages/admin_workspace_side/AdminMessagePortal";
+import AdminTodo from './pages/workspace-pages/admin_workspace_side/AdminTodo'
 
 import StaffDashboard from "./pages/dashboard/StaffDashboard";
 import Leads from "./pages/sales-pages/Leads";
@@ -99,6 +101,7 @@ function Layout() {
           <Route path="/sales/completed" element={<CompletedTask />} />
           <Route path="/sales/rework/port" element={<ReworkTask />} />
           <Route path="/team/work/port/:id" element={<ProjectTeam />} />
+          <Route path="/workspace/todo/" element={<AdminTodo />} />
 
 
 

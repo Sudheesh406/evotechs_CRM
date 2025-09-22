@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import logo from "../../assets/images/logo1.png";
 import axios from "../../instance/Axios";
-import { useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react"; // 👈 new
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [serverError, setServerError] = useState("");
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   const [form, setForm] = useState({
     name: "",
@@ -16,6 +17,8 @@ const Auth = () => {
     signupCode: "",
   });
   const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -40,10 +43,8 @@ const Auth = () => {
     if (Object.keys(newErrors).length > 0) return;
 
     if (isLogin) {
-      console.log("Login Successful!");
       handleLogin(form);
     } else {
-      console.log("Signup Successful!");
       handleSignup(form);
     }
   };
@@ -52,9 +53,8 @@ const Auth = () => {
   const handleSignup = async (data) => {
     try {
       const response = await axios.post("/auth/signup", data);
-      console.log("response in signUp : ", response);
       setServerError(""); // clear error if success
-      navigate('/')
+      navigate("/");
     } catch (error) {
       setServerError(error.response?.data?.message || "Something went wrong");
     }
@@ -64,23 +64,19 @@ const Auth = () => {
   const handleLogin = async (data) => {
     try {
       const response = await axios.post("/auth/login", data);
-      console.log("response in login : ", response);
       setServerError(""); // clear error if success
-      if(response?.data?.userDetails?.role === 'admin'){
-        // after login success
+      if (response?.data?.userDetails?.role === "admin") {
         localStorage.setItem("CRMsrtRolE", "admin");
-        navigate('/admin')
-      }else if(response?.data?.userDetails?.role === 'staff'){
-        navigate('/')
+        navigate("/admin");
+      } else if (response?.data?.userDetails?.role === "staff") {
+        navigate("/");
       }
     } catch (error) {
-      console.log(error)
       setServerError(error.response?.data?.message || "Something went wrong");
     }
   };
 
   return (
-    // FULL-VIEWPORT WRAPPER to bypass parent/sidebars and own the scroll
     <div className="fixed inset-0 z-[9999] bg-gray-100 overflow-y-auto overscroll-contain">
       <div
         className={`min-h-full flex justify-center p-4 ${
@@ -164,12 +160,13 @@ const Auth = () => {
               )}
             </div>
 
-            <div>
+            {/* Password */}
+            <div className="relative">
               <label className="block text-gray-700 text-sm font-medium mb-1">
                 Password
               </label>
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 name="password"
                 value={form.password}
                 onChange={handleChange}
@@ -178,18 +175,26 @@ const Auth = () => {
                   errors.password ? "border-red-500" : ""
                 }`}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-9 text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
               {errors.password && (
                 <p className="text-red-500 text-sm mt-1">{errors.password}</p>
               )}
             </div>
 
+            {/* Confirm Password (only signup) */}
             {!isLogin && (
-              <div>
+              <div className="relative">
                 <label className="block text-gray-700 text-sm font-medium mb-1">
                   Confirm Password
                 </label>
                 <input
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   name="confirmPassword"
                   value={form.confirmPassword}
                   onChange={handleChange}
@@ -198,6 +203,19 @@ const Auth = () => {
                     errors.confirmPassword ? "border-red-500" : ""
                   }`}
                 />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowConfirmPassword(!showConfirmPassword)
+                  }
+                  className="absolute right-3 top-9 text-gray-500 hover:text-gray-700"
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff size={18} />
+                  ) : (
+                    <Eye size={18} />
+                  )}
+                </button>
                 {errors.confirmPassword && (
                   <p className="text-red-500 text-sm mt-1">
                     {errors.confirmPassword}
@@ -213,6 +231,7 @@ const Auth = () => {
               {isLogin ? "Login" : "Sign Up"}
             </button>
           </form>
+
           {/* Global Error Message */}
           {serverError && (
             <div className="mb-4 p-3 rounded-md flex justify-center text-red-700 text-sm font-medium">
@@ -232,6 +251,7 @@ const Auth = () => {
                   email: "",
                   password: "",
                   confirmPassword: "",
+                  signupCode: "",
                 });
               }}
               className="text-blue-600 font-medium hover:underline"

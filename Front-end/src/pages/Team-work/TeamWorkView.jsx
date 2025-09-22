@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import axios from '../../instance/Axios';
 import { useNavigate, useParams } from "react-router-dom";
+import Swal from "sweetalert2";
+
 
 function ProjectCard({ projectName, handleProjectView }) {
   return (
@@ -16,17 +18,37 @@ export default function TeamWorkView() {
   const [staffIds, setStaffIds] = useState()
   const navigate = useNavigate()
 
-  const fetchProjects = async () => {
-    try {
-      const response = await axios.get(`/team/sectors/get/${params.id}`);
-      const projectNames = response.data.requirements.map(item => item.project);
-      setProjects(projectNames);
-      const staffArray = response?.data?.team?.staffIds
-      setStaffIds(staffArray)
-    } catch (error) {
-      console.log('Error fetching projects:', error);
-    }
-  };
+
+const fetchProjects = async () => {
+  try {
+    // Show loading
+    Swal.fire({
+      title: 'Getting projects...',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+
+    const response = await axios.get(`/team/sectors/get/${params.id}`);
+    
+    const projectNames = response.data.requirements.map(item => item.project);
+    setProjects(projectNames);
+    
+    const staffArray = response?.data?.team?.staffIds;
+    setStaffIds(staffArray);
+
+    Swal.close(); // close loading
+  } catch (error) {
+    Swal.close(); // ensure loading is closed on error
+    console.log('Error fetching projects:', error);
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Failed to get projects. Please try again later.',
+    });
+  }
+};
 
   const handleProjectView = (projectName)=>{
     const dataToSend = encodeURIComponent(JSON.stringify({ staffIds, projectName }));
