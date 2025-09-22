@@ -11,7 +11,7 @@ const getPendingTask = async (req, res) => {
     if (!user?.id) {
       return httpError(res, 400, "Invalid user");
     }
-   console.log('ndjdjbbd')
+  
     // Today’s date at 00:00
     const today = new Date();
     today.setHours(0, 0, 0, 0);

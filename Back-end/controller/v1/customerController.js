@@ -89,23 +89,32 @@ const updateLeads = async (req, res) => {
     const data = req.body;
 
     const customer = await Leads.findOne({ where: { id } });
+    if (!customer) return httpError(res, 404, "Lead not found");
 
-    if (!customer) {
-      return httpError(res, 404, "Lead not found");
-    }
+    if (customer.staffId !== user.id) return httpError(res, 403, "Access denied");
 
-    if (customer.staffId !== user.id) {
-      return httpError(res, 403, "Access denied");
-    }
+    // Check duplicates separately
+    const existEmail = await Leads.findOne({
+      where: { email: data.email, id: { [Op.ne]: id } }
+    });
+
+    if (existEmail) return httpError(res, 409, "Another lead already exists with this email");
+
+    const existPhone = await Leads.findOne({
+      where: { phone: data.phone, id: { [Op.ne]: id } }
+    });
+
+    if (existPhone) return httpError(res, 409, "Another lead already exists with this phone number");
 
     const updated = await customer.update(data);
-
     return httpSuccess(res, 200, "Lead updated successfully", updated);
+
   } catch (error) {
     console.error("Error in updating Leads:", error);
     return httpError(res, 500, "Internal Server Error");
   }
 };
+
 
 
 const deleteLeads = async (req, res) => {
@@ -141,32 +150,55 @@ const approveLeads = async (req, res) => {
     const user = req.user;
     const { id } = req.params;
 
+    // 1️⃣ Fetch the lead
     const customer = await Leads.findOne({ where: { id } });
-
     if (!customer) {
       return httpError(res, 404, "Lead not found");
     }
 
-    // Ownership check
+    // 2️⃣ Ownership check
     if (customer.staffId !== user.id) {
       return httpError(res, 403, "Access denied");
     }
 
-    // Remove id so a new one is generated in Contacts
-    const { id: _, ...customerData } = customer.toJSON();
+    // 3️⃣ Check for existing contact by email
+    const existingContact = await Contacts.findOne({
+      where: { email: customer.email , phone : customer.phone},
+    });
+    if (existingContact) {
+      return httpError(res, 400, "A contact with this email already exists");
+    }
 
-    // Create new contact with same details (new id will be auto-generated)
-    const approved = await Contacts.create(customerData);
+    // 4️⃣ Prepare the contact payload
+    const contact = {
+      name: customer.name,
+      description: customer.description,
+      email: customer.email,
+      phone: customer.phone,
+      source: customer.source,
+      priority: customer.priority,
+      amount: customer.amount,
+      verified: customer.verified,
+      softDelete: customer.softDelete,
+      staffId: customer.staffId,
+    };
 
-    // Delete from Leads
-    await Leads.destroy({ where: { id } });
+    // 5️⃣ Create the contact
+    const approved = await Contacts.create(contact);
 
     return httpSuccess(res, 200, "Lead approved successfully", approved);
   } catch (error) {
     console.error("Error in approve Leads:", error);
+
+    // 6️⃣ Handle Sequelize unique constraint just in case
+    if (error.name === "SequelizeUniqueConstraintError") {
+      return httpError(res, 400, "A contact with this email already exists");
+    }
+
     return httpError(res, 500, "Internal Server Error");
   }
 };
+
 
 
 //contacts
@@ -254,22 +286,34 @@ const updateContact = async (req, res) => {
     const data = req.body;
 
     const customer = await Contacts.findOne({ where: { id } });
-
-    if (!customer) {
-      return httpError(res, 404, "Contact not found");
-    }
-
+    if (!customer) return httpError(res, 404, "contact not found");
+    
     if (customer.staffId !== user.id) {
       return httpError(res, 403, "Access denied");
     }
 
-    const updated = await customer.update(data);
+       // Check duplicates separately
+    const existEmail = await Contacts.findOne({
+      where: { email: data.email, id: { [Op.ne]: id } }
+    });
 
-    return httpSuccess(res, 200, "Contact updated successfully", updated);
+    if (existEmail) return httpError(res, 409, "Another contact already exists with this email");
+
+    const existPhone = await Contacts.findOne({
+      where: { phone: data.phone, id: { [Op.ne]: id } }
+    });
+
+    if (existPhone) return httpError(res, 409, "Another contact already exists with this phone number");
+
+    const updated = await customer.update(data);
+    return httpSuccess(res, 200, "contact updated successfully", updated);
+
+
   } catch (error) {
     console.error("Error in updating Contact:", error);
     return httpError(res, 500, "Internal Server Error");
   }
+
 };
 
 

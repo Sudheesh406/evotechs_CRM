@@ -14,8 +14,6 @@ const createTeamWork = async (req, res) => {
     const user = req.user;
     const data = req.body;
 
-    console.log(data);
-
     const access = await roleChecker(user.id);
     if (!access) {
       return httpError(res, 403, "Access denied");
@@ -147,7 +145,7 @@ const editTeam = async (req, res) => {
         "Access denied: do not have permission to edit team."
       );
     }
-    console.log(data);
+
 
     if (
       !data ||
@@ -399,7 +397,7 @@ const getProjects = async (req, res) => {
     });
      
     let admin = null
-    const access = roleChecker(user.id);
+    const access = await roleChecker(user.id);
     if (access) {
      admin = true
     }

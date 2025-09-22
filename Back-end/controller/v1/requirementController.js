@@ -1,12 +1,12 @@
 const { httpSuccess, httpError } = require("../../utils/v1/httpResponse");
 const requirement =  require('../../models/v1/Project/requirements')
-
+const { Op } = require("sequelize");
 
 const createRequirement = async (req, res) => {
   try {
     const user = req.user; 
     const { data ,project}  = req.body
-    console.log(data ,project)
+    
 
     // Validate required fields
     if (!project || !data.lenght <= 0) {
@@ -68,7 +68,7 @@ const editRequirement = async (req, res) => {
       return httpError(res, 400, "Data and ID are required");
     }
 
-    // findOne instead of findAll
+    // Find the existing requirement by ID and staff
     const existingRequirement = await requirement.findOne({
       where: { id: id, staffId: user.id }
     });
@@ -76,7 +76,23 @@ const editRequirement = async (req, res) => {
     if (!existingRequirement) {
       return httpError(res, 403, "Access denied or requirement not found");
     }
+   
+    // Check if another requirement already has the same project name
+    if (data.project) {
+      const duplicate = await requirement.findOne({
+        where: {
+          project: data.project,
+          staffId: user.id,
+          id: { [Op.ne]: id } // exclude the current requirement
+        }
+      });
+    
+      if (duplicate) {
+        return httpError(res, 409, "You already have a requirement with this project");
+      }
+    }
 
+    // Update the requirement
     const updatedRequirement = await existingRequirement.update(data);
 
     return httpSuccess(res, 200, "Requirement updated successfully", updatedRequirement);
@@ -86,6 +102,7 @@ const editRequirement = async (req, res) => {
     return httpError(res, 500, "Server error", error.message); 
   }
 };
+
 
 
 const deleteRequirement = async (req, res) => {

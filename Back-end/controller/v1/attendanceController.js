@@ -22,8 +22,6 @@ const attendanceRegister = async (req, res) => {
     const details = req.body;
     const user = req.user;
 
-    console.log("Received attendance data:", details);
-
     if (!details || !details.date || !details.shedule) {
       return httpError(res, 400, "Missing required fields");
     }
@@ -180,6 +178,7 @@ const attendanceEdit = async (req, res) => {
   }
 };
 
+
 const handleDelete = async (req, res) => {
   try {
     const date = req.params.id;
@@ -188,7 +187,7 @@ const handleDelete = async (req, res) => {
     if (!date) {
       return httpError(res, 400, "Attendance date is required");
     }
-
+ 
     // Only allow deleting for today's date
     const todayStr = new Date().toISOString().split("T")[0];
     if (date !== todayStr) {
@@ -218,6 +217,7 @@ const handleDelete = async (req, res) => {
   }
 };
 
+
 function formatTo12Hour(time24) {
   if (!time24) return null;
   const [hoursStr, minutes] = time24.split(":");
@@ -226,6 +226,7 @@ function formatTo12Hour(time24) {
   hours = hours % 12 || 12;
   return `${hours.toString().padStart(2, "0")}:${minutes} ${ampm}`;
 }
+
 
 const attendanceGet = async (req, res) => {
   try {

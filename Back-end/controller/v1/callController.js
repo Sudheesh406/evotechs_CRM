@@ -199,7 +199,7 @@ const editCalls = async (req, res) => {
       const contact = await Contacts.findOne({
         where: {
           phone: newData.phoneNumber,
-          [Op.or]: [{ staffId: user.id }, { TeamStaffId: user.id }],
+          [Op.or]: [{ staffId: user.id }],
         },
       });
 
