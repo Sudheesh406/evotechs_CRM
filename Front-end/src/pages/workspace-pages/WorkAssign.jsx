@@ -10,7 +10,7 @@ const priorities = {
   Low: "bg-green-200 text-green-800",
 };
 
-export default function AdvancedTodoCRM() {
+export default function WorkAssign() {
   const [tasks, setTasks] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editTask, setEditTask] = useState(null);
@@ -207,34 +207,6 @@ export default function AdvancedTodoCRM() {
     }
   };
 
-  const handleDeleteTask = (id) => {
-    Swal.fire({
-      title: "Delete Task?",
-      text: "Are you sure you want to delete this task?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Yes, delete",
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          Swal.fire({
-            title: "Deleting...",
-            didOpen: () => Swal.showLoading(),
-            allowOutsideClick: false,
-          });
-
-          await axios.delete(`work/assign/delete/${id}`, { method: "DELETE" });
-          setTasks((prev) => prev.filter((t) => t.id !== id));
-          Swal.close();
-          Swal.fire("Deleted!", "Task has been deleted.", "success");
-        } catch (error) {
-          Swal.close();
-          Swal.fire("Error", "Failed to delete task", "error");
-        }
-      }
-    });
-  };
-
   return (
     <div className="p-6 bg-gray-50 ">
       <div className="flex justify-between items-center mb-6">
@@ -294,14 +266,6 @@ export default function AdvancedTodoCRM() {
                     <div className="flex justify-between items-start">
                       <h3 className="font-semibold text-gray-700">{task.title}</h3>
                       <div className="flex gap-2">
-                        <Edit2
-                          className="cursor-pointer text-blue-500 hover:scale-110 transition"
-                          onClick={() => openModal(task)}
-                        />
-                        <Trash2
-                          className="cursor-pointer text-red-500 hover:scale-110 transition"
-                          onClick={() => handleDeleteTask(task.id)}
-                        />
                       </div>
                     </div>
 

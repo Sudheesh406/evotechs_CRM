@@ -14,7 +14,7 @@ import CreateTeam from "./pages/Team-work/admin_team_work_side/CreateTeam";
 import AdminCalendar from "./pages/workspace-pages/admin_workspace_side/AdminCalender";
 import AdminAttendanceView from "./pages/workspace-pages/admin_workspace_side/AdminAttendanceView";
 import AdminMessagePortal from "./pages/workspace-pages/admin_workspace_side/AdminMessagePortal";
-import AdminTodo from './pages/workspace-pages/admin_workspace_side/AdminTodo'
+import AdminTodo from './pages/workspace-pages/admin_workspace_side/AdminTodo';
 
 import StaffDashboard from "./pages/dashboard/StaffDashboard";
 import Leads from "./pages/sales-pages/Leads";
@@ -42,7 +42,8 @@ import StaffTaskDetails from "./pages/sales-pages/admin_sales_side/StaffTaskDeta
 import StaffTaskVerification from "./pages/sales-pages/admin_sales_side/StaffTaskVerification";
 import CompletedTask from "./pages/sales-pages/admin_sales_side/CompletedTask";
 import ReworkTask from "./pages/sales-pages/admin_sales_side/ReworkTask";
-import ProjectTeam from "./pages/Team-work/admin_team_work_side/ProjectTeam"
+import ProjectTeam from "./pages/Team-work/admin_team_work_side/ProjectTeam";
+import Worklog from "./pages/workspace-pages/Worklog";
 
 import Sidebar from "./components/SideBar";
 
@@ -125,6 +126,7 @@ function Layout() {
           <Route path="/team/profile" element={<TeamProfile />} />
           <Route path="/team/work/:id" element={<TeamWork />} />
           <Route path="/team/work/manage/:data" element={<TeamWorkDetails />} />
+          <Route path="/workspace/work/assign" element={<Worklog />} />
 
           <Route path="/trash" element={<Trash />} />
           <Route path="/login" element={<Auth />} />

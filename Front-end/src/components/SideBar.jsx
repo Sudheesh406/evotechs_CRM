@@ -131,6 +131,7 @@ const id = 0
         { title: "Calendar", path: "/workspace/calendar/customise", icon: Calendar },
         { title: "Messages", path: "/workspace/message/port", icon: MessageSquare },
         { title: "Todo", path: "/workspace/todo", icon: FolderKanban },
+        { title: "Tracker", path: "/workspace/work/assign", icon: FolderKanban },
 
       ],
     },
