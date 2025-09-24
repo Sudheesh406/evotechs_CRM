@@ -154,6 +154,7 @@ const logout = async(req,res)=>{
   }
 }
 
+
 const roleChecker = async (req,res)=>{
   try {
     const user = req.user;

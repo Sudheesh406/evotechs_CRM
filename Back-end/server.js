@@ -20,6 +20,8 @@ const teamWorkRoute = require("./routes/v1/teamWorkRoute");
 const pendingRoute = require("./routes/v1/pendingRoute");
 const calendarRoute = require("./routes/v1/calendarRoute");
 const completedRoute = require("./routes/v1/completedRoute");
+const workAssignRoute = require("./routes/v1/workAssignRoute");
+const worklogRoute = require('./routes/v1/worklogRoute')
 
 // ====================
 // Middleware Setup
@@ -72,7 +74,11 @@ app.use("/api/calendar", calendarRoute);
 // Handling completed  Work
 app.use("/api/completed", completedRoute);
 
+// Handling Work assign
+app.use("/api/work", workAssignRoute);
 
+// Handling Worklog
+app.use("/api/worklog", worklogRoute);
 
 
 // ====================

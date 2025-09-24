@@ -6,6 +6,7 @@ const meetings = require("../../models/v1/Customer/meetings");
 const calls = require("../../models/v1/Customer/calls");
 const team = require("../../models/v1/Team_work/team");
 const signup = require("../../models/v1/Authentication/authModel");
+
 const { Op, Sequelize } = require("sequelize");
 
 const createTask = async (req, res) => {
@@ -148,7 +149,6 @@ const getTaskDetails = async (req, res) => {
       return httpError(res, 400, "Missing contactId ");
     }
 
-
     // Fetch customer details
     const customerDetails = await contacts.findOne({
       where: { id: contactId, staffId: user.id },
@@ -192,8 +192,6 @@ const updateStagesAndNotes = async (req, res) => {
   try {
     const { data } = req.body;
     const user = req.user;
-
-    console.log(data);
 
     const existingTask = await task.findOne({
       where: { id: data.id, staffId: user.id },
@@ -361,7 +359,7 @@ const updateTeamStagesAndNotes = async (req, res) => {
 const getPendingTask = async (req, res) => {
   try {
     const user = req.user;
-    const access = roleChecker(user.id);
+    const access = await roleChecker(user.id);
     if (!access) {
       return httpError(res, 403, "Access denied. Admins only.");
     }
@@ -386,7 +384,6 @@ const getPendingTask = async (req, res) => {
   }
 };
 
-
 const getTaskDetailForAdmin = async (req, res) => {
   try {
     // Validate input
@@ -399,7 +396,7 @@ const getTaskDetailForAdmin = async (req, res) => {
 
     const user = req.user;
 
-    const access = roleChecker(user.id);
+    const access = await roleChecker(user.id);
     if (!access) {
       return httpError(res, 403, "Access denied. Admins only.");
     }
@@ -447,19 +444,17 @@ const getTaskDetailForAdmin = async (req, res) => {
   }
 };
 
-
 const updateStagesByAdmin = async (req, res) => {
   try {
     const data = req.body;
-    console.log(data)
     const user = req.user;
-    const access = roleChecker(user.id);
+    const access = await roleChecker(user.id);
     if (!access) {
       return httpError(res, 403, "Access denied. Admins only.");
     }
 
     const existingTask = await task.findOne({
-      where: { id: data.taskId},
+      where: { id: data.taskId },
     });
 
     if (!existingTask) {
@@ -469,14 +464,14 @@ const updateStagesByAdmin = async (req, res) => {
       });
     }
 
-    if(existingTask.stage == 4){
+    if (existingTask.stage == 4) {
       await existingTask.update({
-        stage: '3',
+        stage: "3",
       });
-    }else{
-        await existingTask.update({
+    } else {
+      await existingTask.update({
         stage: data.stage,
-        rework: false
+        rework: false,
       });
     }
 
@@ -485,7 +480,6 @@ const updateStagesByAdmin = async (req, res) => {
       message: "Task stage and notes updated successfully",
       data: existingTask,
     });
-
   } catch (error) {
     console.error("Error in update stages :", error);
     return res.status(500).json({
@@ -496,13 +490,12 @@ const updateStagesByAdmin = async (req, res) => {
   }
 };
 
-
 const reworkUpdate = async (req, res) => {
   try {
     const { id } = req.body;
 
     const user = req.user;
-    const access = roleChecker(user.id);
+    const access = await roleChecker(user.id);
     if (!access) {
       return res.status(403).json({
         success: false,
@@ -537,7 +530,6 @@ const reworkUpdate = async (req, res) => {
       message: `Rework set to ${updatedTask.rework}`,
       data: updatedTask,
     });
-
   } catch (error) {
     console.error("Error in updating rework:", error);
     return res.status(500).json({
@@ -548,14 +540,12 @@ const reworkUpdate = async (req, res) => {
   }
 };
 
-
-
 const newUpdate = async (req, res) => {
   try {
-    const {id}  = req.body;
+    const { id } = req.body;
     const user = req.user;
-    
-    const existing = await task.findOne({ where: { id ,staffId : user.id} });
+
+    const existing = await task.findOne({ where: { id, staffId: user.id } });
     if (!existing) {
       return res.status(404).json({
         success: false,
@@ -563,23 +553,23 @@ const newUpdate = async (req, res) => {
       });
     }
 
-    if(existing.staffId == user.id){
-      const updatedTask = await existing.update({ newUpdate: !existing.newUpdate });
+    if (existing.staffId == user.id) {
+      const updatedTask = await existing.update({
+        newUpdate: !existing.newUpdate,
+      });
       // Toggle the new update flag
-  
+
       return res.status(200).json({
         success: true,
         message: `new update set to ${updatedTask.rework}`,
         data: updatedTask,
       });
-    }else{
-       return res.status(403).json({
+    } else {
+      return res.status(403).json({
         success: false,
         message: "Access denied.",
       });
     }
-
-
   } catch (error) {
     console.error("Error in updating new Update:", error);
     return res.status(500).json({
@@ -589,7 +579,6 @@ const newUpdate = async (req, res) => {
     });
   }
 };
-
 
 
 module.exports = {
@@ -606,5 +595,6 @@ module.exports = {
   getTaskDetailForAdmin,
   updateStagesByAdmin,
   reworkUpdate,
-  newUpdate
+  newUpdate,
+  
 };

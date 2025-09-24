@@ -9,6 +9,8 @@ const createTeam = require("./Team_work/team");
 const teamHistory = require("./Team_work/teamManagementHistory");
 const holiday = require("./Work_space/holiday");
 const leaves = require('../../models/v1/Work_space/Leave')
+const workAssign = require('../../models/v1/Work_space/workAssign')
+const team = require('../../models/v1/Team_work/team')
 
 // Define associations
 
@@ -87,6 +89,17 @@ signup.hasMany(leaves, {
   foreignKey: "createdAdminId",
   as: "createdLeaves",
 });
+
+//work ↔ staff
+workAssign.belongsTo(signup, { foreignKey: "createrId", as: "creator" });
+signup.hasMany(workAssign, { foreignKey: "createrId", as: "createdWorks" });
+
+workAssign.belongsTo(signup, { foreignKey: "staffId", as: "assignedStaff" });
+signup.hasMany(workAssign, { foreignKey: "staffId", as: "assignedWorks" });
+
+workAssign.belongsTo(team, { foreignKey: "teamId", as: "team" });
+team.hasMany(workAssign, { foreignKey: "teamId", as: "teamWorks" });
+
 
 
 module.exports = {
