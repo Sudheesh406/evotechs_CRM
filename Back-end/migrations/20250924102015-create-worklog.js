@@ -1,8 +1,8 @@
-'use strict';
+"use strict";
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('worklog', {
+    await queryInterface.createTable("worklog", {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -13,11 +13,11 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: true,
         references: {
-          model: 'signup', // Make sure this matches the actual table name of authModel
-          key: 'id',
+          model: "signup", // Make sure this matches the actual table name of authModel
+          key: "id",
         },
-        onUpdate: 'CASCADE',
-        onDelete: 'SET NULL',
+        onUpdate: "CASCADE",
+        onDelete: "SET NULL",
       },
       date: {
         type: Sequelize.DATEONLY,
@@ -25,6 +25,10 @@ module.exports = {
       },
       taskName: {
         type: Sequelize.STRING,
+        allowNull: false,
+      },
+      taskNumber: {
+        type: DataTypes.STRING,
         allowNull: false,
       },
       comment: {
@@ -42,17 +46,17 @@ module.exports = {
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.fn('NOW'),
+        defaultValue: Sequelize.fn("NOW"),
       },
       updatedAt: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.fn('NOW'),
+        defaultValue: Sequelize.fn("NOW"),
       },
     });
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('worklog');
+    await queryInterface.dropTable("worklog");
   },
 };

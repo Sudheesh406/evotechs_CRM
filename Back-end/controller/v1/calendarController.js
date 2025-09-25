@@ -135,11 +135,11 @@ const editCalendar = async (req, res) => {
   }
 };
 
+
 const deleteCalendar = async (req, res) => {
   try {
     const { id } = req.params; // extract id
     const user = req.user;
- console.log(id)
     // Check if user is admin
     const admin = await roleChecker(user.id);
     if (!admin) {
@@ -165,6 +165,7 @@ const deleteCalendar = async (req, res) => {
     return httpError(res, 500, "Server error", error.message || error);
   }
 };
+
 
 const getLeaveRequest = async (req, res) => {
   try {
@@ -257,6 +258,177 @@ const leaveRequestUpdate = async (req, res) => {
   }
 };
 
+
+// ----------------------staff----------------------
+
+const getLeaves = async (req,res)=>{
+  try {
+    const user = req.user;
+
+    const { year, month } = req.body; // e.g. { year: 2025, month: 9 }
+
+    if (!year || !month) {
+      return httpError(res, 400, "date is required");
+    }
+
+    // First and last day of the month
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0);
+
+    // Query leaves + staff info
+    const allLeave = await Leaves.findAll({
+      where: {
+        leaveDate: {
+          [Op.between]: [startDate, endDate],
+        },
+        softDelete: false,
+        staffId : user.id
+      },
+      include: [
+        {
+          model: signup,
+          as: "staff",
+          attributes: ["id", "name", "email"],
+        },
+      ],
+      order: [["leaveDate", "ASC"]],
+    });
+
+    return res.status(200).json(allLeave);
+  } catch (error) {
+    console.error('error found in getting leaves',error);
+    return httpError(res, 500, "Server error", error.message || error);
+
+  }
+}
+
+
+const createLeave = async (req, res) => {
+  const user = req.user; // Assuming req.user is set via authentication middleware
+  const { leaveType, category, leaveDate, endDate, description } = req.body;
+
+  try {
+    // 1. Basic validation
+    if (!leaveType || !category || !leaveDate || !description) {
+      return httpError(res, 400, "All required fields must be filled");
+    }
+
+    // 2. Check date validity
+    const start = new Date(leaveDate);
+    const end = endDate ? new Date(endDate) : start;
+
+    if (end < start) {
+      return httpError(res, 406, "End date cannot be before start date");
+    }
+
+    // 3. Create leave entry
+    const newLeave = await Leaves.create({
+      staffId: user.id,
+      leaveType,
+      category,
+      leaveDate: start,
+      endDate: end,
+      description,
+    });
+
+    // 4. Return success response
+    return res.status(201).json({
+      message: "Leave request created successfully",
+      data: newLeave,
+    });
+  } catch (error) {
+    console.error("Error creating leave:", error);
+    return httpError(res, 500, "Server error", error.message || error);
+  }
+};
+
+
+const updateLeave = async (req, res) => {
+  try {
+    const user = req.user;
+    const { id } = req.params;
+    const { leaveType, category, leaveDate, endDate, description } = req.body;
+
+    // 1. Find leave by ID
+    const leave = await Leaves.findByPk(id);
+
+    if (!leave) {
+      return httpError(res, 404, "Leave request not found");
+    }
+
+    // 2. Check if user is owner
+    if (leave.staffId !== user.id) {
+      return httpError(res, 403, "You are not authorized to edit this leave");
+    }
+
+    // 3. Prevent editing if status is Approved or Rejected
+    if (leave.status === "Approved" || leave.status === "Rejected") {
+      return httpError(res, 400, "Cannot edit leave once it is Approved or Rejected");
+    }
+
+    // 4. Validate required fields
+    if (!leaveType || !category || !leaveDate || !description) {
+      return httpError(res, 400, "All required fields must be filled");
+    }
+
+    // 5. Validate dates
+    const start = new Date(leaveDate);
+    const end = endDate ? new Date(endDate) : start;
+
+    if (end < start) {
+      return httpError(res, 406, "End date cannot be before start date");
+    }
+
+    // 6. Update leave fields (status cannot be edited)
+    leave.leaveType = leaveType;
+    leave.category = category;
+    leave.leaveDate = start;
+    leave.endDate = end;
+    leave.description = description;
+
+    await leave.save();
+
+    return res.status(200).json({
+      message: "Leave updated successfully",
+      data: leave,
+    });
+  } catch (error) {
+    console.error("Error in edit leaves:", error);
+    return httpError(res, 500, "Server error", error.message || error);
+  }
+};
+
+
+const deleteLeave = async (req, res) => {
+  try {
+    const user = req.user;
+    const { id } = req.params;
+
+    // 1. Find the leave by ID and ensure it belongs to the user
+    const leave = await Leaves.findOne({ where: { id: id, staffId: user.id } });
+
+    if (!leave) {
+      return httpError(res, 404, "Leave request not found");
+    }
+
+    // 2. Prevent deletion if status is Approved or Rejected
+    if (leave.status === "Approved" || leave.status === "Rejected") {
+      return httpError(res, 400, "Cannot delete leave once it is Approved or Rejected");
+    }
+
+    // 3. Delete the leave
+    await leave.destroy();
+
+    return res.status(200).json({
+      message: "Leave deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error in delete leaves:", error);
+    return httpError(res, 500, "Server error", error.message || error);
+  }
+};
+
+
 module.exports = {
   createCalendar,
   getCalender,
@@ -264,4 +436,8 @@ module.exports = {
   deleteCalendar,
   getLeaveRequest,
   leaveRequestUpdate,
+  getLeaves,
+  createLeave,
+  updateLeave,
+  deleteLeave
 };

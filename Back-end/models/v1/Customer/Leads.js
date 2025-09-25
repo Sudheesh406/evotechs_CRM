@@ -19,7 +19,6 @@ const Leads = sequelize.define('leads', {
   email: {
     type: DataTypes.STRING,
     allowNull: false,
-    unique: true,
     validate: {
       isEmail: true,
     },

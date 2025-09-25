@@ -28,6 +28,10 @@ const worklog = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
+    taskNumber: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
     comment: {
       type: DataTypes.STRING,
       allowNull: true,
