@@ -1,179 +1,182 @@
-import React, { useState } from "react";
-import { Calendar, MessageSquare } from "lucide-react";
-import dayjs from "dayjs";
-import customParseFormat from "dayjs/plugin/customParseFormat";
+import React, { useState, useRef, useEffect } from "react";
+import axios from '../../instance/Axios'
 
-dayjs.extend(customParseFormat);
+// dummy data for staff list
+const staffList = [
+  { id: 1, name: "John Doe", lastMsg: "Ok noted" },
+  { id: 2, name: "Anita Sharma", lastMsg: "Will do" },
+  { id: 3, name: "Mohammed Ali", lastMsg: "Sent files" },
+  { id: 4, name: "Test User 1", lastMsg: "Test message" },
+  { id: 5, name: "Test User 2", lastMsg: "Another test" },
+  { id: 6, name: "Test User 3", lastMsg: "Hello!" },
+  { id: 7, name: "Test User 4", lastMsg: "Hi!" },
+  { id: 8, name: "Test User 5", lastMsg: "Hey there!" },
+];
 
-const Messages = () => {
-  const [filter, setFilter] = useState("All");
+const initialChats = {
+  1: [
+    { sender: "admin", text: "Hello John!", time: "10:30 AM" },
+    { sender: "staff", text: "Hi sir!", time: "10:31 AM" },
+  ],
+  2: [
+    { sender: "admin", text: "Good morning Anita!", time: "09:00 AM" },
+    { sender: "staff", text: "Morning Sir!", time: "09:01 AM" },
+  ],
+  3: [{ sender: "admin", text: "Hi Ali", time: "11:00 AM" }],
+};
 
-  const messages = [
-    {
-      id: 1,
-      admin: "Super Admin",
-      subject: "System Maintenance",
-      message: "We will be performing scheduled maintenance tonight at 11 PM.",
-      date: "16/08/2025",
-      time: "9:30 AM",
-    },
-    {
-      id: 2,
-      admin: "Super Admin",
-      subject: "New Policy Update",
-      message: "Please review the new attendance and leave policy shared.",
-      date: "15/08/2025",
-      time: "10:15 AM",
-    },
-    {
-      id: 3,
-      admin: "System Admin",
-      subject: "Exam Reminder",
-      message: "Exams for class 10 and 12 start from next Monday.",
-      date: "14/08/2025",
-      time: "2:45 PM",
-    },
-    {
-      id: 4,
-      admin: "Super Admin",
-      subject: "Sports Day",
-      message: "Sports day will be held this Friday in the school ground.",
-      date: "12/08/2025",
-      time: "11:00 AM",
-    },
-    {
-      id: 5,
-      admin: "Super Admin",
-      subject: "Library Notice",
-      message: "Please return pending books before 20th Aug.",
-      date: "05/08/2025",
-      time: "5:15 PM",
-    },
-  ];
+const AdminMessagePortal = () => {
+  const [selectedStaff, setSelectedStaff] = useState(null);
+  const [chats, setChats] = useState(initialChats);
+  const [message, setMessage] = useState("");
+  const textareaRef = useRef(null);
+  const messagesEndRef = useRef(null);
 
-  const today = dayjs();
-  const yesterday = today.subtract(1, "day");
-  const dayBeforeYesterday = today.subtract(2, "day");
-  const startOfWeek = today.startOf("week"); // Sunday as start
+  const handleSend = () => {
+    if (!message.trim() || !selectedStaff) return;
+    const newMsg = {
+      sender: "admin",
+      text: message,
+      time: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    };
 
-  const getDateBadge = (dateStr) => {
-    const date = dayjs(dateStr, "DD/MM/YYYY");
+    setChats((prev) => ({
+      ...prev,
+      [selectedStaff.id]: [...(prev[selectedStaff.id] || []), newMsg],
+    }));
 
-    if (date.isSame(today, "day"))
-      return "bg-red-100 text-red-600 border border-red-300";
-
-    if (date.isSame(yesterday, "day") || date.isSame(dayBeforeYesterday, "day"))
-      return "bg-orange-100 text-orange-600 border border-orange-300";
-
-    if (date.isAfter(startOfWeek.subtract(1, "day")) && date.isBefore(today.add(1, "day")))
-      return "bg-blue-100 text-blue-600 border border-blue-300";
-
-    return "bg-white text-black border border-green-300";
+    setMessage("");
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
   };
 
-  const filteredMessages = messages.filter((msg) => {
-    const date = dayjs(msg.date, "DD/MM/YYYY");
+  // Scroll to bottom when new message is added
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chats, selectedStaff]);
 
-    if (filter === "Today") return date.isSame(today, "day");
 
-    if (filter === "Last 2 Days")
-      return date.isSame(yesterday, "day") || date.isSame(dayBeforeYesterday, "day");
+//need to continue the work.........................................................
 
-    if (filter === "This Week")
-      return date.isSame(today, "week"); // ✅ Sunday → Today
+  const fetchStaffList = async ()=>{
+    try {
+         const res = await axios.get("/attendance/staff-list");
+         console.log(res)
+    } catch (error) {
+        console.log('error found in staff list',error)
+    }
+  }
 
-    return true;
-  });
+  useEffect(()=>{
+    fetchStaffList()
+  },[])
+
 
   return (
-    <div className="bg-gray-50 min-h-[680px] p-6">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-          <MessageSquare className="text-blue-600" size={22} /> Admin Messages
-        </h1>
-        <span className="text-gray-600 text-sm">
-          Total Messages: {filteredMessages.length}
-        </span>
+    <div className="flex h-[92vh] bg-neutral-50 text-gray-800">
+      {/* Staff list */}
+      <div className="w-1/4 bg-white border-r border-gray-200 flex flex-col">
+        <div className="p-5 font-semibold text-sm tracking-wide border-b border-gray-200 text-gray-700 uppercase">
+          Staff
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          {staffList.map((staff) => (
+            <div
+              key={staff.id}
+              onClick={() => setSelectedStaff(staff)}
+              className={`p-5 cursor-pointer transition-colors duration-150 ${
+                selectedStaff?.id === staff.id
+                  ? "bg-blue-200"
+                  : "hover:bg-neutral-100"
+              }`}
+            >
+              <div className="font-medium text-gray-900">{staff.name}</div>
+              <div className="text-xs text-gray-500 truncate">
+                {staff.lastMsg}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Filter Buttons */}
-      <div className="flex gap-2 mb-4">
-        {["All", "Today", "Last 2 Days", "This Week"].map((option) => (
-          <button
-            key={option}
-            onClick={() => setFilter(option)}
-            className={`px-4 py-2 rounded text-sm font-medium transition ${
-              filter === option
-                ? "bg-blue-600 text-white shadow"
-                : "bg-white border text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            {option}
-          </button>
-        ))}
-      </div>
+      {/* Chat section */}
+      <div className="flex-1 flex flex-col">
+        {selectedStaff ? (
+          <>
+            {/* Chat header */}
+            <div className="p-5 bg-white border-b border-gray-200 flex items-center shadow-sm">
+              <div className="font-semibold text-lg text-gray-900">
+                {selectedStaff.name}
+              </div>
+            </div>
 
-      {/* Table */}
-      <div className="bg-white shadow rounded-lg overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-indigo-50 text-gray-700 text-sm font-medium">
-              <th className="px-4 py-3">Date</th>
-              <th className="px-4 py-3">Subject</th>
-              <th className="px-4 py-3">Message</th>
-              <th className="px-4 py-3">Time</th>
-              <th className="px-4 py-3">Admin</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredMessages.map((msg) => (
-              <tr key={msg.id} className="border-t hover:bg-gray-50 transition">
-                {/* Date with Badge */}
-                <td className="px-4 py-3">
-                  <span
-                    className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${getDateBadge(
-                      msg.date
-                    )}`}
-                  >
-                    <Calendar size={14} /> {msg.date}
-                  </span>
-                </td>
-
-                {/* Subject */}
-                <td className="px-4 py-3 font-medium text-gray-800">
-                  {msg.subject}
-                </td>
-
-                {/* Message */}
-                <td className="px-4 py-3 text-gray-600 text-sm">{msg.message}</td>
-
-                {/* Time */}
-                <td className="px-4 py-3 text-gray-500 text-sm">{msg.time}</td>
-
-                {/* Admin */}
-                <td className="px-4 py-3 text-gray-700 text-sm">{msg.admin}</td>
-              </tr>
-            ))}
-            {filteredMessages.length === 0 && (
-              <tr>
-                <td
-                  colSpan="5"
-                  className="px-4 py-6 text-center text-gray-500 text-sm"
+            {/* Chat messages */}
+            <div className="flex-1 p-6 overflow-y-auto bg-neutral-50">
+              {(chats[selectedStaff.id] || []).map((msg, index) => (
+                <div
+                  key={index}
+                  className={`flex mb-4 ${
+                    msg.sender === "admin" ? "justify-end" : "justify-start"
+                  }`}
                 >
-                  No messages found
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                  <div
+                    className={`max-w-xs px-4 py-3 rounded-2xl text-sm shadow-sm ${
+                      msg.sender === "admin"
+                        ? "bg-blue-100 text-gray-800"
+                        : "bg-white text-gray-800 border border-gray-200"
+                    }`}
+                  >
+                    <div className="leading-snug">{msg.text}</div>
+                    <div className="text-[10px] text-gray-500 text-right mt-1">
+                      {msg.time}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input bar */}
+            <div className="p-5 bg-white border-t border-gray-200 flex items-center shadow-inner">
+              <textarea
+                ref={textareaRef}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Type a message…"
+                rows={1}
+                className="flex-1 resize-none overflow-hidden p-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-200 text-sm placeholder-gray-400"
+                onInput={(e) => {
+                  e.target.style.height = "auto";
+                  e.target.style.height = e.target.scrollHeight + "px";
+                }}
+              />
+              <button
+                onClick={handleSend}
+                className="ml-3 px-5 py-2 bg-blue-500 text-white rounded-xl text-sm font-medium hover:bg-blue-600 transition-colors duration-150"
+              >
+                Send
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center bg-neutral-50">
+            <div className="text-gray-500 text-center">
+              <div className="text-xl font-semibold">
+                Staff Notice / Announcement
+              </div>
+              <div className="text-sm mt-2 text-gray-400">
+                Choose someone from the left panel
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-export default Messages;
-
-
-
-
+export default AdminMessagePortal;

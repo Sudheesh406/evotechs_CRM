@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "../../instance/Axios";
+import Swal from "sweetalert2";
 
 const Worklog = () => {
   const [tableData, setTableData] = useState([]);
@@ -30,6 +31,23 @@ const Worklog = () => {
   const getDaysInMonth = (year, month) =>
     new Date(year, month + 1, 0).getDate();
 
+  const generateInitialData = (daysInMonth, numCols) => {
+    const generatedData = [];
+    const initialAttendance = [];
+    for (let row = 0; row < daysInMonth; row++) {
+      // Initialize cells as an object with empty value and comment
+      // This is crucial for consistently handling comments on empty cells
+      generatedData.push(
+        Array(numCols).fill({
+          value: "",
+          comment: "",
+        })
+      );
+      initialAttendance.push("");
+    }
+    return { generatedData, initialAttendance };
+  };
+
   useEffect(() => {
     const daysInMonth = getDaysInMonth(currentYear, currentMonth);
 
@@ -46,23 +64,24 @@ const Worklog = () => {
     }
     setDates(generatedDates);
 
-    const generatedData = [];
-    const initialAttendance = [];
-    for (let row = 0; row < daysInMonth; row++) {
-      generatedData.push(Array(numColumns).fill(""));
-      initialAttendance.push("");
-    }
+    // Initial load will use the default structure, then getWorklog will overwrite
+    const { generatedData, initialAttendance } = generateInitialData(
+      daysInMonth,
+      numColumns
+    );
     setTableData(generatedData);
     setAttendance(initialAttendance);
 
-    const initialTasks = Array(numColumns)
-      .fill("")
-      .map((_, i) => `Task ${i + 1}`);
-    setTasks(initialTasks);
+    // Only set default task names if 'tasks' is empty (to avoid overwriting imported tasks immediately)
+    if (tasks.length === 0) {
+      const initialTasks = Array(numColumns)
+        .fill("")
+        .map((_, i) => `Task ${i + 1}`);
+      setTasks(initialTasks);
+    }
 
-    getWorklog(currentMonth,currentYear)
-
-  }, [currentMonth, currentYear]);
+    getWorklog(currentMonth + 1, currentYear);
+  }, [currentMonth, currentYear]); // tasks is intentionally left out to avoid infinite loop
 
   // close menu when clicking outside
   useEffect(() => {
@@ -82,16 +101,25 @@ const Worklog = () => {
     setTimeout(() => setShowToast(false), 2000);
   };
 
+  // 🐛 FIX 1: Ensure cell data is always an object to hold the comment
   const handleCellChange = (rowIndex, colIndex, value) => {
     const updatedData = [...tableData];
-    if (typeof updatedData[rowIndex][colIndex] === "object") {
+    const currentCell = updatedData[rowIndex][colIndex];
+
+    // Ensure we are working with an object structure
+    if (typeof currentCell === "object") {
       updatedData[rowIndex][colIndex] = {
-        ...updatedData[rowIndex][colIndex],
-        value,
+        ...currentCell,
+        value: value,
       };
     } else {
-      updatedData[rowIndex][colIndex] = value;
+      // This handles the case where the cell was unexpectedly a string (shouldn't happen with new init)
+      updatedData[rowIndex][colIndex] = {
+        value: value,
+        comment: "", // Default empty comment
+      };
     }
+
     setTableData(updatedData);
     triggerToast();
   };
@@ -110,34 +138,126 @@ const Worklog = () => {
     triggerToast();
   };
 
-  
-  const getWorklog = async (month,year)=>{
-    try {
-      const response = await axios.post('/worklog/get',{month,year})
-      console.log('response',response)
-      
-    } catch (error) {
-      console.log('error found in getWorklog',error)
+
+
+const getWorklog = async (month, year) => {
+  try {
+    // Show loading popup
+    Swal.fire({
+      title: "Loading Worklogs...",
+      text: "Please wait while we fetch your data",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+
+    const response = await axios.post("/worklog/get", { month, year });
+    const worklogs = response.data.data; // your array of worklogs
+
+    const daysInMonth = getDaysInMonth(year, month - 1);
+    const { generatedData, initialAttendance } = generateInitialData(
+      daysInMonth,
+      numColumns
+    );
+    const newTableData = generatedData;
+    const newAttendance = initialAttendance;
+
+    // Temporary array to hold retrieved task names
+    const retrievedTasks = Array(numColumns).fill(null);
+
+    worklogs.forEach((log) => {
+      const dateObj = new Date(log.date);
+      const day = dateObj.getDate();
+      const rowIndex = day - 1; // 1st day -> index 0
+
+      if (rowIndex >= 0 && rowIndex < daysInMonth) {
+        const taskMatch = log.taskNumber.match(/task(\d+)/i);
+        const taskNum = taskMatch ? parseInt(taskMatch[1]) : null;
+        const colIndex = taskNum ? taskNum - 1 : -1;
+
+        if (colIndex >= 0 && colIndex < numColumns) {
+          newTableData[rowIndex][colIndex] = {
+            value: log.time || "",
+            comment: log.comment || "",
+          };
+
+          if (log.taskName && !retrievedTasks[colIndex]) {
+            retrievedTasks[colIndex] = log.taskName;
+          }
+        }
+
+        if (log.attendance !== undefined) {
+          newAttendance[rowIndex] = log.attendance;
+        }
+      }
+    });
+
+    setTableData(newTableData);
+    setAttendance(newAttendance);
+
+    const defaultTasks = Array(numColumns)
+      .fill("")
+      .map((_, i) => `Task ${i + 1}`);
+
+    const finalTasks = defaultTasks.map((defaultName, i) => {
+      return retrievedTasks[i] || tasks[i] || defaultName;
+    });
+
+    setTasks(finalTasks);
+
+    // Close loading popup
+    Swal.close();
+  } catch (error) {
+    // Close loading popup if still open
+    Swal.close();
+
+    console.error("Error found in getWorklog", error);
+
+    // Show error popup
+    Swal.fire({
+      icon: "error",
+      title: "Oops...",
+      text: "Failed to fetch worklogs. Please try again.",
+    });
+
+    // Fallback for tasks if the API fails
+    if (tasks.length === 0) {
+      setTasks(
+        Array(numColumns)
+          .fill("")
+          .map((_, i) => `Task ${i + 1}`)
+      );
     }
   }
+};
 
-  ///date sending is not correct.................................
 
-  const handleSave = async () => {
+const handleSave = async () => {
   try {
+    // Show loading popup
+    Swal.fire({
+      title: "Saving Worklogs...",
+      text: "Please wait while we save your data",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+
     const payload = tableData
       .map((rowData, rowIndex) => {
         const typedTasks = rowData
           .map((cellData, colIndex) => {
-            const value =
-              typeof cellData === "object" ? cellData.value : cellData;
+            const value = cellData.value;
+            const comment = cellData.comment;
+
             if (value !== "") {
               return {
-                taskIndex: colIndex + 1,
                 taskName: tasks[colIndex],
-                value,
-                comment:
-                  typeof cellData === "object" ? cellData.comment || "" : "",
+                time: value,
+                comment: comment || "",
+                taskNumber: `task${colIndex + 1}`,
               };
             }
             return null;
@@ -145,17 +265,14 @@ const Worklog = () => {
           .filter(Boolean);
 
         if (typedTasks.length > 0 || attendance[rowIndex] !== "") {
-          // Convert date to YYYY-MM-DD
-          const dateString = `${dates[rowIndex]}, ${currentYear}`; // e.g., "Mon, Sep 01, 2025"
-          const formattedDate = new Date(dateString)
-            .toISOString()
-            .split("T")[0]; // "2025-09-01"
+          const dateString = `${dates[rowIndex]}, ${currentYear}`;
+          const date = new Date(dateString);
+          const formatted = date.toLocaleDateString("en-CA"); // YYYY-MM-DD
 
           return {
-            date: formattedDate, // <- formatted here
+            date: formatted,
             attendance: attendance[rowIndex] || "",
             tasks: typedTasks,
-            // rowTotal: rowTotals[rowIndex],
           };
         }
         return null;
@@ -163,29 +280,48 @@ const Worklog = () => {
       .filter(Boolean);
 
     console.log("Filtered Data:", payload);
-    await axios.post("/worklog/create", payload);
+
+    // Send payload to backend
+    await axios.post("/worklog/create", { worklogs: payload });
+
+    // Close loading popup
+    Swal.close();
+
+    // Show success popup
+    Swal.fire({
+      icon: "success",
+      title: "Worklogs Saved!",
+      text: "Your worklogs have been saved successfully.",
+      timer: 2000,
+      showConfirmButton: false,
+    });
+
     triggerToast();
   } catch (error) {
-    console.error(error);
-    alert("Error saving data!");
+    console.error("Error saving data:", error);
+    Swal.close();
+
+    // Show error popup
+    Swal.fire({
+      icon: "error",
+      title: "Save Failed",
+      text: "Failed to save worklogs. Please try again.",
+    });
   }
 };
 
 
+
   const columnTotals = tasks.map((_, colIndex) =>
     tableData.reduce((sum, row) => {
-      const val =
-        typeof row[colIndex] === "object"
-          ? parseFloat(row[colIndex].value)
-          : parseFloat(row[colIndex]);
+      const val = row[colIndex] ? parseFloat(row[colIndex].value) : 0;
       return sum + (isNaN(val) ? 0 : val);
     }, 0)
   );
 
   const rowTotals = tableData.map((row) =>
     row.reduce((sum, val) => {
-      const num =
-        typeof val === "object" ? parseFloat(val.value) : parseFloat(val);
+      const num = val ? parseFloat(val.value) : 0;
       return sum + (isNaN(num) ? 0 : num);
     }, 0)
   );
@@ -209,61 +345,26 @@ const Worklog = () => {
     }
   };
 
-  // mock import tasks (from previous month or template)
-  const importTaskSets = {
-    "Template A": [
-      "Coding",
-      "Testing",
-      "Documentation",
-      "Meeting",
-      "Support",
-      ...Array(numColumns - 5).fill("Task"),
-    ],
-    "Template B": [
-      "Design",
-      "Review",
-      "Deployment",
-      "Bug Fixing",
-      ...Array(numColumns - 4).fill("Task"),
-    ],
-  };
-
-  const handleImportTasks = (templateName) => {
-    if (!templateName) return;
-    if (importTaskSets[templateName]) {
-      const importedTasks = importTaskSets[templateName];
-      const filledTasks = [
-        ...importedTasks,
-        ...Array(numColumns - importedTasks.length)
-          .fill("")
-          .map((_, i) => `Task ${i + importedTasks.length + 1}`),
-      ].slice(0, numColumns);
-      setTasks(filledTasks);
-      triggerToast();
-    }
-  };
 
   // handle double-click to open comment modal
   const handleCellDoubleClick = (rowIndex, colIndex) => {
     setModalCell({ row: rowIndex, col: colIndex });
     const cell = tableData[rowIndex][colIndex];
-    setModalComment(typeof cell === "object" ? cell.comment || "" : "");
+    // Cell is now guaranteed to be an object
+    setModalComment(cell.comment || "");
     setModalOpen(true);
   };
 
   const handleSaveComment = () => {
     const updatedData = [...tableData];
-    if (
-      !updatedData[modalCell.row][modalCell.col] ||
-      typeof updatedData[modalCell.row][modalCell.col] === "string"
-    ) {
-      updatedData[modalCell.row][modalCell.col] = {
-        value: updatedData[modalCell.row][modalCell.col] || "",
-        comment: modalComment,
-      };
-    } else {
-      updatedData[modalCell.row][modalCell.col].comment = modalComment;
-    }
+    const { row, col } = modalCell;
+
+    // Cell is guaranteed to be an object with 'value' and 'comment' keys
+    updatedData[row][col] = {
+      ...updatedData[row][col],
+      comment: modalComment,
+    };
+
     setTableData(updatedData);
     setModalOpen(false);
     triggerToast();
@@ -273,7 +374,7 @@ const Worklog = () => {
     <div className="flex flex-col bg-gray-50 font-sans text-gray-800 relative">
       <header className="p-4 bg-white shadow-md flex justify-between items-center relative">
         <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold">Activity and Progress View</h1>
+          <h1 className="text-2xl font-bold">Performance</h1>
           <span className="text-sm font-semibold">
             {new Date(currentYear, currentMonth).toLocaleString("default", {
               month: "long",
@@ -326,27 +427,6 @@ const Worklog = () => {
                     Next →
                   </button>
                 </div>
-
-                <div className="px-4 pt-3 pb-4 border-t border-gray-100">
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Import tasks from
-                  </label>
-                  <select
-                    value={importChoice}
-                    onChange={(e) => {
-                      setImportChoice(e.target.value);
-                      handleImportTasks(e.target.value);
-                    }}
-                    className="w-full p-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
-                  >
-                    <option value="">Select Template</option>
-                    {Object.keys(importTaskSets).map((key) => (
-                      <option key={key} value={key}>
-                        {key}
-                      </option>
-                    ))}
-                  </select>
-                </div>
               </div>
             )}
           </div>
@@ -397,16 +477,15 @@ const Worklog = () => {
                   {dates[rowIndex]}
                 </td>
                 {rowData.map((cellData, cellIndex) => {
-                  const value =
-                    typeof cellData === "object" ? cellData.value : cellData;
-                  const comment =
-                    typeof cellData === "object" ? cellData.comment : "";
+                  // CellData is always an object: {value, comment}
+                  const value = cellData.value || "";
+                  const comment = cellData.comment || "";
 
                   return (
                     <td
                       key={cellIndex}
-                      className={`relative group p-3 text-sm ... ${
-                        comment ? "bg-yellow-100" : ""
+                      className={`relative group p-3 text-sm border-r border-gray-200 ${
+                        comment ? "bg-yellow-100" : "" // Highlight cells with a comment
                       }`}
                       onDoubleClick={() =>
                         handleCellDoubleClick(rowIndex, cellIndex)
@@ -419,11 +498,11 @@ const Worklog = () => {
                           handleCellChange(rowIndex, cellIndex, e.target.value)
                         }
                         className="w-full p-1 text-sm text-black font-bold focus:outline-none focus:ring-1 focus:ring-blue-400"
-                        placeholder="0"
+                        placeholder="00:00:00"
                       />
                       {/* Tooltip */}
                       {comment && (
-                        <span className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-full bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-pre-line">
+                        <span className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-full bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-pre-line pointer-events-none">
                           {comment}
                         </span>
                       )}

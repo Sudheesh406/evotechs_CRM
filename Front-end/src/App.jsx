@@ -44,6 +44,7 @@ import CompletedTask from "./pages/sales-pages/admin_sales_side/CompletedTask";
 import ReworkTask from "./pages/sales-pages/admin_sales_side/ReworkTask";
 import ProjectTeam from "./pages/Team-work/admin_team_work_side/ProjectTeam";
 import Worklog from "./pages/workspace-pages/Worklog";
+import TeamLeads from "./pages/Team-work/TeamLeads"
 
 import Sidebar from "./components/SideBar";
 
@@ -127,6 +128,7 @@ function Layout() {
           <Route path="/team/work/:id" element={<TeamWork />} />
           <Route path="/team/work/manage/:data" element={<TeamWorkDetails />} />
           <Route path="/workspace/work/assign" element={<Worklog />} />
+          <Route path="/team/leads" element={<TeamLeads />} />
 
           <Route path="/trash" element={<Trash />} />
           <Route path="/login" element={<Auth />} />

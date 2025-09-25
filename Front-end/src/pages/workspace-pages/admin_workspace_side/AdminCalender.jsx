@@ -149,8 +149,8 @@ export default function AdminCalendarManager() {
     } else {
       try {
         const payload = { date: formatted, description, type };
-        const {data} = await axios.post("/calendar/create", payload);
-        console.log(data)
+        const { data } = await axios.post("/calendar/create", payload);
+        console.log(data);
         const createdHoliday = {
           id: data.id,
           date: formatInputToDDMMYYYY(data.holidayDate || dateInput),
@@ -305,6 +305,25 @@ export default function AdminCalendarManager() {
                 </div>
               );
             })}
+          </div>
+          {/* Color Legend */}
+          <div className="mt-4 flex flex-wrap gap-4 items-center text-sm">
+            <div className="flex items-center gap-2">
+              <span className="w-4 h-4 bg-red-500 rounded-sm border"></span>
+              Holiday / Sunday
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-4 h-4 bg-purple-500 rounded-sm border"></span>
+              Maintenance
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-4 h-4 bg-blue-800 rounded-sm border"></span>
+              Full Day Leave
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-4 h-4 bg-orange-500 rounded-sm border"></span>
+              Half Day Leave
+            </div>
           </div>
         </div>
 

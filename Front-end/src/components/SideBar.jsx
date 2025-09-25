@@ -71,7 +71,7 @@ const id = 0
       subMenu: [
         { title: "Info", path: "/team/profile", icon: CheckSquare },
         { title: "Projects", path: `/team/work/${id}`, icon: Calendar },
-        // { title: "Notacess", path: "/team/messages", icon: MessageSquare },
+        { title: "Leads", path: "/team/leads", icon: UserPlus },
       ],
     },
     {
@@ -81,6 +81,8 @@ const id = 0
         { title: "Attendance", path: "/workspace/attendance", icon: CheckSquare },
         { title: "Calendar", path: "/workspace/calendar", icon: Calendar },
         { title: "Messages", path: "/workspace/messages", icon: MessageSquare },
+        { title: "Performance", path: "/workspace/work/assign", icon: FolderKanban },
+
       ],
     },
     { title: "Trash", icon: Trash2, path: "/trash" },
@@ -131,7 +133,6 @@ const id = 0
         { title: "Calendar", path: "/workspace/calendar/customise", icon: Calendar },
         { title: "Messages", path: "/workspace/message/port", icon: MessageSquare },
         { title: "Todo", path: "/workspace/todo", icon: FolderKanban },
-        { title: "Tracker", path: "/workspace/work/assign", icon: FolderKanban },
 
       ],
     },
