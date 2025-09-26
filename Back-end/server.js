@@ -22,6 +22,7 @@ const calendarRoute = require("./routes/v1/calendarRoute");
 const completedRoute = require("./routes/v1/completedRoute");
 const workAssignRoute = require("./routes/v1/workAssignRoute");
 const worklogRoute = require('./routes/v1/worklogRoute')
+const dealRoute = require('./routes/v1/dealRoute')
 
 // ====================
 // Middleware Setup
@@ -79,6 +80,9 @@ app.use("/api/work", workAssignRoute);
 
 // Handling Worklog
 app.use("/api/worklog", worklogRoute);
+
+// Handling Deals
+app.use("/api/deals", dealRoute);
 
 
 // ====================

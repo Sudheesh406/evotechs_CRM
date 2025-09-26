@@ -14,7 +14,7 @@ const createCalls = async (req, res) => {
     const { name, subject, date, time, phoneNumber, contactId, description } =
       req.body.data;
 
-    console.log("data:", name, subject, date, time, phoneNumber, description);
+    // console.log("data:", name, subject, date, time, phoneNumber, description);
 
     // Validate required fields
     if (!name || !subject || !date || !time || !phoneNumber || !description) {
@@ -74,7 +74,7 @@ const getCalls = async (req, res) => {
     const { filter } = req.body;
     const today = moment().format("YYYY-MM-DD");
 
-    console.log(filter);
+    // console.log(filter);
 
     let where = {
       [Op.or]: [{ staffId: user.id }, { TeamStaffId: user.id }],
@@ -256,7 +256,7 @@ const createCallFromTask = async (req, res) => {
     const { name, subject, date, time, phoneNumber, contactId, description } =
       req.body.data;
 
-    console.log("data:", name, subject, date, time, phoneNumber, description);
+    // console.log("data:", name, subject, date, time, phoneNumber, description);
 
     // Validate required fields
     if (!name || !subject || !date || !time || !phoneNumber || !description) {
@@ -306,16 +306,16 @@ const createTeamCallFromTask = async (req, res) => {
       staffId,
     } = req.body.data;
 
-    console.log(
-      "data:",
-      name,
-      subject,
-      date,
-      time,
-      phoneNumber,
-      description,
-      staffId
-    );
+    // console.log(
+    //   "data:",
+    //   name,
+    //   subject,
+    //   date,
+    //   time,
+    //   phoneNumber,
+    //   description,
+    //   staffId
+    // );
 
     // Validate required fields
     if (

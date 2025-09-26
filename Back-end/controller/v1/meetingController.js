@@ -22,16 +22,16 @@ const createMeetings = async (req, res) => {
       description,
     } = req.body.data;
 
-    console.log(
-      "data:",
-      name,
-      subject,
-      meetingDate,
-      startTime,
-      endTime,
-      phoneNumber,
-      description
-    );
+    // console.log(
+    //   "data:",
+    //   name,
+    //   subject,
+    //   meetingDate,
+    //   startTime,
+    //   endTime,
+    //   phoneNumber,
+    //   description
+    // );
 
     // Validate required fields
     if (

@@ -8,7 +8,7 @@ const task = require("../../models/v1/Project/task");
 const { contacts } = require("../../models/v1");
 const { signup } = require("../../models/v1");
 
-const { Op, fn, col, literal } = require("sequelize");
+const { Op, fn, col, literal, Sequelize  } = require("sequelize");
 
 const createTeamWork = async (req, res) => {
   try {
@@ -425,9 +425,7 @@ const getLeads = async (req, res) => {
     });
 
     // Collect all unique staff IDs from these teams
-    const allStaffIds = [
-      ...new Set(allTeams.flatMap((t) => t.staffIds || [])),
-    ];
+    const allStaffIds = [...new Set(allTeams.flatMap((t) => t.staffIds || []))];
 
     if (!allStaffIds.length) {
       return res.status(200).json({ leads: [] });
@@ -435,7 +433,13 @@ const getLeads = async (req, res) => {
 
     // Fetch all leads for these staff IDs
     const allLeads = await leads.findAll({
-      where: { staffId: allStaffIds, softDelete: false },
+      where: {
+        staffId: allStaffIds,
+        softDelete: false,
+        phone: {
+          [Op.notIn]: Sequelize.literal("(SELECT phone FROM contacts)"),
+        },
+      },
       include: [
         {
           model: signup,
@@ -445,17 +449,81 @@ const getLeads = async (req, res) => {
       ],
     });
 
-    return res.status(200).json({ leads: allLeads , userId:user.id});
+    // console.log(allLeads);
+
+    return res.status(200).json({ leads: allLeads, userId: user.id });
   } catch (error) {
     console.error("Error fetching leads:", error);
-    return httpError(
-      res,
-      500,
-      "Failed to get leads. Please try again later."
-    );
+    return httpError(res, 500, "Failed to get leads. Please try again later.");
   }
 };
 
+
+const getContacts = async (req, res) => {
+  try {
+    const user = req.user;
+
+    // Find all teams that include the current user
+    const allTeams = await team.findAll({
+      where: fn("JSON_CONTAINS", col("staffIds"), JSON.stringify(user.id)),
+    });
+
+    // Collect all unique staff IDs from these teams
+    const allStaffIds = [...new Set(allTeams.flatMap((t) => t.staffIds || []))];
+
+    if (!allStaffIds.length) {
+      return res.status(200).json({ contacts: [] });
+    }
+
+    // Fetch all contacts for these staff IDs
+    const allContacts = await contacts.findAll({
+      where: {
+        staffId: allStaffIds,
+        softDelete: false,
+      },
+      include: [
+        {
+          model: signup,
+          as: "assignedStaff",
+          attributes: ["id", "name", "email"],
+        },
+      ],
+    });
+
+    return res.status(200).json({ contacts: allContacts, userId: user.id });
+  } catch (error) {
+    console.error("Error fetching contacts:", error);
+    return httpError(res, 500, "Failed to get leads. Please try again later.");
+  }
+};
+
+
+const contactReassign = async (req, res) => {
+  try {
+    const user = req.user; // Logged-in user
+    const { phone } = req.body;
+
+    if (!phone) {
+      return httpError(res, 400, "Phone number is required for reassignment.");
+    }
+
+    // Find the contact by phone
+    const existing = await contacts.findOne({ where: { phone } });
+
+    if (!existing) {
+      return httpError(res, 404, "Contact not found.");
+    }
+
+    // Reassign the contact
+    existing.staffId = user.id;
+    await existing.save(); // Save the change in DB
+
+    return httpSuccess(res, 200, "Contact reassigned successfully", existing);
+  } catch (error) {
+    console.error("Error reassigning contacts:", error);
+    return httpError(res, 500, "Failed to reassign contacts. Please try again later.");
+  }
+};
 
 
 module.exports = {
@@ -469,4 +537,6 @@ module.exports = {
   getSectors,
   getProjects,
   getLeads,
+  getContacts,
+  contactReassign
 };

@@ -292,6 +292,82 @@ const deleteTodo = async (req, res) => {
 };
 
 
+const getAssignedWork = async (req, res) => {
+  try {
+    const staff = req.user; // logged-in staff
+    const staffId = staff.id;
+
+    // Fetch all teams to find which teams this staff belongs to
+    const teamDetails = await team.findAll({});
+    const staffTeamIds = teamDetails
+      .filter(team => team.staffIds.includes(staffId))
+      .map(team => team.id);
+
+    // Fetch work assignments with team name included
+    const workAssigns = await workAssign.findAll({
+      where: {
+        softDelete: false,
+        [Sequelize.Op.or]: [
+          { staffId: staffId },
+          { teamId: staffTeamIds.length ? staffTeamIds : null }
+        ]
+      },
+      include: [
+        {
+          model: team,
+          as: "team", // Make sure your association uses this alias
+          attributes: ["id", "teamName"] // Only select id and name
+        }
+      ],
+      order: [["id", "DESC"]] 
+    });
+
+    return res.status(200).json({ success: true, data: workAssigns });
+  } catch (error) {
+    console.error("Error fetching work assignments:", error);
+    return res.status(500).json({ success: false, message: "Server Error" });
+  }
+};
+
+
+const stageUpdate = async (req, res) => {
+  try {
+    const user = req.user; // currently logged-in user
+    const { id } = req.params;
+
+    // console.log("Updating work with ID:", id);
+
+    const existing = await workAssign.findOne({ where: { id } });
+
+    if (!existing) {
+      return res.status(404).json({ success: false, message: "Work not found" });
+    }
+
+    let newStatus = existing.workUpdate;
+
+    if (existing.workUpdate === "Pending") {
+      newStatus = "Progress";
+    } else if (existing.workUpdate === "Progress") {
+      newStatus = "Completed";
+    } else {
+      // Already completed
+      return res.status(400).json({ success: false, message: "Work is already completed" });
+    }
+
+    await existing.update({ workUpdate: newStatus });
+
+    return res.status(200).json({
+      success: true,
+      message: `Work updated to ${newStatus}`,
+      data: existing,
+    });
+  } catch (error) {
+    console.error("Error in updating work:", error);
+    return res.status(500).json({ success: false, message: "Server Error" });
+  }
+};
+
+
 
 module.exports = {
   createTodo,
@@ -299,4 +375,6 @@ module.exports = {
   getUserDetails,
   getWorkDetails,
   deleteTodo,
+  getAssignedWork,
+  stageUpdate
 };

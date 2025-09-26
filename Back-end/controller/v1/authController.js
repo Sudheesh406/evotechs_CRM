@@ -137,7 +137,7 @@ const handleLogin = async (req, res) => {
 
 const logout = async(req,res)=>{
   const user = req.user
-  console.log('user')
+  // console.log('user')
   try {
     if(user){
       res.clearCookie("crm_checkin_pass", {

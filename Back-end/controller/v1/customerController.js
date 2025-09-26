@@ -214,7 +214,7 @@ const createContact = async (req, res) => {
     }
 
     // Optionally: check if email or phone already exists
-    const existingLead = await Contacts.findOne({ where: { email } });
+    const existingLead = await Contacts.findOne({ where: { email,phone} });
     if (existingLead) {
       return httpError(res, 409, "A Contacts with this email already exists");
     }

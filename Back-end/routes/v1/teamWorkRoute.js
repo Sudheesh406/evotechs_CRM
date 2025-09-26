@@ -11,7 +11,9 @@ const {
   postTeamHistory,
   getSectors,
   getProjects,
-  getLeads
+  getLeads,
+  getContacts,
+  contactReassign
 } = require("../../controller/v1/teamWorkController");
 
 Router.post("/create", authenticate, createTeamWork);
@@ -27,6 +29,8 @@ Router.post("/history/post", authenticate, postTeamHistory);
 Router.get("/sectors/get/:id", authenticate, getSectors);
 Router.post("/projects/post", authenticate, getProjects);
 Router.get("/leads/get", authenticate, getLeads);
+Router.get("/contacts/get", authenticate, getContacts);
+Router.patch("/contact/reassign", authenticate, contactReassign);
 
 
 module.exports = Router;

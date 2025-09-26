@@ -76,7 +76,7 @@ const editTask = async (req, res) => {
     const user = req.user;
     const taskId = req.params.id;
     const data = req.body;
-    console.log("Editing task with ID:", taskId, "Data:", data);
+    // console.log("Editing task with ID:", taskId, "Data:", data);
     const existingTask = await task.findOne({
       where: { id: taskId, staffId: user.id, softDelete: false },
     });
@@ -120,7 +120,7 @@ const taskStageUpdate = async (req, res) => {
     if (!existingTask) {
       return httpError(res, 404, "Task not found");
     }
-    console.log(existingTask.stage, data.data);
+    // console.log(existingTask.stage, data.data);
     await existingTask.update({ stage: data.data });
     return httpSuccess(
       res,
@@ -228,7 +228,7 @@ const getTeamTaskDetails = async (req, res) => {
   try {
     // Validate input
     const { parsed } = req.body;
-    console.log(parsed);
+    // console.log(parsed);
 
     if (!parsed || !parsed.contactId || !parsed.taskId) {
       return httpError(res, 400, "Missing or invalid request body");
@@ -285,7 +285,7 @@ const updateTeamStagesAndNotes = async (req, res) => {
   try {
     const { data } = req.body;
     const user = req.user;
-    console.log("Input data:", data);
+    // console.log("Input data:", data);
 
     const existingTask = await task.findOne({ where: { id: data.id } });
     if (!existingTask) return httpError(res, 404, "Task not found");
