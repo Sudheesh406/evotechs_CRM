@@ -72,6 +72,7 @@ const id = 0
         { title: "Info", path: "/team/profile", icon: CheckSquare },
         { title: "Projects", path: `/team/work/${id}`, icon: Calendar },
         { title: "Leads", path: "/team/leads", icon: UserPlus },
+        { title: "Contacts", path: "/team/contacts", icon: Users },
       ],
     },
     {

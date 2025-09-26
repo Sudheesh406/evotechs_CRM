@@ -62,7 +62,7 @@ const fetchProjects = async () => {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">Projects</h1>
+      <h1 className="text-xl font-semibold  text-black mb-6">Projects</h1>
       {projects.length > 0 ? (
         <div className="flex flex-wrap gap-4">
           {projects.map((project, index) => (

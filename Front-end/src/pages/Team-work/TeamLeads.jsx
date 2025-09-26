@@ -2,26 +2,28 @@ import React, { useEffect, useState } from "react";
 import axios from "../../instance/Axios";
 import Table2 from "../../components/Table2";
 import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
 
 export default function TeamLeads() {
   const [teamLeads, setTeamLeads] = useState([]);
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const [user, setUser] = useState()
 
+  const [value, setValue] = useState(true)
 
 
-  ////--------------------------------------send staff id to table to work ------------------------///
+  ////--------------------------------------send staff id to table to work ------------------------//
+
   const getTeamLeads = async () => {
     try {
       const response = await axios.get("/team/leads/get");
       const leads = response.data?.leads || [];
       const userId = response.data?.userId
-      console.log(userId)
       setUser(userId)
 
       // Transform data into table-friendly format
       const transformedLeads = leads.map((lead) => ({
-
+        staffId: lead.assignedStaff?.id,
         date: new Date(lead.createdAt).toLocaleDateString(),
         customerName: lead.name,
         amount: lead.amount,
@@ -55,8 +57,14 @@ export default function TeamLeads() {
   ];
 
   const handleRowClick = (lead) => {
-    console.log("Row clicked:", lead);
+    // console.log("Row clicked:", lead);
   };
+
+
+const handleActionClick = (row) => {
+ 
+};
+
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -64,8 +72,10 @@ export default function TeamLeads() {
       <Table2
         columns={columns}
         data={teamLeads}
-        showActionButton= {user}
+        currentStaffId= {user}
         onRowClick={handleRowClick}
+        onActionClick={handleActionClick}   // <-- new prop
+      
       />
     </div>
   );
