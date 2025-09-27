@@ -38,8 +38,8 @@ function CreateTeam() {
 
     const fetchStaffs = async () => {
       try {
-        const { data } = await axios.get("/team/staff/get");
-        setStaffs(data.data || []);
+        const {data} = await axios.get("/team/staff/get");
+        setStaffs(data.data?.staffList || []);
       } catch (error) {
         console.error("Error fetching staffs:", error);
       }

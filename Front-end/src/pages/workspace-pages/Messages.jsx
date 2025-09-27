@@ -1,46 +1,102 @@
 import React, { useState, useRef, useEffect } from "react";
-import axios from '../../instance/Axios'
+import axios from "../../instance/Axios";
+import { io } from "socket.io-client";
 
-// dummy data for staff list
-const staffList = [
-  { id: 1, name: "John Doe", lastMsg: "Ok noted" },
-  { id: 2, name: "Anita Sharma", lastMsg: "Will do" },
-  { id: 3, name: "Mohammed Ali", lastMsg: "Sent files" },
-  { id: 4, name: "Test User 1", lastMsg: "Test message" },
-  { id: 5, name: "Test User 2", lastMsg: "Another test" },
-  { id: 6, name: "Test User 3", lastMsg: "Hello!" },
-  { id: 7, name: "Test User 4", lastMsg: "Hi!" },
-  { id: 8, name: "Test User 5", lastMsg: "Hey there!" },
-];
+// Connect to Socket.IO server
+const socket = io(`${import.meta.env.VITE_BACKEND_URL}`);
 
-const initialChats = {
-  1: [
-    { sender: "admin", text: "Hello John!", time: "10:30 AM" },
-    { sender: "staff", text: "Hi sir!", time: "10:31 AM" },
-  ],
-  2: [
-    { sender: "admin", text: "Good morning Anita!", time: "09:00 AM" },
-    { sender: "staff", text: "Morning Sir!", time: "09:01 AM" },
-  ],
-  3: [{ sender: "admin", text: "Hi Ali", time: "11:00 AM" }],
-};
-
-const AdminMessagePortal = () => {
+const Messages = () => {
+  const [staffList, setStaffList] = useState([]);
   const [selectedStaff, setSelectedStaff] = useState(null);
-  const [chats, setChats] = useState(initialChats);
+  const [chats, setChats] = useState({});
   const [message, setMessage] = useState("");
   const textareaRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const [user, setUser] = useState(0); // current logged-in admin ID
+
+  // 🔹 animation states
+  const [sending, setSending] = useState(false); // click animation
+  const [beat, setBeat] = useState(false); // pulse every 5s
+
+  // Fetch staff list
+  const fetchStaff = async () => {
+    try {
+      const response = await axios.get("/message/get/all/staff/");
+      console.log("response", response);
+
+      if (response.data.success) {
+        setStaffList(response.data?.data?.staffList);
+        setUser(response.data?.data?.userId);
+      }
+    } catch (error) {
+      console.log("Error fetching staff:", error);
+    }
+  };
+
+  // Fetch messages for selected staff
+  const getMessages = async () => {
+    const id = selectedStaff?.id;
+    if (!id) return;
+    try {
+      const { data } = await axios.get(`/message/get/${id}`);
+      const formattedMessages = data.data.map((msg) => ({
+        text: msg.message,
+        time: new Date(msg.sendingTime).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        sender: msg.senderId === user ? "admin" : "staff",
+      }));
+
+      setChats((prev) => ({ ...prev, [id]: formattedMessages }));
+    } catch (error) {
+      console.log("Error fetching messages:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchStaff();
+  }, []);
+
+  useEffect(() => {
+    getMessages();
+  }, [selectedStaff]);
+
+  // Listen for incoming messages from backend
+  useEffect(() => {
+    socket.on("receive_message", ({ staffId, message }) => {
+      setChats((prev) => ({
+        ...prev,
+        [staffId]: [...(prev[staffId] || []), message],
+      }));
+    });
+
+    return () => socket.off("receive_message");
+  }, []);
+
+  // 🔹 Pulse (beat) every 5s
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setBeat(true);
+      setTimeout(() => setBeat(false), 300); // beat lasts 300ms
+    }, 5000); // every 5 sec
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSend = () => {
     if (!message.trim() || !selectedStaff) return;
+
+    // trigger fly animation
+    setSending(true);
+    setTimeout(() => setSending(false), 300);
+
     const newMsg = {
-      sender: "admin",
       text: message,
       time: new Date().toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
       }),
+      sender: "admin",
     };
 
     setChats((prev) => ({
@@ -48,33 +104,21 @@ const AdminMessagePortal = () => {
       [selectedStaff.id]: [...(prev[selectedStaff.id] || []), newMsg],
     }));
 
+    socket.emit("send_message", {
+      senderId: user,
+      staffId: selectedStaff.id,
+      message: newMsg,
+    });
+
     setMessage("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
   };
 
-  // Scroll to bottom when new message is added
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [chats, selectedStaff]);
-
-
-//need to continue the work.........................................................
-
-  const fetchStaffList = async ()=>{
-    try {
-         const res = await axios.get("/attendance/staff-list");
-         console.log(res)
-    } catch (error) {
-        console.log('error found in staff list',error)
-    }
-  }
-
-  useEffect(()=>{
-    fetchStaffList()
-  },[])
-
 
   return (
     <div className="flex h-[92vh] bg-neutral-50 text-gray-800">
@@ -84,22 +128,38 @@ const AdminMessagePortal = () => {
           Staff
         </div>
         <div className="flex-1 overflow-y-auto">
-          {staffList.map((staff) => (
-            <div
-              key={staff.id}
-              onClick={() => setSelectedStaff(staff)}
-              className={`p-5 cursor-pointer transition-colors duration-150 ${
-                selectedStaff?.id === staff.id
-                  ? "bg-blue-200"
-                  : "hover:bg-neutral-100"
-              }`}
-            >
-              <div className="font-medium text-gray-900">{staff.name}</div>
-              <div className="text-xs text-gray-500 truncate">
-                {staff.lastMsg}
+          {staffList &&
+            staffList.map((staff) => (
+              <div
+                key={staff.id}
+                onClick={() => setSelectedStaff(staff)}
+                className={`p-5 cursor-pointer transition-colors duration-150 
+        ${
+          selectedStaff?.id === staff.id
+            ? "bg-blue-200"
+            : "hover:bg-neutral-100"
+        }
+        ${staff.role === "admin" ? "border-l-4 border-yellow-400" : ""}
+      `}
+              >
+                <div className="font-medium text-gray-900 flex items-center justify-between">
+                  <span>
+                    {staff.name}{" "}
+                    <span className="text-xs text-gray-500">
+                      ({staff.email})
+                    </span>
+                  </span>
+                  {staff.role === "admin" && (
+                    <span className="text-xs bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded-full">
+                      Management
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs text-gray-500 truncate">
+                  {chats[staff.id]?.[chats[staff.id].length - 1]?.text || ""}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
         </div>
       </div>
 
@@ -110,7 +170,10 @@ const AdminMessagePortal = () => {
             {/* Chat header */}
             <div className="p-5 bg-white border-b border-gray-200 flex items-center shadow-sm">
               <div className="font-semibold text-lg text-gray-900">
-                {selectedStaff.name}
+                {selectedStaff.name}{" "}
+                <span className="text-sm text-gray-500">
+                  ({selectedStaff.email})
+                </span>
               </div>
             </div>
 
@@ -140,7 +203,7 @@ const AdminMessagePortal = () => {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input bar */}
+            {/* Input bar with animated send icon */}
             <div className="p-5 bg-white border-t border-gray-200 flex items-center shadow-inner">
               <textarea
                 ref={textareaRef}
@@ -156,9 +219,29 @@ const AdminMessagePortal = () => {
               />
               <button
                 onClick={handleSend}
-                className="ml-3 px-5 py-2 bg-blue-500 text-white rounded-xl text-sm font-medium hover:bg-blue-600 transition-colors duration-150"
+                className={`ml-3 p-3 bg-gradient-to-br from-purple-400 via-violet-500 to-fuchsia-500 text-white rounded-full hover:bg-blue-600 
+                  transition-transform duration-200 flex items-center justify-center
+                  ${
+                    sending
+                      ? "scale-125 -translate-y-1 translate-x-1 rotate-12"
+                      : ""
+                  }
+                  ${beat ? "scale-110" : ""}`}
               >
-                Send
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M2 12l19-7-7 19-3-8-9-4z"
+                  />
+                </svg>
               </button>
             </div>
           </>
@@ -179,4 +262,4 @@ const AdminMessagePortal = () => {
   );
 };
 
-export default AdminMessagePortal;
+export default Messages;
