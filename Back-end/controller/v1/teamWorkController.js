@@ -101,6 +101,7 @@ const getTeam = async (req, res) => {
   }
 };
 
+
 const getStaff = async (req, res) => {
   try {
     const user = req.user;
@@ -121,7 +122,8 @@ const getStaff = async (req, res) => {
       attributes: ["id", "name", "email"], // select only necessary fields
     });
 
-    return httpSuccess(res, 200, "Staff fetched successfully", staffList);
+ const userId = user.id
+    return httpSuccess(res, 200, "Staff fetched successfully", {staffList,userId});
   } catch (error) {
     console.error("Error in getStaff:", error);
     return httpError(
@@ -131,6 +133,7 @@ const getStaff = async (req, res) => {
     );
   }
 };
+
 
 const editTeam = async (req, res) => {
   try {

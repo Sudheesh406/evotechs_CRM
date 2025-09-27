@@ -6,6 +6,7 @@ const secretCode = require("../../models/v1/Authentication/secreatCode");
 const { httpSuccess, httpError } = require("../../utils/v1/httpResponse");
 const Signup = require("../../models/v1/Authentication/authModel");
 
+
 const handleSignup = async (req, res) => {
   try {
     const { name, email, password, signupCode } = req.body;
