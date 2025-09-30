@@ -11,6 +11,8 @@ const holiday = require("./Work_space/holiday");
 const leaves = require('../../models/v1/Work_space/Leave')
 const workAssign = require('../../models/v1/Work_space/workAssign')
 const team = require('../../models/v1/Team_work/team')
+const secreatCode = require('../../models/v1/Authentication/secreatCode');
+const trash = require('../../models/v1/Trash/trash')
 
 // Define associations
 
@@ -100,7 +102,11 @@ signup.hasMany(workAssign, { foreignKey: "staffId", as: "assignedWorks" });
 workAssign.belongsTo(team, { foreignKey: "teamId", as: "team" });
 team.hasMany(workAssign, { foreignKey: "teamId", as: "teamWorks" });
 
+secreatCode.belongsTo(signup, {foreignKey: "staffId", as: "staff" })
+signup.hasMany(secreatCode, { foreignKey: "staffId", as: "staffDetails" });
 
+trash.belongsTo(signup, {foreignKey: "staffId", as: "staff" })
+signup.hasMany(trash, { foreignKey: "staffId", as: "trashDetails" });
 
 module.exports = {
   Leads,

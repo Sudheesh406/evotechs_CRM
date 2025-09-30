@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../../../database/dbConfigue');
 const signup = require('../Authentication/authModel'); 
-const team = require("../../../models/v1/Team_work/team")
+const team = require("../../../models/v1/Team_work/team");
 
 const messages = sequelize.define('messages', {
   id: {
@@ -22,7 +22,6 @@ const messages = sequelize.define('messages', {
     },
     onUpdate: 'CASCADE',
     onDelete: "SET NULL",
-
   },
   senderId: {                
     type: DataTypes.INTEGER,

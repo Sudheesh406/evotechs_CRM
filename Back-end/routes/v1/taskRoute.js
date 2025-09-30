@@ -15,6 +15,7 @@ const {
   updateStagesByAdmin,
   reworkUpdate,
   newUpdate,
+  getTaskForAdmin
 
 } = require("../../controller/v1/taskController");
 
@@ -25,6 +26,7 @@ Router.patch("/taskUpdate/:id", authenticate, taskStageUpdate);
 Router.delete("/delete/:id", authenticate, deleteTask);
 
 Router.post("/details/get", authenticate, getTaskDetails);
+Router.get('/admin/get',authenticate,getTaskForAdmin)
 Router.post("/admin/details/get", authenticate, getTaskDetailForAdmin);
 Router.post("/stages_notes", authenticate, updateStagesAndNotes);
 Router.post("/stage/update", authenticate, updateStagesByAdmin);

@@ -5,8 +5,8 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
-const { connectDB, sequelize } = require("./database/dbConfigue");
-const {createMessages} = require('./controller/v1/messageController')
+const { connectDB } = require("./database/dbConfigue");
+const { createMessages } = require("./controller/v1/messageController");
 
 // ====================
 // Import Route Modules
@@ -27,15 +27,11 @@ const worklogRoute = require("./routes/v1/worklogRoute");
 const dealRoute = require("./routes/v1/dealRoute");
 const messageRoute = require("./routes/v1/messageRoute");
 
-// ====================
-// Middleware Setup
-// ====================
 app.use(express.json());
 app.use(cookieParser());
-
 app.use(cors({
-    origin: process.env.FRONTEND_URL,
-    credentials: true,
+  origin: process.env.FRONTEND_URL,
+  credentials: true,
 }));
 
 // ====================
@@ -57,9 +53,6 @@ app.use("/api/worklog", worklogRoute);
 app.use("/api/deals", dealRoute);
 app.use("/api/message", messageRoute);
 
-// ====================
-// Create HTTP Server & Socket.IO
-// ====================
 const server = http.createServer(app);
 
 const io = new Server(server, {
@@ -70,48 +63,45 @@ const io = new Server(server, {
   },
 });
 
+// Socket.IO
 io.on("connection", (socket) => {
-  // console.log("A user connected:", socket.id);
+  // console.log("User connected:", socket.id);
 
-  // Join a room (room name = staffId)
-  socket.on("joinRoom", (staffId) => {
-    socket.join(staffId);
-    console.log(`Socket ${socket.id} joined room ${staffId}`);
+  // Join a room
+  socket.on("joinRoom", (room) => {
+    socket.join(room);
+    // console.log(`Socket ${socket.id} joined room ${room}`);
   });
 
-  // Listen for messages from frontend
-  socket.on("send_message", (data) => {
-    // console.log("sendMessage event received:", data); // <-- log the data
-    createMessages(data)
+  // Listen for sending messages
+  socket.on("send_message", async (data) => {
+    try {
+      const { room, message, senderId, receiverId } = data;
 
-    const { room, message, staffId, senderId } = data;
+      // Save message in DB
+      await createMessages(data);
 
-    // Emit to that specific room
-    if (room) {
-      socket.to(room).emit("receiveMessage", { staffId, message });
-    } else {
-      io.emit("receiveMessage", { staffId, message });
+      // Emit to all clients in room including sender
+      io.to(room).emit("receiveMessage", { senderId, message });
+    } catch (err) {
+      console.error("Error sending message:", err);
     }
   });
 
   socket.on("disconnect", () => {
-    console.log("A user disconnected:", socket.id);
+    // console.log("User disconnected:", socket.id);
   });
 });
 
-
-// ====================
-// Start Server and DB
-// ====================
+// Start server
 const startServer = async () => {
   try {
     await connectDB();
-
     server.listen(process.env.PORT, () => {
-      console.log(`Server is running on port ${process.env.PORT}`);
+      console.log(`Server running on port ${process.env.PORT}`);
     });
-  } catch (error) {
-    console.error("Failed to start the server:", error);
+  } catch (err) {
+    console.error("Server start failed:", err);
   }
 };
 

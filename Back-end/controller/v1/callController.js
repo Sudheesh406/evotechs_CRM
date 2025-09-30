@@ -1,5 +1,6 @@
 const calls = require("../../models/v1/Customer/calls");
 const Contacts = require("../../models/v1/Customer/contacts");
+const trash = require("../../models/v1/Trash/trash");
 const { signup } = require("../../models/v1/index");
 const { httpError, httpSuccess } = require("../../utils/v1/httpResponse");
 const dayjs = require("dayjs"); // ✅ Import dayjs
@@ -230,12 +231,28 @@ const deleteCalls = async (req, res) => {
       return httpError(res, 404, "call not found");
     }
 
-     const isMainStaff = call.staffId === user.id;
+    const isMainStaff = call.staffId === user.id;
     const isTeamStaff = call.TeamStaffId === user.id;
 
     if (!isMainStaff && !isTeamStaff) {
       return httpError(res, 403, "Access denied");
     }
+
+  const moment = require('moment-timezone');
+
+// Get current Indian Railway time (IST)
+const railwayTime = moment().tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss');
+console.log(railwayTime);
+
+///trsh update is pending .............................................................
+
+    await trash.create({
+      dataName: "calls",
+      dataId: id,
+      staffId: user.id, // can be null if no staff
+      dateTime: railwayTime,
+      // dateTime will automatically use default: DataTypes.NOW
+    });
 
     // Instead of destroying, update softDelete
     await call.update({ softDelete: true || null });
