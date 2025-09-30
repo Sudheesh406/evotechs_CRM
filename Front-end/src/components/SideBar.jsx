@@ -87,8 +87,8 @@ const id = 0
       ],
     },
     { title: "Trash", icon: Trash2, path: "/trash" },
-    { title: "Services", icon: Wrench, path: "/services" },
-    { title: "Projects", icon: FolderKanban, path: "/projects" },
+    // { title: "Services", icon: Wrench, path: "/services" },
+    // { title: "Projects", icon: FolderKanban, path: "/projects" },
   ];
 
 
@@ -114,7 +114,7 @@ const id = 0
       title: "Activities",
       icon: Calendar,
       subMenu: [
-        { title: "Tasks", path: "/activities/tasks", icon: ClipboardList },
+        { title: "Tasks", path: "/activities/task/port", icon: ClipboardList },
       ],
     },
     {
@@ -133,7 +133,8 @@ const id = 0
         { title: "Attendance", path: "/workspace/attendance/view", icon: CheckSquare },
         { title: "Calendar", path: "/workspace/calendar/customise", icon: Calendar },
         { title: "Messages", path: "/workspace/message/port", icon: MessageSquare },
-        { title: "Todo", path: "/workspace/todo", icon: FolderKanban },
+        { title: "Assignment", path: "/workspace/todo", icon: FolderKanban },
+        { title: "Pinator", path: "/workspace/auth/pin/generator", icon: FolderKanban },
 
       ],
     },
@@ -262,10 +263,10 @@ const handleLogout = async ()=>{
 
       {/* Bottom Settings / Logout */}
       <div className="space-y-2 p-2">
-        <div className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-[#2A3A5F] hover:text-[#E50914] cursor-pointer transition-all duration-200">
+        {/* <div className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-[#2A3A5F] hover:text-[#E50914] cursor-pointer transition-all duration-200">
           <Settings className="w-5 h-5" />
           <span className="font-medium">Settings</span>
-        </div>
+        </div> */}
         <div className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-[#2A3A5F] hover:text-[#E50914] cursor-pointer transition-all duration-200"
          onClick={()=>handleLogout()}>
           <LogOut className="w-5 h-5" />

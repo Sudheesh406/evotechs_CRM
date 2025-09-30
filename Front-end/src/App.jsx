@@ -15,6 +15,7 @@ import AdminCalendar from "./pages/workspace-pages/admin_workspace_side/AdminCal
 import AdminAttendanceView from "./pages/workspace-pages/admin_workspace_side/AdminAttendanceView";
 import AdminMessagePortal from "./pages/workspace-pages/admin_workspace_side/AdminMessagePortal";
 import AdminTodo from './pages/workspace-pages/admin_workspace_side/AdminTodo';
+import AdminPinGenerator from './pages/workspace-pages/admin_workspace_side/AdminPinGenerator'
 
 import StaffDashboard from "./pages/dashboard/StaffDashboard";
 import Leads from "./pages/sales-pages/Leads";
@@ -44,8 +45,9 @@ import CompletedTask from "./pages/sales-pages/admin_sales_side/CompletedTask";
 import ReworkTask from "./pages/sales-pages/admin_sales_side/ReworkTask";
 import ProjectTeam from "./pages/Team-work/admin_team_work_side/ProjectTeam";
 import Worklog from "./pages/workspace-pages/Worklog";
-import TeamLeads from "./pages/Team-work/TeamLeads"
-import TeamContacts from './pages/Team-work/TeamContacts'
+import TeamLeads from "./pages/Team-work/TeamLeads";
+import TeamContacts from './pages/Team-work/TeamContacts';
+import TaskView from './pages/activity-pages/admin_activity/TaskView'
 
 import Sidebar from "./components/SideBar";
 
@@ -105,6 +107,8 @@ function Layout() {
           <Route path="/sales/rework/port" element={<ReworkTask />} />
           <Route path="/team/work/port/:id" element={<ProjectTeam />} />
           <Route path="/workspace/todo/" element={<AdminTodo />} />
+          <Route path="/activities/task/port" element={<TaskView />} />
+          <Route path="/workspace/auth/pin/generator" element={<AdminPinGenerator />} />
 
 
 

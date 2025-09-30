@@ -1,111 +1,95 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "../../../instance/Axios";
 import { io } from "socket.io-client";
+import { getRoomId } from "../../../components/utils/Room"; // import above function
 
-// Connect to Socket.IO server
-const socket = io(`${import.meta.env.VITE_BACKEND_URL}`);
+const socket = io(`${import.meta.env.VITE_BACKEND_URL}`, { transports: ["websocket"] });
 
 const AdminMessagePortal = () => {
   const [staffList, setStaffList] = useState([]);
   const [selectedStaff, setSelectedStaff] = useState(null);
   const [chats, setChats] = useState({});
   const [message, setMessage] = useState("");
+  const [user, setUser] = useState(0);
+
   const textareaRef = useRef(null);
   const messagesEndRef = useRef(null);
-  const [user, setUser] = useState(0); // current logged-in admin ID
+  const [sending, setSending] = useState(false);
+  const [beat, setBeat] = useState(false);
 
-  // 🔹 animation states
-  const [sending, setSending] = useState(false); // click animation
-  const [beat, setBeat] = useState(false); // pulse every 5s
-
-  // Fetch staff list
-  const fetchStaff = async () => {
-    try {
-      const response = await axios.get("/team/staff/get");
-      if (response.data.success) {
-        setStaffList(response.data?.data?.staffList);
-        setUser(response.data?.data?.userId);
-      }
-    } catch (error) {
-      console.log("Error fetching staff:", error);
-    }
-  };
-
-  // Fetch messages for selected staff
-  const getMessages = async () => {
-    const id = selectedStaff?.id;
-    if (!id) return;
-
-    try {
-      const { data } = await axios.get(`/message/get/${id}`);
-      const formattedMessages = data.data.map((msg) => ({
-        text: msg.message,
-        time: new Date(msg.sendingTime).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        sender: msg.senderId === user ? "admin" : "staff",
-      }));
-
-      setChats((prev) => ({ ...prev, [id]: formattedMessages }));
-    } catch (error) {
-      console.log("Error fetching messages:", error);
-    }
-  };
-
+  // Fetch staff
   useEffect(() => {
+    const fetchStaff = async () => {
+      try {
+        const { data } = await axios.get("/team/staff/get");
+        if (data.success) {
+          setStaffList(data.data.staffList);
+          setUser(data.data.userId);
+        }
+      } catch (err) { console.log(err); }
+    };
     fetchStaff();
   }, []);
 
+  // Fetch messages
   useEffect(() => {
+    const getMessages = async () => {
+      if (!selectedStaff) return;
+      try {
+        const { data } = await axios.get(`/message/get/${selectedStaff.id}`);
+        const formatted = data.data.map(msg => ({
+          text: msg.message,
+          time: msg.sendingTime.slice(0,5),
+          sender: msg.senderId === user ? "admin" : "staff",
+        }));
+        setChats(prev => ({ ...prev, [selectedStaff.id]: formatted }));
+      } catch (err) { console.log(err); }
+    };
     getMessages();
   }, [selectedStaff]);
 
-  // Listen for incoming messages from backend
+  // Join room whenever a staff is selected
   useEffect(() => {
-    socket.on("receive_message", ({ staffId, message }) => {
-      setChats((prev) => ({
+    if (!selectedStaff) return;
+    const room = getRoomId(user, selectedStaff.id);
+    socket.emit("joinRoom", room);
+  }, [selectedStaff]);
+
+  // Receive messages
+  useEffect(() => {
+    socket.on("receiveMessage", ({ senderId, message }) => {
+      const otherId = senderId === user ? selectedStaff.id : senderId;
+      setChats(prev => ({
         ...prev,
-        [staffId]: [...(prev[staffId] || []), message],
+        [otherId]: [...(prev[otherId] || []), message],
       }));
     });
-
-    return () => socket.off("receive_message");
-  }, []);
-
-  // 🔹 Pulse (beat) every 5s
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setBeat(true);
-      setTimeout(() => setBeat(false), 300); // beat lasts 300ms
-    }, 5000); // every 5 sec
-    return () => clearInterval(interval);
-  }, []);
+    return () => socket.off("receiveMessage");
+  }, [selectedStaff, user]);
 
   const handleSend = () => {
     if (!message.trim() || !selectedStaff) return;
 
-    // trigger fly animation
     setSending(true);
     setTimeout(() => setSending(false), 300);
 
     const newMsg = {
       text: message,
-      time: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       sender: "admin",
     };
 
-    setChats((prev) => ({
-      ...prev,
-      [selectedStaff.id]: [...(prev[selectedStaff.id] || []), newMsg],
-    }));
+    // setChats(prev => ({
+    //   ...prev,
+    //   [selectedStaff.id]: [...(prev[selectedStaff.id] || []), newMsg],
+    // }));
+
+    const room = getRoomId(user, selectedStaff.id);
 
     socket.emit("send_message", {
       senderId: user,
-      staffId: selectedStaff.id,
+      receiverId: selectedStaff.id,
+      room,
       message: newMsg,
     });
 
@@ -113,13 +97,10 @@ const AdminMessagePortal = () => {
     if (textareaRef.current) textareaRef.current.style.height = "auto";
   };
 
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [chats, selectedStaff]);
+  // Auto scroll
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chats, selectedStaff]);
 
-  return (
+    return (
     <div className="flex h-[92vh] bg-neutral-50 text-gray-800">
       {/* Staff list */}
       <div className="w-1/4 bg-white border-r border-gray-200 flex flex-col">
@@ -127,7 +108,7 @@ const AdminMessagePortal = () => {
           Staff
         </div>
         <div className="flex-1 overflow-y-auto">
-          {staffList && staffList.map((staff) => (
+          {staffList.map((staff) => (
             <div
               key={staff.id}
               onClick={() => setSelectedStaff(staff)}
@@ -189,7 +170,7 @@ const AdminMessagePortal = () => {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input bar with animated send icon */}
+            {/* Input bar */}
             <div className="p-5 bg-white border-t border-gray-200 flex items-center shadow-inner">
               <textarea
                 ref={textareaRef}
@@ -211,7 +192,6 @@ const AdminMessagePortal = () => {
                   ${beat ? "scale-110" : ""}`}
               >
                 <svg
-                
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-5 w-5"
                   fill="none"

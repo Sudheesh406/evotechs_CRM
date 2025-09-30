@@ -37,7 +37,7 @@ export default function TaskDetail() {
   if (!parsed) return <div>Loading or invalid data…</div>;
 
   const action = parsed?.role; // ← read-only flag
-  console.log(action)
+  console.log(action);
 
   // API state
   const [customer, setCustomer] = useState(null);
@@ -62,39 +62,40 @@ export default function TaskDetail() {
   // Notes state
   const [notes, setNotes] = useState("");
 
-
   // Fetch customer details
   const fetchCustomerDetails = async () => {
-  // Show loading alert
-  Swal.fire({
-    title: "Getting Customer Details...",
-    didOpen: () => {
-      Swal.showLoading();
-    },
-    allowOutsideClick: false,
-  });
+    // Show loading alert
+    Swal.fire({
+      title: "Getting Customer Details...",
+      didOpen: () => {
+        Swal.showLoading();
+      },
+      allowOutsideClick: false,
+    });
 
-  try {
-    const response = await axios.post("task/team/details/get", { parsed });
-    const apiData = response.data?.data || {};
+    try {
+      const response = await axios.post("task/team/details/get", { parsed });
+      const apiData = response.data?.data || {};
 
-    setCustomer(apiData.customerDetails || null);
-    setCalls(apiData.callDetails || []);
-    setMeetings(apiData.meetingDetails || []);
-    setTaskDetails(apiData.taskDetails || []);
-    setAttachments([]);
-    setNotes(apiData.taskDetails?.[0]?.notes || "");
-    setTeamWorkDetails(apiData.taskDetails?.[0]?.teamWork || "");
+      setCustomer(apiData.customerDetails || null);
+      setCalls(apiData.callDetails || []);
+      setMeetings(apiData.meetingDetails || []);
+      setTaskDetails(apiData.taskDetails || []);
+      setAttachments([]);
+      setNotes(apiData.taskDetails?.[0]?.notes || "");
+      setTeamWorkDetails(apiData.taskDetails?.[0]?.teamWork || "");
 
-    // Close loading and show success (optional)
-    Swal.close();
-
-  } catch (error) {
-    console.log("error found in fetching customer details", error);
-    Swal.fire('Error', 'Failed to get customer details. Please try again.', 'error');
-  }
-};
-
+      // Close loading and show success (optional)
+      Swal.close();
+    } catch (error) {
+      console.log("error found in fetching customer details", error);
+      Swal.fire(
+        "Error",
+        "Failed to get customer details. Please try again.",
+        "error"
+      );
+    }
+  };
 
   useEffect(() => {
     fetchCustomerDetails();
@@ -133,40 +134,43 @@ export default function TaskDetail() {
     updateStagesAndNotes(checkedStagesCount, notes, taskId);
   };
 
+  const updateStagesAndNotes = async (stages, notes, id) => {
+    const data = { stages, notes, id };
 
-const updateStagesAndNotes = async (stages, notes, id) => {
-  const data = { stages, notes, id };
+    // Show loading alert
+    Swal.fire({
+      title: "Updating Stages and Notes...",
+      didOpen: () => {
+        Swal.showLoading();
+      },
+      allowOutsideClick: false,
+    });
 
-  // Show loading alert
-  Swal.fire({
-    title: "Updating Stages and Notes...",
-    didOpen: () => {
-      Swal.showLoading();
-    },
-    allowOutsideClick: false,
-  });
+    try {
+      const response = await axios.post("/task/team/stages_notest", { data });
 
-  try {
-    const response = await axios.post("/task/team/stages_notest", { data });
-
-    if (response?.data?.success || response) { 
-      fetchCustomerDetails(); 
-      Swal.fire({
-        icon: "success",
-        title: "Updated successfully!",
-        toast: true,
-        position: "top-end",
-        showConfirmButton: false,
-        timer: 1500,
-      });
-    } else {
-      Swal.fire("Error", "Failed to update stages and notes.", "error");
+      if (response?.data?.success || response) {
+        fetchCustomerDetails();
+        Swal.fire({
+          icon: "success",
+          title: "Updated successfully!",
+          toast: true,
+          position: "top-end",
+          showConfirmButton: false,
+          timer: 1500,
+        });
+      } else {
+        Swal.fire("Error", "Failed to update stages and notes.", "error");
+      }
+    } catch (error) {
+      console.log("error found in update stage and notes", error);
+      Swal.fire(
+        "Error",
+        "Failed to update stages and notes. Please try again.",
+        "error"
+      );
     }
-  } catch (error) {
-    console.log("error found in update stage and notes", error);
-    Swal.fire("Error", "Failed to update stages and notes. Please try again.", "error");
-  }
-};
+  };
 
   return (
     <div className="min-h-[680px] bg-gray-50 p-6 space-y-8">
@@ -217,19 +221,24 @@ const updateStagesAndNotes = async (stages, notes, id) => {
           </h3>
           <div className="border border-gray-300 rounded-lg bg-gray-50 p-3 text-sm">
             <div className="flex flex-col gap-2">
-              {Object.keys(workStages).map((k, i) => (
+              {[
+                { label: "Not Started", key: "pending1", disabled: true },
+                { label: "Ongoing", key: "pending2", disabled: false },
+                { label: "Review", key: "pending3", disabled: false },
+                { label: "Completed", key: "pending4", disabled: true },
+              ].map((stage, i) => (
                 <label
-                  key={k}
+                  key={stage.key}
                   className="flex items-center gap-2 text-gray-700"
                 >
                   <input
                     type="checkbox"
                     className="accent-blue-600"
-                    checked={workStages[k]}
-                    onChange={() => toggleStage(k)}
-                    disabled={action}
+                    checked={workStages[stage.key]}
+                    disabled={stage.disabled}
+                    onChange={() => toggleStage(stage.key)}
                   />
-                  Stage {i + 1}
+                  {stage.label}
                 </label>
               ))}
             </div>

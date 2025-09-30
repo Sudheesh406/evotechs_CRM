@@ -80,7 +80,7 @@ function CompletedTask() {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 bg-gray-50 ">
       <h1 className="text-xl font-semibold mb-6 text-gray-800">Completed Works</h1>
 
       {completedWorks.length === 0 ? (

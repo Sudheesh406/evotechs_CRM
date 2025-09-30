@@ -28,7 +28,7 @@ export default function TaskDetailDemo() {
   }
 
   const isPending = parsed?.data?.pending;
-  const isCompleted = parsed?.data.completed
+  const isCompleted = parsed?.data.completed;
 
   const getTaskDetails = async () => {
     if (!parsed) return;
@@ -81,30 +81,28 @@ export default function TaskDetailDemo() {
     }
   };
 
+  const reworkUpdate = async () => {
+    try {
+      // Safely get the task ID
+      const id = taskData?.taskDetails?.[0]?.id;
+      console.log("Task data:", id);
 
- const reworkUpdate = async () => {
-  try {
-    // Safely get the task ID
-    const id = taskData?.taskDetails?.[0]?.id;
-    console.log("Task data:", id);
+      // Call the API to toggle rework
+      if (id) {
+        const response = await axios.patch("/task/rework/update", { id });
 
-    // Call the API to toggle rework
-    if(id){
-      const response = await axios.patch("/task/rework/update", { id });
-  
-      if (response?.data?.success) {
-        console.log("Rework updated successfully:", response.data);
-        navigate(-1); // Go back one page
-      } else {
-        console.warn("Failed to update rework:", response?.data?.message);
+        if (response?.data?.success) {
+          console.log("Rework updated successfully:", response.data);
+          navigate(-1); // Go back one page
+        } else {
+          console.warn("Failed to update rework:", response?.data?.message);
+        }
       }
+    } catch (error) {
+      console.error("Failed to set rework:", error);
+      alert("Failed to set rework"); // optional user feedback
     }
-  } catch (error) {
-    console.error("Failed to set rework:", error);
-    alert("Failed to set rework"); // optional user feedback
-  }
-};
-
+  };
 
   return (
     <div className="min-h-[680px] bg-gray-50 p-6 space-y-8">
@@ -126,22 +124,22 @@ export default function TaskDetailDemo() {
             Customer Details
           </h2>
 
-          {!isPending && isCompleted &&
-          <button
-            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition"
-            onClick={() => reworkUpdate()}
-          >
-            Rework
-          </button>
-          }
-          {isPending && isCompleted &&
-          <button
-            className="px-4 py-2 bg-orange-500 text-white text-sm rounded-lg hover:bg-blue-700 transition"
-            onClick={() => reworkUpdate()}
-          >
-            Restore
-          </button>
-          }
+          {!isPending && isCompleted && (
+            <button
+              className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition"
+              onClick={() => reworkUpdate()}
+            >
+              Rework
+            </button>
+          )}
+          {isPending && isCompleted && (
+            <button
+              className="px-4 py-2 bg-orange-500 text-white text-sm rounded-lg hover:bg-blue-700 transition"
+              onClick={() => reworkUpdate()}
+            >
+              Restore
+            </button>
+          )}
         </div>
 
         {/* Personal Details */}
@@ -172,19 +170,24 @@ export default function TaskDetailDemo() {
           </h3>
           <div className="border border-gray-300 rounded-lg bg-gray-50 p-3 text-sm">
             <div className="flex flex-col gap-2">
-              {[1, 2, 3, 4].map((stageNum) => (
+              {[
+                { num: 1, label: "Not Started" },
+                { num: 2, label: "Ongoing" },
+                { num: 3, label: "Review" },
+                { num: 4, label: "Completed" },
+              ].map((stage) => (
                 <label
-                  key={stageNum}
+                  key={stage.num}
                   className="flex items-center gap-2 text-gray-700"
                 >
                   <input
                     type="checkbox"
                     className="accent-blue-600"
-                    checked={currentStage >= stageNum}
-                    disabled={stageNum !== 4 || isPending}
-                    onChange={() => handleStageChange(stageNum)}
+                    checked={currentStage >= stage.num}
+                    disabled={stage.num !== 4 || isPending}
+                    onChange={() => handleStageChange(stage.num)}
                   />
-                  Stage {stageNum}
+                  {stage.num} {stage.label}
                 </label>
               ))}
             </div>

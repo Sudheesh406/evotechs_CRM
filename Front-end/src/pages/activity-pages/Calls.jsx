@@ -259,58 +259,60 @@ const calls = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    try {
-      // Show confirmation dialog
-      const result = await Swal.fire({
-        title: "Are you sure?",
-        text: "This call will be deleted permanently!",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#d33",
-        cancelButtonColor: "#3085d6",
-        confirmButtonText: "Yes, delete it!",
-      });
+ const handleDelete = async (id) => {
+  try {
+    // Show confirmation dialog
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "This call will be deleted permanently!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+    });
 
-      if (result.isConfirmed) {
-        // Show loading while deleting
-        Swal.fire({
-          title: "Deleting...",
-          allowOutsideClick: false,
-          didOpen: () => {
-            Swal.showLoading();
-          },
-        });
-
-        await axios.delete(`/calls/delete/${id}`);
-
-        Swal.close(); // close loading
-
-        // Show success message
-        Swal.fire({
-          icon: "success",
-          title: "Deleted!",
-          text: "The call has been deleted successfully.",
-          confirmButtonText: "OK",
-          showConfirmButton: false,
-        }).then(() => {
-          getCalls(filter);
-        });
-      }
-    } catch (error) {
-      Swal.close(); // close loading if error
-
+    if (result.isConfirmed) {
+      // Show loading while deleting
       Swal.fire({
-        icon: "error",
-        title: "Failed to delete",
-        text:
-          error.response?.data?.message ||
-          "Something went wrong. Please try again.",
+        title: "Deleting...",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
       });
 
-      console.log("error found delete", error);
+      await axios.delete(`/calls/delete/${id}`);
+
+      Swal.close(); // close loading
+
+      // Show success message with OK button
+      await Swal.fire({
+        icon: "success",
+        title: "Deleted!",
+        text: "The call has been deleted successfully.",
+        confirmButtonText: "OK",
+        showConfirmButton: true, // ensure OK button is shown
+      });
+
+      // Refresh data after user clicks OK
+      getCalls(filter);
     }
-  };
+  } catch (error) {
+    Swal.close(); // close loading if error
+
+    Swal.fire({
+      icon: "error",
+      title: "Failed to delete",
+      text:
+        error.response?.data?.message ||
+        "Something went wrong. Please try again.",
+    });
+
+    console.log("error found delete", error);
+  }
+};
+
 
   useEffect(() => {
     getCalls(filter);

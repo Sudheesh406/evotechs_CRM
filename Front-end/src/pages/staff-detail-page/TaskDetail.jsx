@@ -16,7 +16,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 /* --- Main Component --- */
 export default function TaskDetail() {
-  const state = false
+  const state = false;
   const navigate = useNavigate();
   const { data } = useParams();
 
@@ -36,9 +36,8 @@ export default function TaskDetail() {
   }
   if (!parsed) return <div>Loading or invalid data…</div>;
 
-
-    const isUpdate = parsed?.data.update
-    const newUpdate = parsed?.data.clear
+  const isUpdate = parsed?.data.update;
+  const newUpdate = parsed?.data.clear;
 
   // API state
   const [customer, setCustomer] = useState(null);
@@ -71,7 +70,7 @@ export default function TaskDetail() {
       setAttachments([]);
       setNotes(apiData.taskDetails?.[0]?.notes || "");
     } catch (error) {
-       Swal.fire('Error', 'Failed to get customer details.', 'error');
+      Swal.fire("Error", "Failed to get customer details.", "error");
       console.log("error found in fetching customer details", error);
     }
   };
@@ -100,7 +99,9 @@ export default function TaskDetail() {
     const originalStagesCount = parseInt(taskDetails[0].stage, 10) || 0;
     const checkedStagesCount = Object.values(workStages).filter(Boolean).length;
 
-    return notes !== originalNotes || checkedStagesCount !== originalStagesCount;
+    return (
+      notes !== originalNotes || checkedStagesCount !== originalStagesCount
+    );
   };
 
   // Save handler
@@ -108,111 +109,113 @@ export default function TaskDetail() {
     const checkedStagesCount = Object.values(workStages).filter(Boolean).length;
     console.log("Updated Notes:", notes);
     console.log("Checked Stages Count:", checkedStagesCount);
-     const taskId = taskDetails[0].id
-    updateStagesAndNotes(checkedStagesCount,notes,taskId )
+    const taskId = taskDetails[0].id;
+    updateStagesAndNotes(checkedStagesCount, notes, taskId);
     // Optional: update taskDetails so button disappears after save
     setTaskDetails((prev) => {
       if (!prev[0]) return prev;
-      return [{ ...prev[0], notes, stage: checkedStagesCount }, ...prev.slice(1)];
+      return [
+        { ...prev[0], notes, stage: checkedStagesCount },
+        ...prev.slice(1),
+      ];
     });
   };
 
+  const updateStagesAndNotes = async (stages, notes, id) => {
+    const data = { stages, notes, id };
 
-const updateStagesAndNotes = async (stages, notes, id) => {
-  const data = { stages, notes, id };
-
-  try {
-    // 🔄 Show loading
-    Swal.fire({
-      title: 'Updating...',
-      text: 'Please wait while we update stages and notes',
-      allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-      },
-    });
-
-    // ✅ Make API call
-    const response = await axios.post('/task/stages_notes', { data });
-
-    // 🔔 Show success alert
-    Swal.fire({
-      icon: 'success',
-      title: 'Updated!',
-      text: 'Stages and notes have been successfully updated.',
-      timer: 2000,
-      showConfirmButton: false,
-    });
-
-    console.log('response', response);
-    return response.data;
-  } catch (error) {
-    console.error('Error updating stages and notes', error);
-
-    // ❌ Show error alert
-    Swal.fire({
-      icon: 'error',
-      title: 'Failed!',
-      text: 'Failed to update stages and notes. Please try again later.',
-    });
-    fetchCustomerDetails();
-  }
-};
-
- const updateWork = async () => {
-  try {
-    // Safely get the task ID
-    const id = taskDetails[0]?.id;
-    console.log("Task data:", id);
-
-    if (!id) {
+    try {
+      // 🔄 Show loading
       Swal.fire({
-        icon: "warning",
-        title: "Task not found",
-        text: "No task ID available to update.",
+        title: "Updating...",
+        text: "Please wait while we update stages and notes",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
       });
-      return;
-    }
 
-    // Show loading while API request is in progress
-    Swal.fire({
-      title: "Updating rework...",
-      allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-      },
-    });
+      // ✅ Make API call
+      const response = await axios.post("/task/stages_notes", { data });
 
-    const response = await axios.patch("/task/rework/finish", { id });
-
-    Swal.close(); // Close the loading alert
-
-    if (response?.data?.success) {
+      // 🔔 Show success alert
       Swal.fire({
         icon: "success",
-        title: "Success!",
-        text: "Rework updated successfully.",
+        title: "Updated!",
+        text: "Stages and notes have been successfully updated.",
         timer: 2000,
         showConfirmButton: false,
-      }).then(() => {
-        navigate(-1); // Go back one page
       });
-    } else {
+
+      console.log("response", response);
+      return response.data;
+    } catch (error) {
+      console.error("Error updating stages and notes", error);
+
+      // ❌ Show error alert
       Swal.fire({
         icon: "error",
-        title: "Failed",
-        text: response?.data?.message || "Failed to update rework.",
+        title: "Failed!",
+        text: "Failed to update stages and notes. Please try again later.",
       });
+      fetchCustomerDetails();
     }
-  } catch (error) {
-    Swal.fire({
-      icon: "error",
-      title: "Error",
-      text: "Failed to set rework. Please try again later.",
-    });
-    console.error("Failed to set rework:", error);
-  }
-};
+  };
+
+  const updateWork = async () => {
+    try {
+      // Safely get the task ID
+      const id = taskDetails[0]?.id;
+      console.log("Task data:", id);
+
+      if (!id) {
+        Swal.fire({
+          icon: "warning",
+          title: "Task not found",
+          text: "No task ID available to update.",
+        });
+        return;
+      }
+
+      // Show loading while API request is in progress
+      Swal.fire({
+        title: "Updating rework...",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
+
+      const response = await axios.patch("/task/rework/finish", { id });
+
+      Swal.close(); // Close the loading alert
+
+      if (response?.data?.success) {
+        Swal.fire({
+          icon: "success",
+          title: "Success!",
+          text: "Rework updated successfully.",
+          timer: 2000,
+          showConfirmButton: false,
+        }).then(() => {
+          navigate(-1); // Go back one page
+        });
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Failed",
+          text: response?.data?.message || "Failed to update rework.",
+        });
+      }
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to set rework. Please try again later.",
+      });
+      console.error("Failed to set rework:", error);
+    }
+  };
 
   return (
     <div className="min-h-[680px] bg-gray-50 p-6 space-y-8">
@@ -233,22 +236,22 @@ const updateStagesAndNotes = async (stages, notes, id) => {
           <h2 className="text-xl font-semibold text-gray-800">
             Customer Details
           </h2>
-            {isUpdate && !newUpdate &&
-          <button
-            className="px-4 py-2 bg-orange-500 text-white text-sm rounded-lg hover:bg-blue-700 transition"
-            onClick={() => updateWork()}
-          >
-            Update
-          </button>
-          }
-            {isUpdate && newUpdate &&
-          <button
-            className="px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-blue-700 transition"
-            onClick={() => updateWork()}
-          >
-            Reject
-          </button>
-          }
+          {isUpdate && !newUpdate && (
+            <button
+              className="px-4 py-2 bg-orange-500 text-white text-sm rounded-lg hover:bg-blue-700 transition"
+              onClick={() => updateWork()}
+            >
+              Update
+            </button>
+          )}
+          {isUpdate && newUpdate && (
+            <button
+              className="px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-blue-700 transition"
+              onClick={() => updateWork()}
+            >
+              Reject
+            </button>
+          )}
         </div>
 
         {/* Personal Details */}
@@ -279,18 +282,24 @@ const updateStagesAndNotes = async (stages, notes, id) => {
           </h3>
           <div className="border border-gray-300 rounded-lg bg-gray-50 p-3 text-sm">
             <div className="flex flex-col gap-2">
-              {Object.keys(workStages).map((k, i) => (
+              {[
+                { label: "Not Started", key: "pending1", disabled: true },
+                { label: "Ongoing", key: "pending2", disabled: false },
+                { label: "Review", key: "pending3", disabled: false },
+                { label: "Completed", key: "pending4", disabled: true },
+              ].map((stage, i) => (
                 <label
-                  key={k}
+                  key={stage.key}
                   className="flex items-center gap-2 text-gray-700"
                 >
                   <input
                     type="checkbox"
                     className="accent-blue-600"
-                    checked={workStages[k]}
-                    onChange={() => toggleStage(k)}
+                    checked={workStages[stage.key]}
+                    disabled={stage.disabled}
+                    onChange={() => toggleStage(stage.key)}
                   />
-                  Stage {i + 1}
+                  {stage.label}
                 </label>
               ))}
             </div>
