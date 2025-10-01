@@ -9,11 +9,17 @@ module.exports = {
         primaryKey: true,
         allowNull: false,
       },
-      dateTime: {
-        type: Sequelize.DATE,
-        allowNull: false,
+      staffId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: {
+          model: "signup", // 👈 replace with actual table name for your signup model
+          key: "id",
+        },
+        onUpdate: "CASCADE",
+        onDelete: "SET NULL",
       },
-      dataName: {
+      data: {
         type: Sequelize.STRING,
         allowNull: false,
       },
@@ -21,15 +27,18 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
       },
-      staffId: {
-        type: Sequelize.INTEGER,
-        allowNull: true,
-        references: {
-          model: "signup", // make sure this is your actual signup table name
-          key: "id",
-        },
-        onUpdate: "CASCADE",
-        onDelete: "SET NULL",
+      date: {
+        type: Sequelize.DATEONLY,
+        allowNull: false,
+      },
+      time: {
+        type: Sequelize.TIME,
+        allowNull: false,
+      },
+      createdAt: {
+        type: Sequelize.DATE,
+        allowNull: false,
+        defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
       },
     });
   },

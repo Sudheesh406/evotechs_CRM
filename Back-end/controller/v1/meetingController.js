@@ -1,5 +1,6 @@
 const meetings = require("../../models/v1/Customer/meetings");
 const Contacts = require("../../models/v1/Customer/contacts");
+const trash = require("../../models/v1/Trash/trash")
 const { signup } = require("../../models/v1/index");
 const { httpError, httpSuccess } = require("../../utils/v1/httpResponse");
 const dayjs = require("dayjs"); // ✅ Import dayjs
@@ -100,7 +101,6 @@ const createMeetings = async (req, res) => {
   }
 };
 
-
 const getMeetings = async (req, res) => {
   const user = req.user;
 
@@ -173,7 +173,6 @@ const getMeetings = async (req, res) => {
   }
 };
 
-
 const editMeetings = async (req, res) => {
   const user = req.user;
   const newData = req.body.data;
@@ -187,7 +186,7 @@ const editMeetings = async (req, res) => {
 
     const meeting = await meetings.findByPk(id);
     if (!meeting) return httpError(res, 404, "Meeting not found");
-    
+
     const isMainStaff = meeting.staffId === user.id;
     const isTeamStaff = meeting.TeamStaffId === user.id;
 
@@ -270,7 +269,6 @@ const editMeetings = async (req, res) => {
   }
 };
 
-
 const deleteMeetings = async (req, res) => {
   try {
     const user = req.user;
@@ -294,6 +292,23 @@ const deleteMeetings = async (req, res) => {
       return httpError(res, 403, "Access denied");
     }
 
+    const moment = require("moment-timezone");
+
+    // Get current Indian Railway time (IST)
+    const now = moment().tz("Asia/Kolkata");
+
+    const currentDate = now.format("YYYY-MM-DD"); // only date
+    const currentTime = now.format("HH:mm:ss");
+
+    await trash.create({
+      data: "meetings",
+      dataId: id,
+      staffId: user.id, // can be null if no staff
+      date: currentDate,
+      time: currentTime,
+      // dateTime will automatically use default: DataTypes.NOW
+    });
+
     // Instead of destroying, update softDelete
     await meeting.update({ softDelete: true || null });
 
@@ -306,7 +321,6 @@ const deleteMeetings = async (req, res) => {
     return httpError(res, 500, "Server error", error.message);
   }
 };
-
 
 const createMeetingFromTask = async (req, res) => {
   try {
@@ -373,10 +387,8 @@ const createMeetingFromTask = async (req, res) => {
   }
 };
 
-
 const createTeamMeetingFromTask = async (req, res) => {
   try {
-
     const user = req.user;
     const {
       name,
@@ -405,7 +417,6 @@ const createTeamMeetingFromTask = async (req, res) => {
       return httpError(res, 400, "All fields are required");
     }
 
-
     // ✅ Convert times to MySQL TIME format (HH:mm:ss)
     const formattedStartTime = dayjs(startTime, ["h:mm A", "HH:mm"]).format(
       "HH:mm:ss"
@@ -422,12 +433,12 @@ const createTeamMeetingFromTask = async (req, res) => {
       return httpError(res, 400, "Invalid time format. Please use hh:mm AM/PM");
     }
 
-  let TeamStaffId = null;
+    let TeamStaffId = null;
     if (staffId != user.id) {
       TeamStaffId = user.id;
     }
 
-     const result = await meetings.create({
+    const result = await meetings.create({
       name,
       subject,
       meetingDate: date,
@@ -437,10 +448,9 @@ const createTeamMeetingFromTask = async (req, res) => {
       description,
       staffId,
       contactId,
-      TeamStaffId
+      TeamStaffId,
     });
     return httpSuccess(res, 201, "meetings created successfully", result);
-
   } catch (error) {
     console.error("Error in createTeamMeetingFromTask:", error);
     return httpError(res, 500, "Server error", error.message);

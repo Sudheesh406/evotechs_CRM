@@ -89,7 +89,8 @@ const handleLogin = async (req, res) => {
     if (!userRecord) {
       return httpError(res, 404, "Email is not registered");
     }
-    if (!userRecord) {
+
+    if (userRecord.verified == true) {
       return httpError(res, 404, "Email is not registered");
     }
 
@@ -137,6 +138,7 @@ const handleLogin = async (req, res) => {
   }
 };
 
+
 const logout = async (req, res) => {
   const user = req.user;
   // console.log('user')
@@ -156,6 +158,7 @@ const logout = async (req, res) => {
   }
 };
 
+
 const roleChecker = async (req, res) => {
   try {
     const user = req.user;
@@ -171,6 +174,7 @@ const roleChecker = async (req, res) => {
     return httpError(res, 500, "Server error", err.message);
   }
 };
+
 
 const getPin = async (req, res) => {
   const user = req.user;
@@ -204,6 +208,7 @@ const getPin = async (req, res) => {
     return httpError(res, 500, "Server error", err.message);
   }
 };
+
 
 const createPin = async (req, res) => {
   const user = req.user; // logged-in user
@@ -244,6 +249,10 @@ const createPin = async (req, res) => {
     existing.staffId = user.id;
 
     await existing.save();
+    const staff = await signup.findOne({ where: { id: user.id } });
+    if (staff) {
+      existing.staffName = staff.name;
+    }
     return res
       .status(200)
       .json({ message: "Pin updated successfully", pin: existing });
@@ -253,6 +262,75 @@ const createPin = async (req, res) => {
   }
 };
 
+
+const acessHandler = async (req, res) => {
+  try {
+    const user = req.user;
+  // check if user exists
+    const userDetails = await Signup.findOne({ where: { id: user.id } });
+    if (!userDetails) return httpError(res, 404, "User not found");
+
+    // optional: check role if needed
+    if (!userDetails.role)
+      return httpError(res, 403, "Access denied. Admins only.");
+
+    const { id } = req.params;
+    if (!id) {
+      return httpError(res, 400, "id is required for access change");
+    }
+
+    const exist = await signup.findOne({ where: { id } }); // ✅ added await
+    if (!exist) {
+      return httpError(res, 401, "No user found with this id");
+    }
+
+    // Toggle verified
+    await exist.update({ verified: !exist.verified });
+
+    return res
+      .status(200)
+      .json({ message: "Access updated successfully", exist });
+  } catch (error) {
+    console.log("error found in access handling", error);
+    return httpError(res, 500, "Server error", error.message); // ✅ fixed variable
+  }
+};
+
+
+const deleteUser = async (req, res) => {
+  try {
+    const user = req.user;
+  // check if user exists
+    const userDetails = await Signup.findOne({ where: { id: user.id } });
+    if (!userDetails) return httpError(res, 404, "User not found");
+
+    // optional: check role if needed
+    if (!userDetails.role)
+      return httpError(res, 403, "Access denied. Admins only.");
+
+    const { id } = req.params;
+    if (!id) {
+      return httpError(res, 400, "id is required for access change");
+    }
+
+    const exist = await signup.findOne({ where: { id } }); // ✅ added await
+    if (!exist) {
+      return httpError(res, 401, "No user found with this id");
+    }
+
+    // Toggle verified
+    await exist.destroy()
+
+    return res
+      .status(200)
+      .json({ message: "User deleted successfully" });
+  } catch (error) {
+    console.log("error found in delete user", error);
+    return httpError(res, 500, "Server error", error.message); // ✅ fixed variable
+  }
+};
+
+
 module.exports = {
   handleSignup,
   handleLogin,
@@ -260,4 +338,6 @@ module.exports = {
   roleChecker,
   getPin,
   createPin,
+  acessHandler,
+  deleteUser
 };

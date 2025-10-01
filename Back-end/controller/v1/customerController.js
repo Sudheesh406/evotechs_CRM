@@ -1,18 +1,27 @@
 const Leads = require("../../models/v1/Customer/leads");
-const Contacts = require("../../models/v1/Customer/contacts")
+const Contacts = require("../../models/v1/Customer/contacts");
+const trash = require("../../models/v1/Trash/trash");
 const { httpSuccess, httpError } = require("../../utils/v1/httpResponse");
 const { Op } = require("sequelize");
-
 
 //leads
 const createLeads = async (req, res) => {
   try {
-    const user = req.user; 
+    const user = req.user;
 
-    const { name, description, email, phone, source, priority, amount } = req.body;
+    const { name, description, email, phone, source, priority, amount } =
+      req.body;
 
     // Validate required fields
-    if (!name || !description || !email || !phone || !source || !priority || !amount) {
+    if (
+      !name ||
+      !description ||
+      !email ||
+      !phone ||
+      !source ||
+      !priority ||
+      !amount
+    ) {
       return httpError(res, 400, "All fields are required");
     }
 
@@ -40,7 +49,6 @@ const createLeads = async (req, res) => {
     return httpError(res, 500, "Server error", err.message);
   }
 };
-
 
 const getLeads = async (req, res) => {
   try {
@@ -81,7 +89,6 @@ const getLeads = async (req, res) => {
   }
 };
 
-
 const updateLeads = async (req, res) => {
   try {
     const user = req.user;
@@ -91,31 +98,35 @@ const updateLeads = async (req, res) => {
     const customer = await Leads.findOne({ where: { id } });
     if (!customer) return httpError(res, 404, "Lead not found");
 
-    if (customer.staffId !== user.id) return httpError(res, 403, "Access denied");
+    if (customer.staffId !== user.id)
+      return httpError(res, 403, "Access denied");
 
     // Check duplicates separately
     const existEmail = await Leads.findOne({
-      where: { email: data.email, id: { [Op.ne]: id } }
+      where: { email: data.email, id: { [Op.ne]: id } },
     });
 
-    if (existEmail) return httpError(res, 409, "Another lead already exists with this email");
+    if (existEmail)
+      return httpError(res, 409, "Another lead already exists with this email");
 
     const existPhone = await Leads.findOne({
-      where: { phone: data.phone, id: { [Op.ne]: id } }
+      where: { phone: data.phone, id: { [Op.ne]: id } },
     });
 
-    if (existPhone) return httpError(res, 409, "Another lead already exists with this phone number");
+    if (existPhone)
+      return httpError(
+        res,
+        409,
+        "Another lead already exists with this phone number"
+      );
 
     const updated = await customer.update(data);
     return httpSuccess(res, 200, "Lead updated successfully", updated);
-
   } catch (error) {
     console.error("Error in updating Leads:", error);
     return httpError(res, 500, "Internal Server Error");
   }
 };
-
-
 
 const deleteLeads = async (req, res) => {
   try {
@@ -134,6 +145,23 @@ const deleteLeads = async (req, res) => {
       return httpError(res, 403, "Access denied");
     }
 
+    const moment = require("moment-timezone");
+
+    // Get current Indian Railway time (IST)
+    const now = moment().tz("Asia/Kolkata");
+
+    const currentDate = now.format("YYYY-MM-DD"); // only date
+    const currentTime = now.format("HH:mm:ss");
+
+    await trash.create({
+      data: "leads",
+      dataId: id,
+      staffId: user.id, // can be null if no staff
+      date: currentDate,
+      time: currentTime,
+      // dateTime will automatically use default: DataTypes.NOW
+    });
+
     // Perform soft delete
     const updated = await customer.update({ softDelete: true });
 
@@ -143,7 +171,6 @@ const deleteLeads = async (req, res) => {
     return httpError(res, 500, "Internal Server Error");
   }
 };
-
 
 const approveLeads = async (req, res) => {
   try {
@@ -163,7 +190,7 @@ const approveLeads = async (req, res) => {
 
     // 3️⃣ Check for existing contact by email
     const existingContact = await Contacts.findOne({
-      where: { email: customer.email , phone : customer.phone},
+      where: { email: customer.email, phone: customer.phone },
     });
     if (existingContact) {
       return httpError(res, 400, "A contact with this email already exists");
@@ -199,22 +226,29 @@ const approveLeads = async (req, res) => {
   }
 };
 
-
-
 //contacts
 const createContact = async (req, res) => {
   try {
-    const user = req.user; 
+    const user = req.user;
 
-    const { name, description, email, phone, source, priority, amount } = req.body;
+    const { name, description, email, phone, source, priority, amount } =
+      req.body;
 
     // Validate required fields
-    if (!name || !description || !email || !phone || !source || !priority || !amount) {
+    if (
+      !name ||
+      !description ||
+      !email ||
+      !phone ||
+      !source ||
+      !priority ||
+      !amount
+    ) {
       return httpError(res, 400, "All fields are required");
     }
 
     // Optionally: check if email or phone already exists
-    const existingLead = await Contacts.findOne({ where: { email,phone} });
+    const existingLead = await Contacts.findOne({ where: { email, phone } });
     if (existingLead) {
       return httpError(res, 409, "A Contacts with this email already exists");
     }
@@ -237,7 +271,6 @@ const createContact = async (req, res) => {
     return httpError(res, 500, "Server error", err.message);
   }
 };
-
 
 const getContact = async (req, res) => {
   try {
@@ -278,7 +311,6 @@ const getContact = async (req, res) => {
   }
 };
 
-
 const updateContact = async (req, res) => {
   try {
     const user = req.user;
@@ -287,35 +319,41 @@ const updateContact = async (req, res) => {
 
     const customer = await Contacts.findOne({ where: { id } });
     if (!customer) return httpError(res, 404, "contact not found");
-    
+
     if (customer.staffId !== user.id) {
       return httpError(res, 403, "Access denied");
     }
 
-       // Check duplicates separately
+    // Check duplicates separately
     const existEmail = await Contacts.findOne({
-      where: { email: data.email, id: { [Op.ne]: id } }
+      where: { email: data.email, id: { [Op.ne]: id } },
     });
 
-    if (existEmail) return httpError(res, 409, "Another contact already exists with this email");
+    if (existEmail)
+      return httpError(
+        res,
+        409,
+        "Another contact already exists with this email"
+      );
 
     const existPhone = await Contacts.findOne({
-      where: { phone: data.phone, id: { [Op.ne]: id } }
+      where: { phone: data.phone, id: { [Op.ne]: id } },
     });
 
-    if (existPhone) return httpError(res, 409, "Another contact already exists with this phone number");
+    if (existPhone)
+      return httpError(
+        res,
+        409,
+        "Another contact already exists with this phone number"
+      );
 
     const updated = await customer.update(data);
     return httpSuccess(res, 200, "contact updated successfully", updated);
-
-
   } catch (error) {
     console.error("Error in updating Contact:", error);
     return httpError(res, 500, "Internal Server Error");
   }
-
 };
-
 
 const deleteContact = async (req, res) => {
   try {
@@ -334,6 +372,22 @@ const deleteContact = async (req, res) => {
       return httpError(res, 403, "Access denied");
     }
 
+    const moment = require("moment-timezone");
+
+    // Get current Indian Railway time (IST)
+    const now = moment().tz("Asia/Kolkata");
+
+    const currentDate = now.format("YYYY-MM-DD"); // only date
+    const currentTime = now.format("HH:mm:ss");
+
+    await trash.create({
+      data: "contacts",
+      dataId: id,
+      staffId: user.id, // can be null if no staff
+      date: currentDate,
+      time: currentTime,
+      // dateTime will automatically use default: DataTypes.NOW
+    });
     // Perform soft delete
     const updated = await customer.update({ softDelete: true });
 
@@ -344,7 +398,14 @@ const deleteContact = async (req, res) => {
   }
 };
 
-
-module.exports = { createLeads, getLeads, updateLeads, deleteLeads, approveLeads,
-  deleteContact, updateContact, getContact, createContact
- };
+module.exports = {
+  createLeads,
+  getLeads,
+  updateLeads,
+  deleteLeads,
+  approveLeads,
+  deleteContact,
+  updateContact,
+  getContact,
+  createContact,
+};

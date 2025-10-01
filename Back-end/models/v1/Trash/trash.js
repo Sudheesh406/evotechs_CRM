@@ -1,38 +1,52 @@
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../../../database/dbConfigue');
+// models/SecretCode.js
+// models/v1/Authentication/secretCode.js
+const { DataTypes } = require("sequelize");
+const { sequelize } = require("../../../database/dbConfigue");
 const signup = require('../Authentication/authModel'); 
 
-const Trash = sequelize.define('trash', {
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true,
-  },
-  dateTime: {
-    type: DataTypes.DATE,
-    allowNull: false,
-  },
-  dataName: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  dataId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-  },
-  staffId: {                
-    type: DataTypes.INTEGER,
-    allowNull: true,        
-    references: {
-      model: signup,   
-      key: 'id',
+const trash = sequelize.define(
+  "trash",
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
     },
-    onUpdate: 'CASCADE',
-    onDelete: 'SET NULL',
+    staffId: {
+    type: DataTypes.INTEGER, 
+    allowNull: true,
+    references: {
+      model: signup, 
+      key: "id",
+    },
+    onUpdate: "CASCADE",
+    onDelete: "SET NULL",
   },
-}, {
-  tableName: 'trash',
-  timestamps: false, // since we have our own dateTime field
-});
+    data: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+     dataId: {
+    type: DataTypes.INTEGER, 
+    allowNull: false,
+    },
+    date: {
+      type: DataTypes.DATEONLY,
+      allowNull: false,
+    },
+    time: {
+      type: DataTypes.TIME,
+      allowNull: false,
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+  },
+  {
+    tableName: "trash",
+    updatedAt: false,
+  }
+);
 
-module.exports = Trash;
+module.exports = trash;

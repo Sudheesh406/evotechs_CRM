@@ -7,8 +7,9 @@ const leads = require("../../models/v1/Customer/leads");
 const task = require("../../models/v1/Project/task");
 const { contacts } = require("../../models/v1");
 const { signup } = require("../../models/v1");
+const trash = require("../../models/v1/Trash/trash");
 
-const { Op, fn, col, literal, Sequelize  } = require("sequelize");
+const { Op, fn, col, literal, Sequelize } = require("sequelize");
 
 const createTeamWork = async (req, res) => {
   try {
@@ -119,11 +120,14 @@ const getStaff = async (req, res) => {
     // Fetch all staff users
     const staffList = await signup.findAll({
       where: { role: "staff" },
-      attributes: ["id", "name", "email"], // select only necessary fields
+      attributes: ["id", "name", "email","verified"], // select only necessary fields
     });
 
- const userId = user.id
-    return httpSuccess(res, 200, "Staff fetched successfully", {staffList,userId});
+    const userId = user.id;
+    return httpSuccess(res, 200, "Staff fetched successfully", {
+      staffList,
+      userId,
+    });
   } catch (error) {
     console.error("Error in getStaff:", error);
     return httpError(
@@ -133,7 +137,6 @@ const getStaff = async (req, res) => {
     );
   }
 };
-
 
 const editTeam = async (req, res) => {
   try {
@@ -197,6 +200,23 @@ const deleteTeam = async (req, res) => {
     if (!dataForDelete) {
       return httpError(res, 404, "Team not found");
     }
+
+    const moment = require("moment-timezone");
+
+    // Get current Indian Railway time (IST)
+    const now = moment().tz("Asia/Kolkata");
+
+    const currentDate = now.format("YYYY-MM-DD"); // only date
+    const currentTime = now.format("HH:mm:ss");
+
+    await trash.create({
+      data: "teams",
+      dataId: id,
+      staffId: user.id, // can be null if no staff
+      date: currentDate,
+      time: currentTime,
+      // dateTime will automatically use default: DataTypes.NOW
+    });
 
     // Soft delete by updating the field
     const deletedData = await dataForDelete.update({ softDelete: true });
@@ -329,7 +349,7 @@ const getSectors = async (req, res) => {
       where: { id: teamId, softDelete: false },
     });
     if (!teamDetails) {
-      return res.status(404).json({ message: "Team not found" });
+      return res.status(405).json({ message: "Team not found" });
     }
 
     const staffIds = teamDetails.staffIds; // array of staff IDs
@@ -366,11 +386,13 @@ const getSectors = async (req, res) => {
   }
 };
 
+
 const getProjects = async (req, res) => {
   try {
     const user = req.user;
     const { parsedData } = req.body;
     const { staffIds, projectName } = parsedData;
+
 
     if (!Array.isArray(staffIds) || staffIds.length === 0) {
       return res
@@ -461,7 +483,6 @@ const getLeads = async (req, res) => {
   }
 };
 
-
 const getContacts = async (req, res) => {
   try {
     const user = req.user;
@@ -500,7 +521,6 @@ const getContacts = async (req, res) => {
   }
 };
 
-
 const contactReassign = async (req, res) => {
   try {
     const user = req.user; // Logged-in user
@@ -524,10 +544,13 @@ const contactReassign = async (req, res) => {
     return httpSuccess(res, 200, "Contact reassigned successfully", existing);
   } catch (error) {
     console.error("Error reassigning contacts:", error);
-    return httpError(res, 500, "Failed to reassign contacts. Please try again later.");
+    return httpError(
+      res,
+      500,
+      "Failed to reassign contacts. Please try again later."
+    );
   }
 };
-
 
 module.exports = {
   createTeamWork,
@@ -541,5 +564,5 @@ module.exports = {
   getProjects,
   getLeads,
   getContacts,
-  contactReassign
+  contactReassign,
 };

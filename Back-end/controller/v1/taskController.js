@@ -6,6 +6,7 @@ const meetings = require("../../models/v1/Customer/meetings");
 const calls = require("../../models/v1/Customer/calls");
 const team = require("../../models/v1/Team_work/team");
 const signup = require("../../models/v1/Authentication/authModel");
+const trash = require('../../models/v1/Trash/trash')
 
 const { Op, Sequelize } = require("sequelize");
 
@@ -101,6 +102,22 @@ const deleteTask = async (req, res) => {
     if (!existingTask) {
       return httpError(res, 404, "Task not found");
     }
+    const moment = require("moment-timezone");
+
+    // Get current Indian Railway time (IST)
+    const now = moment().tz("Asia/Kolkata");
+
+    const currentDate = now.format("YYYY-MM-DD"); // only date
+    const currentTime = now.format("HH:mm:ss");
+
+    await trash.create({
+      data: "task",
+      dataId: taskId,
+      staffId: user.id, // can be null if no staff
+      date: currentDate,
+      time: currentTime,
+      // dateTime will automatically use default: DataTypes.NOW
+    });
     await existingTask.update({ softDelete: true });
     return httpSuccess(res, 200, "Task deleted successfully");
   } catch (error) {
@@ -583,7 +600,7 @@ const newUpdate = async (req, res) => {
 const getTaskForAdmin = async (req, res) => {
   try {
     // Assuming req.user has the logged-in user info
-      const user = req.user;
+    const user = req.user;
 
     const access = await roleChecker(user.id);
     if (!access) {
@@ -595,19 +612,19 @@ const getTaskForAdmin = async (req, res) => {
 
     // Fetch all tasks with associated contact and staff details
     const tasks = await task.findAll({
-       where: { softDelete: false },
+      where: { softDelete: false },
       include: [
         {
           model: contacts, // replace with your contact model
-          as: "customer",  // make sure your association alias matches
-          attributes: ["name", "phone", "email", "amount"]
+          as: "customer", // make sure your association alias matches
+          attributes: ["name", "phone", "email", "amount"],
         },
         {
-          model: signup,   // replace with your staff model
-          as: "staff",    // make sure your association alias matches
-          attributes: ["name", "email"]
-        }
-      ]
+          model: signup, // replace with your staff model
+          as: "staff", // make sure your association alias matches
+          attributes: ["name", "email"],
+        },
+      ],
     });
 
     return res.status(200).json({
@@ -624,8 +641,6 @@ const getTaskForAdmin = async (req, res) => {
   }
 };
 
-
-
 module.exports = {
   createTask,
   getTask,
@@ -641,5 +656,5 @@ module.exports = {
   updateStagesByAdmin,
   reworkUpdate,
   newUpdate,
-  getTaskForAdmin
+  getTaskForAdmin,
 };

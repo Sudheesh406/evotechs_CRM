@@ -238,19 +238,20 @@ const deleteCalls = async (req, res) => {
       return httpError(res, 403, "Access denied");
     }
 
-  const moment = require('moment-timezone');
+ const moment = require("moment-timezone");
 
 // Get current Indian Railway time (IST)
-const railwayTime = moment().tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss');
-console.log(railwayTime);
+const now = moment().tz("Asia/Kolkata");
 
-///trsh update is pending .............................................................
+const currentDate = now.format("YYYY-MM-DD"); // only date
+const currentTime = now.format("HH:mm:ss");  
 
     await trash.create({
-      dataName: "calls",
+      data: "calls",
       dataId: id,
       staffId: user.id, // can be null if no staff
-      dateTime: railwayTime,
+      date: currentDate,
+      time: currentTime
       // dateTime will automatically use default: DataTypes.NOW
     });
 

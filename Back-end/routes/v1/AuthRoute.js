@@ -6,7 +6,9 @@ const {
   logout,
   roleChecker,
   getPin,
-  createPin
+  createPin,
+  acessHandler,
+  deleteUser
 } = require("../../controller/v1/authController");
 const { authenticate } = require("../../middleware/v1/verification/Auth");
 
@@ -18,5 +20,7 @@ Router.patch("/logout", authenticate, logout);
 Router.get("/role", authenticate, roleChecker);
 Router.get("/pin", authenticate, getPin);
 Router.post("/create/pin", authenticate, createPin);
+Router.put("/acess/update/:id", authenticate, acessHandler);
+Router.delete("/user/delete/:id", authenticate, deleteUser);
 
 module.exports = Router;

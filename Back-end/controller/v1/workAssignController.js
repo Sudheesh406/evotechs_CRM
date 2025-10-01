@@ -2,6 +2,7 @@ const { httpSuccess, httpError } = require("../../utils/v1/httpResponse");
 const team = require("../../models/v1/Team_work/team");
 const signup = require("../../models/v1/Authentication/authModel");
 const workAssign = require("../../models/v1/Work_space/workAssign");
+const trash = require('../../models/v1/Trash/trash')
 const roleChecker = require("../../utils/v1/roleChecker");
 
 const { Op, Sequelize } = require("sequelize");
@@ -44,7 +45,7 @@ const createTodo = async (req, res) => {
       priority,
       teamId,
       date: dueDate,
-      workUpdate
+      workUpdate,
     };
     taskData.createrId = user.id;
 
@@ -74,7 +75,6 @@ const createTodo = async (req, res) => {
   }
 };
 
-
 const updateTodo = async (req, res) => {
   try {
     const { params } = req.body; // taskId to identify the work
@@ -98,7 +98,7 @@ const updateTodo = async (req, res) => {
     const dueDate = params.dueDate;
     const priority = params.priority;
     const teamId = params.team?.id || params.teamId;
-    const workUpdate = params.status
+    const workUpdate = params.status;
 
     const assignedName = params.assignedName || params.assignedTo?.name;
     const assignedEmail = params.assignedEmail || params.assignedTo?.email;
@@ -114,7 +114,7 @@ const updateTodo = async (req, res) => {
       priority,
       teamId,
       date: dueDate,
-      workUpdate
+      workUpdate,
     };
 
     updatedData.createrId = user.id;
@@ -145,7 +145,6 @@ const updateTodo = async (req, res) => {
   }
 };
 
-
 const getUserDetails = async (req, res) => {
   try {
     const user = req.user;
@@ -174,7 +173,6 @@ const getUserDetails = async (req, res) => {
   }
 };
 
-
 const getWorkDetails = async (req, res) => {
   try {
     const user = req.user;
@@ -197,7 +195,11 @@ const getWorkDetails = async (req, res) => {
 
       const workDetails = await workAssign.findAll({
         where: {
-          [Op.or]: [{ teamId: { [Op.in]: teamIds } }, { staffId: staffId }, { softDelete: false }],
+          [Op.or]: [
+            { teamId: { [Op.in]: teamIds } },
+            { staffId: staffId },
+            { softDelete: false },
+          ],
         },
         include: [
           {
@@ -221,7 +223,7 @@ const getWorkDetails = async (req, res) => {
       );
     } else {
       const workDetails = await workAssign.findAll({
-         where: { softDelete: false },
+        where: { softDelete: false },
         include: [
           {
             model: signup,
@@ -252,7 +254,6 @@ const getWorkDetails = async (req, res) => {
   }
 };
 
-
 const deleteTodo = async (req, res) => {
   try {
     const user = req.user;
@@ -273,6 +274,23 @@ const deleteTodo = async (req, res) => {
       return httpError(res, 404, "Work assignment not found.");
     }
 
+    const moment = require("moment-timezone");
+
+    // Get current Indian Railway time (IST)
+    const now = moment().tz("Asia/Kolkata");
+
+    const currentDate = now.format("YYYY-MM-DD"); // only date
+    const currentTime = now.format("HH:mm:ss");
+
+    await trash.create({
+      data: "Assignment",
+      dataId: id,
+      staffId: user.id, // can be null if no staff
+      date: currentDate,
+      time: currentTime,
+      // dateTime will automatically use default: DataTypes.NOW
+    });
+
     // Soft delete: update the flag instead of destroying
     await existing.update({ softDelete: true });
 
@@ -280,7 +298,6 @@ const deleteTodo = async (req, res) => {
       success: true,
       message: "Work assignment soft deleted successfully.",
     });
-
   } catch (error) {
     console.error("Error in deleting work details:", error);
     return res.status(500).json({
@@ -291,7 +308,6 @@ const deleteTodo = async (req, res) => {
   }
 };
 
-
 const getAssignedWork = async (req, res) => {
   try {
     const staff = req.user; // logged-in staff
@@ -300,8 +316,8 @@ const getAssignedWork = async (req, res) => {
     // Fetch all teams to find which teams this staff belongs to
     const teamDetails = await team.findAll({});
     const staffTeamIds = teamDetails
-      .filter(team => team.staffIds.includes(staffId))
-      .map(team => team.id);
+      .filter((team) => team.staffIds.includes(staffId))
+      .map((team) => team.id);
 
     // Fetch work assignments with team name included
     const workAssigns = await workAssign.findAll({
@@ -309,17 +325,17 @@ const getAssignedWork = async (req, res) => {
         softDelete: false,
         [Sequelize.Op.or]: [
           { staffId: staffId },
-          { teamId: staffTeamIds.length ? staffTeamIds : null }
-        ]
+          { teamId: staffTeamIds.length ? staffTeamIds : null },
+        ],
       },
       include: [
         {
           model: team,
           as: "team", // Make sure your association uses this alias
-          attributes: ["id", "teamName"] // Only select id and name
-        }
+          attributes: ["id", "teamName"], // Only select id and name
+        },
       ],
-      order: [["id", "DESC"]] 
+      order: [["id", "DESC"]],
     });
 
     return res.status(200).json({ success: true, data: workAssigns });
@@ -328,7 +344,6 @@ const getAssignedWork = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server Error" });
   }
 };
-
 
 const stageUpdate = async (req, res) => {
   try {
@@ -340,7 +355,9 @@ const stageUpdate = async (req, res) => {
     const existing = await workAssign.findOne({ where: { id } });
 
     if (!existing) {
-      return res.status(404).json({ success: false, message: "Work not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Work not found" });
     }
 
     let newStatus = existing.workUpdate;
@@ -351,7 +368,9 @@ const stageUpdate = async (req, res) => {
       newStatus = "Completed";
     } else {
       // Already completed
-      return res.status(400).json({ success: false, message: "Work is already completed" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Work is already completed" });
     }
 
     await existing.update({ workUpdate: newStatus });
@@ -367,8 +386,6 @@ const stageUpdate = async (req, res) => {
   }
 };
 
-
-
 module.exports = {
   createTodo,
   updateTodo,
@@ -376,5 +393,5 @@ module.exports = {
   getWorkDetails,
   deleteTodo,
   getAssignedWork,
-  stageUpdate
+  stageUpdate,
 };
