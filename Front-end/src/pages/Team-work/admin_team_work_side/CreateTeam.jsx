@@ -182,42 +182,53 @@ function CreateTeam() {
     setIsModalOpen(true);
   };
 
-  const handleDeleteTeam = async (id) => {
-    const result = await MySwal.fire({
-      title: "Are you sure?",
-      text: "You won't be able to revert this!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, delete it!",
-    });
+const handleDeleteTeam = async (id) => {
+  const result = await MySwal.fire({
+    title: "Are you sure?",
+    text: "You won't be able to revert this!",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
+    confirmButtonText: "Yes, delete it!",
+  });
 
-    if (result.isConfirmed) {
-      try {
-        MySwal.fire({
-          title: "Deleting team...",
-          didOpen: () => MySwal.showLoading(),
-          allowOutsideClick: false,
-        });
+  if (result.isConfirmed) {
+    try {
+      // Show loading
+      MySwal.fire({
+        title: "Deleting team...",
+        didOpen: () => MySwal.showLoading(),
+        allowOutsideClick: false,
+        showConfirmButton: false, // optional
+      });
 
-        await axios.delete(`/team/delete/${id}`);
-        setTeams(teams.filter((t) => t.id !== id));
+      // Perform delete
+      await axios.delete(`/team/delete/${id}`);
+      setTeams((prev) => prev.filter((t) => t.id !== id));
 
-        MySwal.fire({
-          icon: "success",
-          title: "Team deleted successfully!",
-        });
-      } catch (error) {
-        MySwal.fire({
-          icon: "error",
-          title: "Failed to delete team",
-          text: error.response?.data?.message || error.message,
-        });
-        console.error(error);
-      }
+      // Close loading modal first
+      MySwal.close();
+
+      // Show success
+      MySwal.fire({
+        icon: "success",
+        title: "Team deleted successfully!",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      MySwal.close(); // make sure loading is closed if error occurs
+      MySwal.fire({
+        icon: "error",
+        title: "Failed to delete team",
+        text: error.response?.data?.message || error.message,
+      });
+      console.error(error);
     }
-  };
+  }
+};
+
 
   const resetForm = () => {
     setTeamName("");

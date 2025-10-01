@@ -291,56 +291,58 @@ const Meetings = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    try {
-      // Show confirmation dialog
-      const result = await Swal.fire({
-        title: "Are you sure?",
-        text: "This meeting will be deleted permanently!",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#d33",
-        cancelButtonColor: "#3085d6",
-        confirmButtonText: "Yes, delete it!",
-      });
+ const handleDelete = async (id) => {
+  try {
+    // Show confirmation dialog
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "This meeting will be deleted permanently!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+    });
 
-      if (result.isConfirmed) {
-        // Show loading while deleting
-        Swal.fire({
-          title: "Deleting...",
-          allowOutsideClick: false,
-          didOpen: () => {
-            Swal.showLoading();
-          },
-        });
-        const response = await axios.delete(`/meetings/delete/${id}`);
-        Swal.close(); // close loading
-
-        // Show success message
-        Swal.fire({
-          icon: "success",
-          title: "Deleted!",
-          text: "The meeting has been deleted successfully.",
-          confirmButtonText: "OK",
-          showConfirmButton: false,
-        }).then(() => {
-          getMeetings(filter);
-        });
-      }
-    } catch (error) {
-      Swal.close(); // close loading if error
-
+    if (result.isConfirmed) {
+      // Show loading while deleting
       Swal.fire({
-        icon: "error",
-        title: "Failed to delete",
-        text:
-          error.response?.data?.message ||
-          "Something went wrong. Please try again.",
+        title: "Deleting...",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
       });
 
-      console.log("error found delete", error);
+      const response = await axios.delete(`/meetings/delete/${id}`);
+      Swal.close(); // close loading
+
+      // Show success message with OK button
+      Swal.fire({
+        icon: "success",
+        title: "Deleted!",
+        text: "The meeting has been deleted successfully.",
+        confirmButtonText: "OK", // this will show the OK button
+        showConfirmButton: true, // ensure it's visible
+      }).then(() => {
+        getMeetings(filter); // refresh data after modal is closed
+      });
     }
-  };
+  } catch (error) {
+    Swal.close(); // close loading if error
+
+    Swal.fire({
+      icon: "error",
+      title: "Failed to delete",
+      text:
+        error.response?.data?.message ||
+        "Something went wrong. Please try again.",
+    });
+
+    console.log("error found delete", error);
+  }
+};
+
 
   useEffect(() => {
     getMeetings(filter);

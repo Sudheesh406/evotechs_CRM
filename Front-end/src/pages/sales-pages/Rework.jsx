@@ -81,7 +81,7 @@ export default function Reworks() {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 bg-gray-50">
       <h1 className="text-xl font-semibold mb-6 text-gray-800">Reworks</h1>
       <Table2
         columns={columns}

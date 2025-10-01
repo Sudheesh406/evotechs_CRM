@@ -8,17 +8,6 @@ const stageColors = {
   "Identify Decision Makers": "bg-purple-100",
 };
 
-// Utility to group deals by stage
-const groupByStage = (deals) => {
-  const grouped = {};
-  deals.forEach((deal) => {
-    const stageName = stageNameFromId(deal.stage); // convert "1" → "Qualification"
-    if (!grouped[stageName]) grouped[stageName] = [];
-    grouped[stageName].push(deal);
-  });
-  return grouped;
-};
-
 // Map your stage IDs to readable names
 const stageNameFromId = (stage) => {
   switch (stage) {
@@ -36,17 +25,14 @@ const stageNameFromId = (stage) => {
 };
 
 const DealsKanban = () => {
-  const [dealsByStage, setDealsByStage] = useState({});
+  const [deals, setDeals] = useState([]);
 
   const fetchDeals = async () => {
     try {
       const response = await axios.get("/deals/get");
-      // response.data.data is your deals array
-      const deals = response.data.data;
-      const grouped = groupByStage(deals);
-      setDealsByStage(grouped);
+      setDeals(response.data.data);
     } catch (error) {
-      console.log("error found in fetching deals", error);
+      console.log("Error fetching deals:", error);
     }
   };
 
@@ -59,47 +45,34 @@ const DealsKanban = () => {
       <h1 className="text-2xl font-semibold mb-4">Deals</h1>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {Object.entries(dealsByStage).map(([stageName, deals]) => (
-          <div key={stageName}>
-            <h2 className="font-semibold mb-2">{stageName}</h2>
-            <div className="space-y-4">
-              {deals.map((deal, idx) => (
-                <div
-                  key={idx}
-                  className={`p-4 rounded shadow ${
-                    stageColors[stageName] || "bg-gray-100"
-                  }`}
-                >
-                  {/* Requirement name as main heading */}
-                  <h3 className="font-semibold">{deal.requirement}</h3>
-
-                  {/* Contact name */}
-                  <p className="text-sm text-gray-600">
-                    Contact: {deal.customer?.name || ""}
-                  </p>
-
-                  {/* Amount */}
-                  <p className="text-sm text-gray-600">
-                    Amount: {deal.customer?.amount || ""}
-                  </p>
-
-                  {/* Phone */}
-                  <p className="text-sm text-gray-600">
-                    Phone: {deal.customer?.phone || ""}
-                  </p>
-
-                  {/* Finish By (closing date) */}
-                  <p className="text-sm text-gray-600">
-                    Date:{" "}
-                    {deal.finishBy
-                      ? new Date(deal.finishBy).toLocaleDateString()
-                      : ""}
-                  </p>
-                </div>
-              ))}
+        {deals.map((deal, idx) => {
+          const stageName = stageNameFromId(deal.stage);
+          return (
+            <div
+              key={idx}
+              className={`p-4 rounded shadow ${
+                stageColors[stageName] || "bg-gray-100"
+              }`}
+            >
+              <h3 className="font-semibold">{deal.requirement}</h3>
+              <p className="text-sm text-gray-600">
+                Contact: {deal.customer?.name || ""}
+              </p>
+              <p className="text-sm text-gray-600">
+                Amount: {deal.customer?.amount || ""}
+              </p>
+              <p className="text-sm text-gray-600">
+                Phone: {deal.customer?.phone || ""}
+              </p>
+              <p className="text-sm text-gray-600">
+                Date:{" "}
+                {deal.finishBy
+                  ? new Date(deal.finishBy).toLocaleDateString()
+                  : ""}
+              </p>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
