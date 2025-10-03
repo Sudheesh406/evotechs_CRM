@@ -175,6 +175,23 @@ const roleChecker = async (req, res) => {
   }
 };
 
+const getRole = async (req, res) => {
+  try {
+    const user = req.user;
+    const userDetails = await Signup.findOne({ where: { id: user.id } });
+    if (!userDetails) {
+      return httpError(res, 404, "User not found");
+    }
+    return httpSuccess(res, 200, "Role fetched successfully", {
+      role: userDetails.role,
+    });
+  } catch (error) {
+    console.log("error found  in role getting", error);
+    return httpError(res, 500, "Server error", err.message);
+  }
+};
+
+
 
 const getPin = async (req, res) => {
   const user = req.user;
@@ -339,5 +356,6 @@ module.exports = {
   getPin,
   createPin,
   acessHandler,
-  deleteUser
+  deleteUser,
+  getRole
 };

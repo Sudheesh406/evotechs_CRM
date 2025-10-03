@@ -386,6 +386,37 @@ const stageUpdate = async (req, res) => {
   }
 };
 
+
+
+const adminDashboard = async (req, res) => {
+  const user = req.user;
+
+  // Check admin access
+  const access = await roleChecker(user.id);
+  if (!access) {
+    return res.status(403).json({ success: false, message: "Access denied. Admins only." });
+  }
+
+  try {
+    // Find work assignments with workUpdate 'Progress' or 'Pending' for admin
+    const existing = await workAssign.findAll({
+      where: {
+        admin: true,
+        workUpdate: {
+          [Op.or]: ['Progress', 'Pending']
+        }
+      }
+    });
+
+    // Return the results
+    return res.status(200).json({ success: true, data: existing });
+
+  } catch (error) {
+    console.error('Error found in admin dashboard:', error);
+    return res.status(500).json({ success: false, message: "Server Error" });
+  }
+};
+
 module.exports = {
   createTodo,
   updateTodo,
@@ -394,4 +425,5 @@ module.exports = {
   deleteTodo,
   getAssignedWork,
   stageUpdate,
+  adminDashboard
 };

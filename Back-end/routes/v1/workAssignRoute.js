@@ -8,7 +8,8 @@ const {
   getWorkDetails,
   deleteTodo,
   getAssignedWork,
-  stageUpdate
+  stageUpdate,
+  adminDashboard
 } = require("../../controller/v1/workAssignController");
 
 const { authenticate } = require("../../middleware/v1/verification/Auth");
@@ -21,5 +22,7 @@ Router.delete("/assign/delete/:id", authenticate, deleteTodo);
 
 Router.get("/get", authenticate, getAssignedWork);
 Router.put("/stage/update/:id", authenticate, stageUpdate);
+
+Router.get("/admin/dashboard", authenticate, adminDashboard);
 
 module.exports = Router;

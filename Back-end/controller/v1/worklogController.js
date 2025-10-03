@@ -3,6 +3,7 @@ const signup = require("../../models/v1/Authentication/authModel");
 const roleChecker = require("../../utils/v1/roleChecker");
 const { Op, Sequelize } = require("sequelize");
 const worklog = require("../../models/v1/Work_space/worklog");
+const attendance = require('../../models/v1/Work_space/attendance')
 
 
 const createWorklog = async (req, res) => {
@@ -93,21 +94,80 @@ const getWorklog = async (req, res) => {
   }
 
   try {
-    // Build start and end dates of the month (YYYY-MM-DD)
-    const startDate = new Date(year, month - 1, 1);          // 2025-08-01
-    const endDate   = new Date(year, month, 0, 23, 59, 59);  // 2025-08-31 23:59:59
+    // Build start and end dates for the month
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59);
 
+    // Fetch worklogs
     const worklogs = await worklog.findAll({
       where: {
         staffId: user.id,
         date: {
-          [Op.between]: [startDate, endDate], // only rows in that month/year
+          [Op.between]: [startDate, endDate],
         },
       },
       order: [["date", "ASC"]],
     });
 
-    return httpSuccess(res, 200, "Worklogs fetched successfully", worklogs);
+    // Fetch attendance records
+    const attendanceRecords = await attendance.findAll({
+      where: {
+        staffId: user.id,
+        attendanceDate: {
+          [Op.between]: [startDate, endDate],
+        },
+        softDelete: 0,
+      },
+      order: [["attendanceDate", "ASC"], ["time", "ASC"]],
+    });
+
+    // Group attendance by date
+    const groupedByDate = {};
+    attendanceRecords.forEach((rec) => {
+      // Make sure attendanceDate is a Date object
+      const dateObj = new Date(rec.attendanceDate);
+      const date = dateObj.toISOString().split("T")[0];
+
+      if (!groupedByDate[date]) groupedByDate[date] = [];
+      groupedByDate[date].push(rec);
+    });
+
+    // Calculate daily work hours
+    const dailyWorkHours = Object.entries(groupedByDate).map(([date, records]) => {
+      let totalMinutes = 0;
+      let entryTime = null;
+
+      records.forEach((rec) => {
+        if (rec.type === "entry") {
+          entryTime = rec.time;
+        } else if (rec.type === "exit" && entryTime) {
+          const [entryH, entryM, entryS] = entryTime.split(":").map(Number);
+          const [exitH, exitM, exitS] = rec.time.split(":").map(Number);
+
+          const entryDate = new Date(date);
+          entryDate.setHours(entryH, entryM, entryS);
+
+          const exitDate = new Date(date);
+          exitDate.setHours(exitH, exitM, exitS);
+
+          totalMinutes += (exitDate - entryDate) / (1000 * 60);
+          entryTime = null;
+        }
+      });
+
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = Math.floor(totalMinutes % 60);
+
+      return {
+        date,
+        workTime: `${hours}:${minutes.toString().padStart(2, "0")}`,
+      };
+    });
+
+    return httpSuccess(res, 200, "Worklogs fetched successfully", {
+      worklogs,
+      dailyWorkHours,
+    });
   } catch (error) {
     console.error("Error in getting worklog:", error);
     return httpError(res, 500, "Internal Server Error");
@@ -115,4 +175,98 @@ const getWorklog = async (req, res) => {
 };
 
 
-module.exports = { createWorklog, getWorklog };
+
+const getStaffWork = async (req, res) => {
+  try {
+    const { staffId, month, year } = req.body;
+
+    if (!staffId || !month || !year) {
+      return res.status(400).json({ message: "staffId, month, and year are required" });
+    }
+
+    // Fetch staff info
+    const staff = await signup.findOne({ where: { id: staffId } });
+    if (!staff) {
+      return res.status(404).json({ message: "Staff not found" });
+    }
+
+    // Fetch worklogs and attendance for that staff
+    const [worklogs, attendanceRecords] = await Promise.all([
+      worklog.findAll({ where: { staffId }, order: [["date", "ASC"], ["createdAt", "ASC"]] }),
+      attendance.findAll({ where: { staffId }, order: [["attendanceDate", "ASC"], ["time", "ASC"]] }),
+    ]);
+
+    // Helper function to filter by month/year
+    const filterByMonthYear = (dateField) => {
+      const d = new Date(dateField);
+      return d.getFullYear() === Number(year) && d.getMonth() + 1 === Number(month);
+    };
+
+    // Grouped object by date
+    const grouped = {};
+
+    // Process worklogs
+    worklogs.forEach((rec) => {
+      if (!rec.date) return;
+      if (!filterByMonthYear(rec.date)) return;
+
+      const dateKey = new Date(rec.date).toISOString().split("T")[0];
+
+      if (!grouped[dateKey]) {
+        grouped[dateKey] = {
+          date: dateKey,
+          staffId,
+          name: staff.name,
+          email: staff.email,
+          tasks: [],
+          attendance: [],
+        };
+      }
+
+      grouped[dateKey].tasks.push({
+        taskName: rec.taskName,
+        comment: rec.comment || "No comment",
+        time: rec.time,
+        taskNumber: rec.taskNumber,
+      });
+    });
+
+    // Process attendance
+    attendanceRecords.forEach((rec) => {
+      if (!rec.attendanceDate) return;
+      if (!filterByMonthYear(rec.attendanceDate)) return;
+
+      const dateKey = new Date(rec.attendanceDate).toISOString().split("T")[0];
+
+      if (!grouped[dateKey]) {
+        grouped[dateKey] = {
+          date: dateKey,
+          staffId,
+          name: staff.name,
+          email: staff.email,
+          tasks: [],
+          attendance: [],
+        };
+      }
+
+      grouped[dateKey].attendance.push({
+        type: rec.type, // entry/exit
+        time: rec.time,
+      });
+    });
+
+    return res.status(200).json({
+      staff: {
+        id: staff.id,
+        name: staff.name,
+        email: staff.email,
+      },
+      worklogs: Object.values(grouped),
+    });
+  } catch (error) {
+    console.log("Error in getting staff work:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+module.exports = { createWorklog, getWorklog, getStaffWork };
