@@ -350,7 +350,7 @@ export default function AdvancedTodoCRM() {
     <div className="p-4 md:p-8 bg-gray-100">
       {/* Header */}
       <header className="flex justify-between items-center mb-8 bg-white p-4 rounded-xl shadow-lg">
-        <h3 className="text-3xl font-bold text-gray-900">Advanced Task Manager</h3>
+        <h3 className="text-2xl font-semibold text-gray-900">Task Assignment</h3>
         <button
           onClick={() => openModal()}
           className="flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-semibold shadow-lg transition duration-200 ease-in-out transform hover:scale-[1.02]"

@@ -142,7 +142,6 @@ const Worklog = () => {
 
 const getWorklog = async (month, year) => {
   try {
-    // Show loading popup
     Swal.fire({
       title: "Loading Worklogs...",
       text: "Please wait while we fetch your data",
@@ -153,19 +152,24 @@ const getWorklog = async (month, year) => {
     });
 
     const response = await axios.post("/worklog/get", { month, year });
-    const worklogs = response.data.data; // your array of worklogs
+    console.log(response);
+
+    const worklogs = response.data.data.worklogs; // your array of worklogs
+    const dailyWorkHours = response.data.data.dailyWorkHours || []; // new attendance array
 
     const daysInMonth = getDaysInMonth(year, month - 1);
     const { generatedData, initialAttendance } = generateInitialData(
       daysInMonth,
       numColumns
     );
+
     const newTableData = generatedData;
     const newAttendance = initialAttendance;
 
     // Temporary array to hold retrieved task names
     const retrievedTasks = Array(numColumns).fill(null);
 
+    // Fill worklog tasks
     worklogs.forEach((log) => {
       const dateObj = new Date(log.date);
       const day = dateObj.getDate();
@@ -186,10 +190,17 @@ const getWorklog = async (month, year) => {
             retrievedTasks[colIndex] = log.taskName;
           }
         }
+      }
+    });
 
-        if (log.attendance !== undefined) {
-          newAttendance[rowIndex] = log.attendance;
-        }
+    // Fill attendance from dailyWorkHours
+    dailyWorkHours.forEach((att) => {
+      const dateObj = new Date(att.date);
+      const day = dateObj.getDate();
+      const rowIndex = day - 1;
+
+      if (rowIndex >= 0 && rowIndex < daysInMonth) {
+        newAttendance[rowIndex] = att.workTime; // fill with workTime
       }
     });
 
@@ -206,22 +217,17 @@ const getWorklog = async (month, year) => {
 
     setTasks(finalTasks);
 
-    // Close loading popup
     Swal.close();
   } catch (error) {
-    // Close loading popup if still open
     Swal.close();
-
     console.error("Error found in getWorklog", error);
 
-    // Show error popup
     Swal.fire({
       icon: "error",
       title: "Oops...",
       text: "Failed to fetch worklogs. Please try again.",
     });
 
-    // Fallback for tasks if the API fails
     if (tasks.length === 0) {
       setTasks(
         Array(numColumns)
@@ -231,6 +237,8 @@ const getWorklog = async (month, year) => {
     }
   }
 };
+
+
 
 
 const handleSave = async () => {
@@ -309,7 +317,6 @@ const handleSave = async () => {
     });
   }
 };
-
 
 
   const columnTotals = tasks.map((_, colIndex) =>

@@ -135,6 +135,8 @@ const id = 0
         { title: "Messages", path: "/workspace/message/port", icon: MessageSquare },
         { title: "Assignment", path: "/workspace/todo", icon: FolderKanban },
         { title: "Pinator", path: "/workspace/auth/pin/generator", icon: FolderKanban },
+        { title: "Work", path: "/workspace/AdminWorklog", icon: FolderKanban },
+
 
       ],
     },

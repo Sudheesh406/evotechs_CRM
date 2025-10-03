@@ -76,6 +76,7 @@ const Auth = () => {
     }
   };
 
+  
   return (
     <div className="fixed inset-0 z-[9999] bg-gray-100 overflow-y-auto overscroll-contain">
       <div
