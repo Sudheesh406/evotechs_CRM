@@ -2,7 +2,7 @@ const { DataTypes } = require('sequelize');
 const { sequelize } = require('../../../database/dbConfigue');
 const signup = require('../Authentication/authModel'); 
 
-const Leads = sequelize.define('leads', {
+const leads = sequelize.define('leads', {
   id: {
     type: DataTypes.INTEGER,
     autoIncrement: true,
@@ -64,4 +64,4 @@ const Leads = sequelize.define('leads', {
   timestamps: true,
 });
 
-module.exports = Leads;
+module.exports = leads;
