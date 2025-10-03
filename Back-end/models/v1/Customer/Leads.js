@@ -37,7 +37,7 @@ const Leads = sequelize.define('leads', {
     defaultValue: 'normal',
   },
   amount: {
-    type: DataTypes.DECIMAL(10, 2),  // stores up to 99999999.99
+    type: DataTypes.DECIMAL(10, 2),
     allowNull: true,
     defaultValue: 0.00,
   },
