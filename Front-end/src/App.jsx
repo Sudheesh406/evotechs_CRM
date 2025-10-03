@@ -48,7 +48,8 @@ import TeamContacts from "./pages/Team-work/TeamContacts";
 import TaskView from "./pages/activity-pages/admin_activity/TaskView";
 import AdminWorklog from "./pages/workspace-pages/admin_workspace_side/AdminWorklog";
 import AccessDenied from "./components/AcessDenined";
-import UnAuthorised from "./components/UnAuthorised"
+import UnAuthorised from "./components/UnAuthorised";
+import HelperRoute from "./components/Routes/HelperRoute";
 
 import ProtectedRoute from "./components/Routes/ProtectedRoute";
 import Sidebar from "./components/SideBar";
@@ -97,7 +98,7 @@ function Layout() {
           <Route
             path="/access-denied"
             element={
-           <  AccessDenied />
+               < AccessDenied />
             }
           />
 
@@ -419,9 +420,15 @@ function Layout() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/login"
+            element={
+              <HelperRoute >
+                <Auth />
+              </HelperRoute>
+            }
+          />
 
-          {/* Auth */}
-          <Route path="/login" element={<Auth />} />
         </Routes>
       </div>
     </div>

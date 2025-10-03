@@ -148,20 +148,13 @@ const id = 0
 useEffect(() => {
   async function initRole() {
     try {
-      let role = localStorage.getItem("CRMsrtRolE");
-      // Normalize invalid values
-      if (!role || role === "undefined" || role === "null") {
-        role = null;
-      }
-      if (!role) {
+      let acess = null
         const { data } = await axios.get("/auth/role");
         if (data?.data?.role) {
-          role = data?.data?.role;
-          localStorage.setItem("CRMsrtRolE", role);
+        acess = data?.data?.role;
         }
-      }
       // Set menu
-      if (role === "admin") {
+      if (acess === "admin") {
         setMenuItems(adminItems);
       } else {
         setMenuItems(staffItems);

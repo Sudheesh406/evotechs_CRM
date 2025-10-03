@@ -16,9 +16,24 @@ export default function AdminPinGenerator() {
   const [revealCurrent, setRevealCurrent] = useState(false);
   const [loading, setLoading] = useState(true);
   const [staffList, setStaffList] = useState([]);
+  const [showPassword, setShowPassword] = useState(false);
+
+  // === Change Password Modal State ===
+  const [showModal, setShowModal] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    email: "",
+    pin: "",
+    newPassword: "",
+  });
+  const [errors, setErrors] = useState({
+    email: "",
+    pin: "",
+    newPassword: "",
+  });
 
   const pinPattern = /^[A-Z]{3}\d{3}$/;
 
+  // ===== Admin PIN Handlers =====
   const handlePinChange = (e) => {
     setPinInput(e.target.value.toUpperCase().slice(0, 6));
   };
@@ -67,7 +82,6 @@ export default function AdminPinGenerator() {
 
       const response = await axios.post("/auth/create/pin", { pin: pinInput });
       const newPin = response.data.pin;
-      console.log(response);
 
       setCurrentPin({
         pin: newPin.code.toUpperCase(),
@@ -99,7 +113,7 @@ export default function AdminPinGenerator() {
     }
   };
 
-  // === Staff Handling ===
+  // ===== Staff Handlers =====
   const getStaffDetails = async () => {
     try {
       const response = await axios.get("/team/staff/get");
@@ -125,12 +139,12 @@ export default function AdminPinGenerator() {
       Swal.fire({
         icon: "success",
         title: "Success",
-        text: `Acess changed Successfully.`,
+        text: `Access changed Successfully.`,
         timer: 1500,
         showConfirmButton: false,
       });
     } catch (error) {
-      console.log('error',error)
+      console.log("error", error);
       Swal.fire({
         icon: "error",
         title: "Error",
@@ -138,7 +152,6 @@ export default function AdminPinGenerator() {
       });
     }
   };
-
 
   const deleteStaff = async (id) => {
     try {
@@ -177,12 +190,11 @@ export default function AdminPinGenerator() {
     }
   };
 
-
+  // ===== Fetch Current PIN =====
   const getCurrentPin = async () => {
     try {
       setLoading(true);
       const response = await axios.get("/auth/pin");
-
       const existingPin = response.data.data.existing;
       setCurrentPin({
         pin: existingPin.code.toUpperCase(),
@@ -217,6 +229,71 @@ export default function AdminPinGenerator() {
       hour: "2-digit",
       minute: "2-digit",
     });
+  };
+
+  // ===== Change Password Handlers =====
+  const handleChangePasswordInput = (e) => {
+    const { name, value } = e.target;
+    setErrors((prev) => ({ ...prev, [name]: "" }));
+    setPasswordData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleChangePasswordSubmit = (e) => {
+    e.preventDefault();
+    let hasError = false;
+    let newErrors = { email: "", pin: "", newPassword: "" };
+
+    if (!passwordData.email) {
+      newErrors.email = "Email is required";
+      hasError = true;
+    }
+    if (!passwordData.pin) {
+      newErrors.pin = "PIN is required";
+      hasError = true;
+    } else if (!pinPattern.test(passwordData.pin)) {
+      newErrors.pin = "PIN format invalid (ABC123)";
+      hasError = true;
+    }
+    if (!passwordData.newPassword) {
+      newErrors.newPassword = "New password is required";
+      hasError = true;
+    }
+
+    setErrors(newErrors);
+
+    if (hasError) return;
+
+    console.log("Password Change Data:", passwordData);
+    changePassword(passwordData);
+    setShowModal(false);
+    setPasswordData({ email: "", pin: "", newPassword: "" });
+  };
+
+  const changePassword = async (data) => {
+    try {
+      const response = await axios.post("/auth/password", { data });
+
+      // Assuming your API sends a success message
+      Swal.fire({
+        icon: "success",
+        title: "Password Changed!",
+        text:
+          response.data.message ||
+          "Your password has been updated successfully.",
+        confirmButtonColor: "#3085d6",
+      });
+
+      // console.log(response);
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Error!",
+        text: error.response?.data?.message || "Failed to change password.",
+        confirmButtonColor: "#d33",
+      });
+
+      console.log("Error found in changing password:", error);
+    }
   };
 
   if (loading) {
@@ -269,10 +346,17 @@ export default function AdminPinGenerator() {
             >
               {revealCurrent ? "Hide" : "Reveal"}
             </button>
+            <button
+              type="button"
+              onClick={() => setShowModal(true)}
+              className="px-3 py-1 rounded-md bg-green-100 text-green-700 text-sm font-medium"
+            >
+              Change Password
+            </button>
           </div>
         </div>
 
-        {/* Form */}
+        {/* PIN Form */}
         <form onSubmit={handleSubmit} className="max-w-md mx-auto">
           <p className="text-gray-500 text-sm mb-3">
             PIN must be{" "}
@@ -381,6 +465,86 @@ export default function AdminPinGenerator() {
           </ul>
         )}
       </div>
+
+      {/* Change Password Modal */}
+      {showModal && (
+        <div className="fixed inset-0 backdrop-blur-[1px] bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative">
+            <h2 className="text-lg font-bold mb-4 text-gray-800">
+              Change Password
+            </h2>
+            <form onSubmit={handleChangePasswordSubmit} className="space-y-4">
+              <div>
+                <label className="block text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={passwordData.email}
+                  onChange={handleChangePasswordInput}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
+                {errors.email && (
+                  <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-gray-700 mb-1">PIN</label>
+                <input
+                  type="text"
+                  name="pin"
+                  value={passwordData.pin}
+                  onChange={handleChangePasswordInput}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  placeholder="ABC123"
+                />
+                {errors.pin && (
+                  <p className="text-red-500 text-xs mt-1">{errors.pin}</p>
+                )}
+              </div>
+
+              <div className="relative"> 
+                <label className="block text-gray-700 mb-1">New Password</label>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="newPassword"
+                  value={passwordData.newPassword}
+                  onChange={handleChangePasswordInput}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
+                {errors.newPassword && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.newPassword}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute  h-24 right-2 top-[70%] transform -translate-y-1/2 text-gray-500"
+                >
+                  {showPassword ? "🙈" : "👁️"}
+                </button>
+              </div>
+
+              <div className="flex justify-end gap-2 mt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="px-3 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-3 py-1 rounded-md bg-blue-500 text-white hover:bg-blue-600"
+                >
+                  Submit
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
