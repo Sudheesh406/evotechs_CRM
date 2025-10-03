@@ -36,12 +36,12 @@ const messages = sequelize.define('messages', {
   sendingTime: {
     type: DataTypes.TIME,
     allowNull: false,
-    defaultValue: DataTypes.NOW,
+    
   },
   sendingDate: {
     type: DataTypes.DATEONLY,
     allowNull: false,
-    defaultValue: DataTypes.NOW,
+    
   },
   teamId: {
     type: DataTypes.INTEGER,

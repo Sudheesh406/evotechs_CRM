@@ -18,14 +18,14 @@ module.exports = {
     await queryInterface.addColumn("secret_codes", "date", {
       type: Sequelize.DATEONLY,
       allowNull: true, // change to false if you want it required
-      defaultValue: Sequelize.NOW, // optional default to current date
+      
     });
 
     // Add time column
     await queryInterface.addColumn("secret_codes", "time", {
       type: Sequelize.TIME,
       allowNull: true, // change to false if you want it required
-      defaultValue: Sequelize.literal("CURRENT_TIME"), // sets default to current time
+      
     });
   },
 
@@ -34,5 +34,53 @@ module.exports = {
     await queryInterface.removeColumn("secret_codes", "time");
     await queryInterface.removeColumn("secret_codes", "date");
     await queryInterface.removeColumn("secret_codes", "staffId");
+  },
+};
+"use strict";
+
+module.exports = {
+  async up(queryInterface, Sequelize) {
+    const table = await queryInterface.describeTable("secret_codes");
+
+    if (!table.staffId) {
+      await queryInterface.addColumn("secret_codes", "staffId", {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: {
+          model: "signup",
+          key: "id",
+        },
+        onUpdate: "CASCADE",
+        onDelete: "SET NULL",
+      });
+    }
+
+    if (!table.date) {
+      await queryInterface.addColumn("secret_codes", "date", {
+        type: Sequelize.DATEONLY,
+        allowNull: true,
+      });
+    }
+
+    if (!table.time) {
+      await queryInterface.addColumn("secret_codes", "time", {
+        type: Sequelize.TIME,
+        allowNull: true,
+      });
+    }
+  },
+
+  async down(queryInterface, Sequelize) {
+    const table = await queryInterface.describeTable("secret_codes");
+
+    if (table.time) {
+      await queryInterface.removeColumn("secret_codes", "time");
+    }
+    if (table.date) {
+      await queryInterface.removeColumn("secret_codes", "date");
+    }
+    if (table.staffId) {
+      await queryInterface.removeColumn("secret_codes", "staffId");
+    }
   },
 };

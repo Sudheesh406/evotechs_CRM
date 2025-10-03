@@ -322,9 +322,9 @@ const deleteUser = async (req, res) => {
     if (!userDetails) return httpError(res, 404, "User not found");
 
     // optional: check role if needed
-    if (!userDetails.role)
+    if (!userDetails.role){
       return httpError(res, 403, "Access denied. Admins only.");
-
+    }
     const { id } = req.params;
     if (!id) {
       return httpError(res, 400, "id is required for access change");
@@ -348,6 +348,54 @@ const deleteUser = async (req, res) => {
 };
 
 
+const passwordChange = async (req, res) => {
+  try {
+    const user = req.user;
+    const { email, newPassword, pin } = req.body.data;
+
+    // Validate input
+    if (!email || !newPassword || !pin) {
+      return httpError(res, 400, "Email, Pin, and Password are required");
+    }
+
+    // Check if current user exists
+    const userDetails = await Signup.findOne({ where: { id: user.id } });
+    if (!userDetails) return httpError(res, 404, "User not found");
+
+    // Optional: check role if needed
+    if (!userDetails.role) {
+      return httpError(res, 403, "Access denied. Admins only.");
+    }
+
+    // Check if pin exists
+    const pinExist = await secretCode.findOne({ where: { code: pin } });
+    if (!pinExist) {
+      return httpError(res, 403, "Access denied. Pin is not correct.");
+    }
+
+    // Check if the email exists
+    const existing = await Signup.findOne({ where: { email } });
+    if (!existing) {
+      return httpError(res, 401, "No user found with this email.");
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(
+      newPassword,
+      parseInt(process.env.SALT_VALUE) || 10
+    );
+
+    // Update the password
+    await existing.update({ password: hashedPassword });
+
+    // Send success response
+    return res.status(200).json({ message: "Password changed successfully." });
+  } catch (error) {
+    console.error("Error changing password:", error);
+    return httpError(res, 500, "Server error", error.message);
+  }
+};
+
 module.exports = {
   handleSignup,
   handleLogin,
@@ -357,5 +405,6 @@ module.exports = {
   createPin,
   acessHandler,
   deleteUser,
-  getRole
+  getRole,
+  passwordChange
 };

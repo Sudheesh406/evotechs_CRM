@@ -27,7 +27,7 @@ const task = sequelize.define(
         key: "id",
       },
       onUpdate: "CASCADE",
-      onDelete: "SET NULL",
+      onDelete: "CASCADE",
     },
     contactId: {
       type: DataTypes.INTEGER,
@@ -37,7 +37,7 @@ const task = sequelize.define(
         key: "id",
       },
       onUpdate: "CASCADE",
-      onDelete: "SET NULL",
+      onDelete: "CASCADE",
     },
     notes: {
       type: DataTypes.TEXT,

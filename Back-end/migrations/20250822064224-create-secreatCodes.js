@@ -16,7 +16,6 @@ module.exports = {
       createdAt: {
         type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.fn('NOW'),
       }
       // ✅ no updatedAt since you disabled it in the model
     });

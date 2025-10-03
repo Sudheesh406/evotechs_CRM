@@ -17,7 +17,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: true,
         references: {
-          model: 'signups', // adjust table name if needed
+          model: 'signup', // adjust table name if needed
           key: 'id',
         },
         onUpdate: 'CASCADE',
@@ -27,7 +27,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'signups',
+          model: 'signup',
           key: 'id',
         },
         onUpdate: 'CASCADE',
@@ -36,18 +36,18 @@ module.exports = {
       sendingTime: {
         type: Sequelize.TIME,           // TIME column
         allowNull: false,
-        defaultValue: Sequelize.literal('CURRENT_TIME'),
+      
       },
       sendingDate: {
         type: Sequelize.DATEONLY,       // DATEONLY column
         allowNull: false,
-        defaultValue: Sequelize.literal('CURRENT_DATE'),
+        
       },
       teamId: {
         type: Sequelize.INTEGER,
         allowNull: true,
         references: {
-          model: 'teams',
+          model: 'team',
           key: 'id',
         },
         onUpdate: 'CASCADE',
