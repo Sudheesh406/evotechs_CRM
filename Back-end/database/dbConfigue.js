@@ -7,9 +7,11 @@ const sequelize = new Sequelize(
   {
     host: process.env.HOST,
     dialect: 'mysql',
-    logging: false, // disable SQL logging (optional)
+    port: process.env.DB_PORT || 3306,
+    logging: false,
   }
 );
+
 
 const connectDB = async () => {
   try {
