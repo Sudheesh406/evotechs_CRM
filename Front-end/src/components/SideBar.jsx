@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "../instance/Axios";
-import { NavLink,useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   Home,
   Users,
@@ -8,7 +8,6 @@ import {
   ClipboardList,
   Calendar,
   Phone,
-  Settings,
   LogOut,
   CheckSquare,
   Shield,
@@ -19,18 +18,17 @@ import {
   Boxes,
   RotateCcw,
   Trash2,
-  Wrench,
   FolderKanban,
   Hourglass,
-  Eye 
+  Eye,
+  Menu
 } from "lucide-react";
-import { s } from "framer-motion/client";
-import { use } from "react";
 
-const Sidebar = ({ closeSidebar }) => {
+const Sidebar = () => {
   const [openMenus, setOpenMenus] = useState({});
   const [menuItems, setMenuItems] = useState();
-  const navigate = useNavigate()
+  const [openSidebar, setOpenSidebar] = useState(false);
+  const navigate = useNavigate();
 
   const toggleMenu = (index) => {
     setOpenMenus((prev) => ({
@@ -39,9 +37,9 @@ const Sidebar = ({ closeSidebar }) => {
     }));
   };
 
-const id = 0
+  const id = 0;
 
-   const staffItems = [
+  const staffItems = [
     { title: "Home", icon: Home, path: "/" },
     {
       title: "Sales",
@@ -83,21 +81,13 @@ const id = 0
         { title: "Calendar", path: "/workspace/calendar", icon: Calendar },
         { title: "Messages", path: "/workspace/messages", icon: MessageSquare },
         { title: "Performance", path: "/workspace/work/assign", icon: FolderKanban },
-
       ],
     },
     { title: "Trash", icon: Trash2, path: "/trash" },
-    // { title: "Services", icon: Wrench, path: "/services" },
-    // { title: "Projects", icon: FolderKanban, path: "/projects" },
   ];
 
-
-  //------------------------ Admin Items-------------------------//
-  //--------------------------------------------------------------//
-
-
   const adminItems = [
-    {title: "Home", icon: Home, path: "/admin" },
+    { title: "Home", icon: Home, path: "/admin" },
     {
       title: "Sales",
       icon: ClipboardList,
@@ -105,8 +95,8 @@ const id = 0
         { title: "Deals", path: "/sales/deals", icon: Briefcase },
         { title: "Pending", path: "/sales/pending/task", icon: Hourglass },
         { title: "Completed", path: "/sales/completed", icon: Building },
-        { title: "Resolved", path: "/sales/resolved", icon: Eye  },
-        { title: "Rework", path: "/sales/rework/port", icon: RotateCcw  },
+        { title: "Resolved", path: "/sales/resolved", icon: Eye },
+        { title: "Rework", path: "/sales/rework/port", icon: RotateCcw },
         { title: "Documents", path: "/sales/documents", icon: FileText },
       ],
     },
@@ -123,7 +113,6 @@ const id = 0
       subMenu: [
         { title: "Customise", path: "/team/customise", icon: CheckSquare },
         { title: "Projects", path: `/team/work/${id}`, icon: Calendar },
-        // { title: "Notacess", path: "/team/messages", icon: MessageSquare },
       ],
     },
     {
@@ -136,139 +125,160 @@ const id = 0
         { title: "Assignment", path: "/workspace/todo", icon: FolderKanban },
         { title: "Pinator", path: "/workspace/auth/pin/generator", icon: FolderKanban },
         { title: "Work", path: "/workspace/AdminWorklog", icon: FolderKanban },
-
-
       ],
     },
     { title: "Trash", icon: Trash2, path: "/trash" },
-    // { title: "Services", icon: Wrench, path: "/services" },
-    // { title: "Projects", icon: FolderKanban, path: "/projects" },
-  ]
+  ];
 
-useEffect(() => {
-  async function initRole() {
-    try {
-      let acess = null
+  useEffect(() => {
+    async function initRole() {
+      try {
+        let acess = null;
         const { data } = await axios.get("/auth/role");
         if (data?.data?.role) {
-        acess = data?.data?.role;
+          acess = data?.data?.role;
         }
-      // Set menu
-      if (acess === "admin") {
-        setMenuItems(adminItems);
-      } else {
-        setMenuItems(staffItems);
+        if (acess === "admin") {
+          setMenuItems(adminItems);
+        } else {
+          setMenuItems(staffItems);
+        }
+      } catch (err) {
+        console.error("Error initializing role:", err);
       }
-    } catch (err) {
-      console.error("Error initializing role:", err);
     }
-  }
+    initRole();
+  }, []);
 
-  initRole();
-}, []);
-
-  
-const handleLogout = async ()=>{
-  try {
-    const response = await axios.patch('/auth/logout')
-    if(response){
-      localStorage.removeItem("CRMsrtRolE");
-      navigate('/login')
+  const handleLogout = async () => {
+    try {
+      const response = await axios.patch("/auth/logout");
+      if (response) {
+        localStorage.removeItem("CRMsrtRolE");
+        navigate("/login");
+      }
+    } catch (error) {
+      console.log("error found in logout", error);
     }
-  } catch (error) {
-    console.log('error found in logout',error)
-  }
-}
+  };
 
-  
   return (
-    <div className="flex flex-col justify-between h-screen bg-[#1F2A40] text-white w-64 shadow-lg">
-      {/* Top + Menu Scrollable */}
-      <div className="flex flex-col overflow-y-auto flex-1">
-        {/* Logo */}
-        <h1 className="text-[#E50914] text-2xl font-extrabold  p-6 tracking-wide">
+    <>
+      {/* Mobile header with hamburger */}
+      <div className="md:hidden flex justify-between items-center bg-[#1F2A40] text-white px-4 py-3">
+        <h1 className="text-[#E50914] text-xl font-bold">CRM Panel</h1>
+        <button onClick={() => setOpenSidebar(!openSidebar)}>
+          <Menu className="w-6 h-6" />
+        </button>
+      </div>
+
+      {/* Sidebar */}
+      <div
+        className={`fixed md:static top-0 left-0 h-screen bg-[#1F2A40] text-white w-64 shadow-lg z-50 transform transition-transform duration-300
+        ${openSidebar ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
+      >
+        {/* Logo (desktop only) */}
+        <h1 className="hidden md:block text-[#E50914] text-2xl font-extrabold p-6 tracking-wide">
           CRM Panel
         </h1>
 
         {/* Menu */}
-        <nav className="space-y-2 px-2">
-          {menuItems?.map((item, i) => {
-            const Icon = item.icon;
-            const hasSubMenu = !!item.subMenu;
+        <div className="flex flex-col justify-between h-full">
+          <div className="flex-1 overflow-y-auto px-2">
+            <nav className="space-y-2">
+              {menuItems?.map((item, i) => {
+                const Icon = item.icon;
+                const hasSubMenu = !!item.subMenu;
 
-            if (!hasSubMenu) {
-              return (
-                <NavLink
-                  key={i}
-                  to={item.path}
-                  onClick={closeSidebar}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200
-                     ${isActive ? "bg-[#E50914]/20 text-[#E50914]" : "hover:bg-[#2A3A5F] hover:text-[#E50914]"}`
-                  }
-                >
-                  <Icon className="w-5 h-5" />
-                  <span className="font-medium">{item.title}</span>
-                </NavLink>
-              );
-            }
+                if (!hasSubMenu) {
+                  return (
+                    <NavLink
+                      key={i}
+                      to={item.path}
+                      onClick={() => setOpenSidebar(false)}
+                      className={({ isActive }) =>
+                        `flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200
+                      ${
+                        isActive
+                          ? "bg-[#E50914]/20 text-[#E50914]"
+                          : "hover:bg-[#2A3A5F] hover:text-[#E50914]"
+                      }`
+                      }
+                    >
+                      <Icon className="w-5 h-5" />
+                      <span className="font-medium">{item.title}</span>
+                    </NavLink>
+                  );
+                }
 
-            return (
-              <div key={i}>
-                <div
-                  onClick={() => toggleMenu(i)}
-                  className={`flex items-center justify-between gap-3 px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer
-                    ${openMenus[i] ? "bg-[#2A3A5F] text-[#E50914]" : "hover:bg-[#2A3A5F] hover:text-[#E50914]"}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon className="w-5 h-5" />
-                    <span className="font-medium">{item.title}</span>
+                return (
+                  <div key={i}>
+                    <div
+                      onClick={() => toggleMenu(i)}
+                      className={`flex items-center justify-between gap-3 px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer
+                      ${
+                        openMenus[i]
+                          ? "bg-[#2A3A5F] text-[#E50914]"
+                          : "hover:bg-[#2A3A5F] hover:text-[#E50914]"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon className="w-5 h-5" />
+                        <span className="font-medium">{item.title}</span>
+                      </div>
+                      <span
+                        className={`transform transition-transform duration-200 ${
+                          openMenus[i] ? "rotate-90" : ""
+                        }`}
+                      >
+                        ▸
+                      </span>
+                    </div>
+
+                    {openMenus[i] && (
+                      <div className="ml-6 mt-1 space-y-1">
+                        {item.subMenu.map((sub, idx) => {
+                          const SubIcon = sub.icon;
+                          return (
+                            <NavLink
+                              key={idx}
+                              to={sub.path}
+                              onClick={() => setOpenSidebar(false)}
+                              className={({ isActive }) =>
+                                `flex items-center gap-3 px-3 py-1.5 rounded-lg text-sm transition-all duration-200
+                              ${
+                                isActive
+                                  ? "bg-[#E50914]/20 text-[#E50914]"
+                                  : "hover:bg-[#2A3A5F] hover:text-[#E50914]"
+                              }`
+                              }
+                            >
+                              <SubIcon className="w-4 h-4" />
+                              {sub.title}
+                            </NavLink>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                  <span className={`transform transition-transform duration-200 ${openMenus[i] ? "rotate-90" : ""}`}>
-                    ▸
-                  </span>
-                </div>
+                );
+              })}
+            </nav>
+          </div>
 
-                {openMenus[i] && (
-                  <div className="ml-6 mt-1 space-y-1">
-                    {item.subMenu.map((sub, idx) => {
-                      const SubIcon = sub.icon;
-                      return (
-                        <NavLink
-                          key={idx}
-                          to={sub.path}
-                          onClick={closeSidebar}
-                          className={({ isActive }) =>
-                            `flex items-center gap-3 px-3 py-1.5 rounded-lg text-sm transition-all duration-200
-                             ${isActive ? "bg-[#E50914]/20 text-[#E50914]" : "hover:bg-[#2A3A5F] hover:text-[#E50914]"}`
-                          }
-                        >
-                          <SubIcon className="w-4 h-4" />
-                          {sub.title}
-                        </NavLink>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </nav>
-      </div>
-
-      {/* Bottom Settings / Logout */}
-      <div className="space-y-2 p-2">
-        {/* <div className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-[#2A3A5F] hover:text-[#E50914] cursor-pointer transition-all duration-200">
-          <Settings className="w-5 h-5" />
-          <span className="font-medium">Settings</span>
-        </div> */}
-        <div className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-[#2A3A5F] hover:text-[#E50914] cursor-pointer transition-all duration-200"
-         onClick={()=>handleLogout()}>
-          <LogOut className="w-5 h-5" />
-          <span className="font-medium">Logout</span>
+          {/* Logout at bottom */}
+          <div className="p-2">
+            <div
+              className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-[#2A3A5F] hover:text-[#E50914] cursor-pointer transition-all duration-200"
+              onClick={handleLogout}
+            >
+              <LogOut className="w-5 h-5" />
+              <span className="font-medium">Logout</span>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
