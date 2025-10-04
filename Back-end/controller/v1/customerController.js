@@ -1,4 +1,4 @@
-const Leads = require("../../models/v1/Customer/leads");
+const Leads = []
 const Contacts = require("../../models/v1/Customer/contacts");
 const trash = require("../../models/v1/Trash/trash");
 const { httpSuccess, httpError } = require("../../utils/v1/httpResponse");
