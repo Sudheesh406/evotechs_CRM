@@ -1,5 +1,5 @@
-const leads = require("../../models/v1/Customer/leads");
 const Contacts = require("../../models/v1/Customer/contacts");
+const leads = require("../../models/v1/Customer/leads");
 const trash = require("../../models/v1/Trash/trash");
 const { httpSuccess, httpError } = require("../../utils/v1/httpResponse");
 const { Op } = require("sequelize");
