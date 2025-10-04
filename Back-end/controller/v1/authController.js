@@ -12,14 +12,14 @@ const handleSignup = async (req, res) => {
     // console.log(req.body);
 
     // 1. Validate
-    if (!name || !email || !password || !signupCode) {
-      return httpError(res, 400, "All fields are required");
-    }
+    // if (!name || !email || !password || !signupCode) {
+    //   return httpError(res, 400, "All fields are required");
+    // }
 
-    const verified = await secretCode.findOne({ where: { code: signupCode } });
-    if (!verified) {
-      return httpError(res, 400, "Signup code is not correct");
-    }
+    // const verified = await secretCode.findOne({ where: { code: signupCode } });
+    // if (!verified) {
+    //   return httpError(res, 400, "Signup code is not correct");
+    // }
 
     // // 2. Check if email exists
     const existingUser = await signup.findOne({ where: { email } });
