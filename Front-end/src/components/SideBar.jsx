@@ -32,12 +32,27 @@ const Sidebar = ({ closeSidebar }) => {
   const [menuItems, setMenuItems] = useState();
   const navigate = useNavigate()
 
+
+  const handleLogout = async ()=>{
+  try {
+    const response = await axios.patch('/auth/logout')
+    if(response){
+      localStorage.removeItem("CRMsrtRolE");
+      navigate('/login')
+    }
+  } catch (error) {
+    console.log('error found in logout',error)
+  }
+}
+
   const toggleMenu = (index) => {
     setOpenMenus((prev) => ({
       ...prev,
       [index]: !prev[index],
     }));
   };
+
+
 
 const id = 0
 
@@ -87,6 +102,8 @@ const id = 0
       ],
     },
     { title: "Trash", icon: Trash2, path: "/trash" },
+    { title: "Logout", onClick: handleLogout },
+
     // { title: "Services", icon: Wrench, path: "/services" },
     // { title: "Projects", icon: FolderKanban, path: "/projects" },
   ];
@@ -168,18 +185,6 @@ useEffect(() => {
   initRole();
 }, []);
 
-  
-const handleLogout = async ()=>{
-  try {
-    const response = await axios.patch('/auth/logout')
-    if(response){
-      localStorage.removeItem("CRMsrtRolE");
-      navigate('/login')
-    }
-  } catch (error) {
-    console.log('error found in logout',error)
-  }
-}
 
   
   return (
