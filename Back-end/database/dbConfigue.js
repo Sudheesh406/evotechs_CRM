@@ -1,5 +1,4 @@
 const { Sequelize } = require('sequelize');
-require('dotenv').config();
 
 const sequelize = new Sequelize(
   process.env.DB_NAME,
@@ -9,7 +8,12 @@ const sequelize = new Sequelize(
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
     dialect: 'mysql',
-    logging: false, // Set to true to see SQL queries in the console
+    dialectOptions: {
+      ssl: {
+        rejectUnauthorized: false, // Aiven requires SSL for MySQL
+      },
+    },
+    logging: false,
   }
 );
 
@@ -17,8 +21,8 @@ const connectDB = async () => {
   try {
     await sequelize.authenticate();
     console.log('Database connected successfully.');
-  } catch (error) {
-    console.error('Unable to connect to the database:', error);
+  } catch (err) {
+    console.error('Unable to connect to the database:', err);
   }
 };
 
