@@ -13,6 +13,7 @@ const sequelize = new Sequelize(
     dialectOptions: {
       ssl: {
         ca: fs.readFileSync(path.join(__dirname, 'certs/ca.pem')),
+        rejectUnauthorized: false, 
       },
     },
     logging: false,
