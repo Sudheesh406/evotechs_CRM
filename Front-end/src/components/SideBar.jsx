@@ -22,8 +22,10 @@ import {
   Wrench,
   FolderKanban,
   Hourglass,
-  Eye
+  Eye,
 } from "lucide-react";
+import { s } from "framer-motion/client";
+import { use } from "react";
 
 const Sidebar = ({ closeSidebar }) => {
   const [openMenus, setOpenMenus] = useState({});
@@ -77,14 +79,27 @@ const Sidebar = ({ closeSidebar }) => {
       title: "Workspace",
       icon: Users,
       subMenu: [
-        { title: "Attendance", path: "/workspace/attendance", icon: CheckSquare },
+        {
+          title: "Attendance",
+          path: "/workspace/attendance",
+          icon: CheckSquare,
+        },
         { title: "Calendar", path: "/workspace/calendar", icon: Calendar },
         { title: "Messages", path: "/workspace/messages", icon: MessageSquare },
-        { title: "Performance", path: "/workspace/work/assign", icon: FolderKanban },
+        {
+          title: "Performance",
+          path: "/workspace/work/assign",
+          icon: FolderKanban,
+        },
       ],
     },
     { title: "Trash", icon: Trash2, path: "/trash" },
+    // { title: "Services", icon: Wrench, path: "/services" },
+    // { title: "Projects", icon: FolderKanban, path: "/projects" },
   ];
+
+  //------------------------ Admin Items-------------------------//
+  //--------------------------------------------------------------//
 
   const adminItems = [
     { title: "Home", icon: Home, path: "/admin" },
@@ -113,53 +128,82 @@ const Sidebar = ({ closeSidebar }) => {
       subMenu: [
         { title: "Customise", path: "/team/customise", icon: CheckSquare },
         { title: "Projects", path: `/team/work/${id}`, icon: Calendar },
+        // { title: "Notacess", path: "/team/messages", icon: MessageSquare },
       ],
     },
     {
       title: "Workspace",
       icon: Users,
       subMenu: [
-        { title: "Attendance", path: "/workspace/attendance/view", icon: CheckSquare },
-        { title: "Calendar", path: "/workspace/calendar/customise", icon: Calendar },
-        { title: "Messages", path: "/workspace/message/port", icon: MessageSquare },
+        {
+          title: "Attendance",
+          path: "/workspace/attendance/view",
+          icon: CheckSquare,
+        },
+        {
+          title: "Calendar",
+          path: "/workspace/calendar/customise",
+          icon: Calendar,
+        },
+        {
+          title: "Messages",
+          path: "/workspace/message/port",
+          icon: MessageSquare,
+        },
         { title: "Assignment", path: "/workspace/todo", icon: FolderKanban },
-        { title: "Pinator", path: "/workspace/auth/pin/generator", icon: FolderKanban },
+        {
+          title: "Pinator",
+          path: "/workspace/auth/pin/generator",
+          icon: FolderKanban,
+        },
         { title: "Work", path: "/workspace/AdminWorklog", icon: FolderKanban },
       ],
     },
     { title: "Trash", icon: Trash2, path: "/trash" },
+    // { title: "Services", icon: Wrench, path: "/services" },
+    // { title: "Projects", icon: FolderKanban, path: "/projects" },
   ];
 
   useEffect(() => {
     async function initRole() {
       try {
+        let acess = null;
         const { data } = await axios.get("/auth/role");
-        const role = data?.data?.role || null;
-        if (role === "admin") setMenuItems(adminItems);
-        else setMenuItems(staffItems);
+        if (data?.data?.role) {
+          acess = data?.data?.role;
+        }
+        // Set menu
+        if (acess === "admin") {
+          setMenuItems(adminItems);
+        } else {
+          setMenuItems(staffItems);
+        }
       } catch (err) {
         console.error("Error initializing role:", err);
       }
     }
+
     initRole();
   }, []);
 
   const handleLogout = async () => {
     try {
-      await axios.patch("/auth/logout");
-      localStorage.removeItem("CRMsrtRolE");
-      navigate("/login");
+      const response = await axios.patch("/auth/logout");
+      if (response) {
+        localStorage.removeItem("CRMsrtRolE");
+        navigate("/login");
+      }
     } catch (error) {
-      console.log("Error during logout:", error);
+      console.log("error found in logout", error);
     }
   };
 
   return (
     <div className="flex flex-col justify-between h-screen bg-[#1F2A40] text-white w-64 shadow-lg">
-      {/* Scrollable menu */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Top + Menu Scrollable */}
+      <div className="flex flex-col overflow-y-auto flex-1">
         {/* Logo */}
-        <h1 className="text-[#E50914] text-2xl font-extrabold p-6 tracking-wide">
+        <h1 className="text-[#E50914] text-2xl font-extrabold  p-6 tracking-wide">
           CRM Panel
         </h1>
 
@@ -177,7 +221,11 @@ const Sidebar = ({ closeSidebar }) => {
                   onClick={closeSidebar}
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200
-                    ${isActive ? "bg-[#E50914]/20 text-[#E50914]" : "hover:bg-[#2A3A5F] hover:text-[#E50914]"}`
+                     ${
+                       isActive
+                         ? "bg-[#E50914]/20 text-[#E50914]"
+                         : "hover:bg-[#2A3A5F] hover:text-[#E50914]"
+                     }`
                   }
                 >
                   <Icon className="w-5 h-5" />
@@ -191,13 +239,21 @@ const Sidebar = ({ closeSidebar }) => {
                 <div
                   onClick={() => toggleMenu(i)}
                   className={`flex items-center justify-between gap-3 px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer
-                    ${openMenus[i] ? "bg-[#2A3A5F] text-[#E50914]" : "hover:bg-[#2A3A5F] hover:text-[#E50914]"}`}
+                    ${
+                      openMenus[i]
+                        ? "bg-[#2A3A5F] text-[#E50914]"
+                        : "hover:bg-[#2A3A5F] hover:text-[#E50914]"
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <Icon className="w-5 h-5" />
                     <span className="font-medium">{item.title}</span>
                   </div>
-                  <span className={`transform transition-transform duration-200 ${openMenus[i] ? "rotate-90" : ""}`}>
+                  <span
+                    className={`transform transition-transform duration-200 ${
+                      openMenus[i] ? "rotate-90" : ""
+                    }`}
+                  >
                     ▸
                   </span>
                 </div>
@@ -213,7 +269,11 @@ const Sidebar = ({ closeSidebar }) => {
                           onClick={closeSidebar}
                           className={({ isActive }) =>
                             `flex items-center gap-3 px-3 py-1.5 rounded-lg text-sm transition-all duration-200
-                             ${isActive ? "bg-[#E50914]/20 text-[#E50914]" : "hover:bg-[#2A3A5F] hover:text-[#E50914]"}`
+                             ${
+                               isActive
+                                 ? "bg-[#E50914]/20 text-[#E50914]"
+                                 : "hover:bg-[#2A3A5F] hover:text-[#E50914]"
+                             }`
                           }
                         >
                           <SubIcon className="w-4 h-4" />
@@ -227,17 +287,22 @@ const Sidebar = ({ closeSidebar }) => {
             );
           })}
         </nav>
-      </div>
 
-      {/* Logout button always visible */}
-      <div className="p-2">
         <div
           className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-[#2A3A5F] hover:text-[#E50914] cursor-pointer transition-all duration-200"
-          onClick={handleLogout}
+          onClick={() => handleLogout()}
         >
           <LogOut className="w-5 h-5" />
           <span className="font-medium">Logout</span>
         </div>
+      </div>
+
+      {/* Bottom Settings / Logout */}
+      <div className="space-y-2 p-2">
+        {/* <div className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-[#2A3A5F] hover:text-[#E50914] cursor-pointer transition-all duration-200">
+          <Settings className="w-5 h-5" />
+          <span className="font-medium">Settings</span>
+        </div> */}
       </div>
     </div>
   );

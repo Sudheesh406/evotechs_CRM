@@ -87,7 +87,7 @@ const Auth = () => {
         <div className="w-full max-w-md bg-white border border-gray-200 rounded-lg shadow-md p-8 my-8">
           {/* Branding */}
           <div className="text-center mb-2">
-            <img src={logo} alt="Government Emblem" className="mx-auto h-12" />
+            <img src={logo} alt="Logo" className="mx-auto h-12" />
             <h1 className="text-xl font-semibold text-gray-800 mt-2">
               CRM Portal
             </h1>
