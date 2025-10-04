@@ -1,5 +1,4 @@
-// const Leads = require("./Customer/leads");
-const leads = []
+const leads = require("./Customer/leads");
 const contacts = require("./Customer/contacts");
 const signup = require("./Authentication/authModel");
 const meetings = require("./Customer/meetings");
@@ -18,8 +17,8 @@ const trash = require('../../models/v1/Trash/trash')
 // Define associations
 
 // Leads ↔ Staff
-Leads.belongsTo(signup, { foreignKey: "staffId", as: "assignedStaff" });
-signup.hasMany(Leads, { foreignKey: "staffId", as: "leads" });
+leads.belongsTo(signup, { foreignKey: "staffId", as: "assignedStaff" });
+signup.hasMany(leads, { foreignKey: "staffId", as: "leads" });
 
 // Contacts ↔ Staff
 contacts.belongsTo(signup, { foreignKey: "staffId", as: "assignedStaff" });
@@ -110,7 +109,7 @@ trash.belongsTo(signup, {foreignKey: "staffId", as: "staff" })
 signup.hasMany(trash, { foreignKey: "staffId", as: "trashDetails" });
 
 module.exports = {
-  Leads,
+  leads,
   signup,
   contacts,
   calls,

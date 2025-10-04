@@ -1,4 +1,4 @@
-const Leads = []
+const leads = require("../../models/v1/Customer/leads");
 const Contacts = require("../../models/v1/Customer/contacts");
 const trash = require("../../models/v1/Trash/trash");
 const { httpSuccess, httpError } = require("../../utils/v1/httpResponse");
@@ -26,13 +26,13 @@ const createLeads = async (req, res) => {
     }
 
     // Optionally: check if email or phone already exists
-    const existingLead = await Leads.findOne({ where: { phone } });
+    const existingLead = await leads.findOne({ where: { phone } });
     if (existingLead) {
       return httpError(res, 409, "A lead with this email already exists");
     }
 
     // Create the lead
-    const result = await Leads.create({
+    const result = await leads.create({
       name,
       description,
       email,
@@ -70,7 +70,7 @@ const getLeads = async (req, res) => {
       ];
     }
 
-    const { count, rows } = await Leads.findAndCountAll({
+    const { count, rows } = await leads.findAndCountAll({
       where: whereCondition,
       order: [["id", "DESC"]],
       limit: parseInt(limit),
@@ -95,21 +95,21 @@ const updateLeads = async (req, res) => {
     const { id } = req.params;
     const data = req.body;
 
-    const customer = await Leads.findOne({ where: { id } });
+    const customer = await leads.findOne({ where: { id } });
     if (!customer) return httpError(res, 404, "Lead not found");
 
     if (customer.staffId !== user.id)
       return httpError(res, 403, "Access denied");
 
     // Check duplicates separately
-    const existEmail = await Leads.findOne({
+    const existEmail = await leads.findOne({
       where: { email: data.email, id: { [Op.ne]: id } },
     });
 
     if (existEmail)
       return httpError(res, 409, "Another lead already exists with this email");
 
-    const existPhone = await Leads.findOne({
+    const existPhone = await leads.findOne({
       where: { phone: data.phone, id: { [Op.ne]: id } },
     });
 
@@ -134,7 +134,7 @@ const deleteLeads = async (req, res) => {
     const { id } = req.params;
 
     // Find the lead
-    const customer = await Leads.findOne({ where: { id } });
+    const customer = await leads.findOne({ where: { id } });
 
     if (!customer) {
       return httpError(res, 404, "Lead not found");
@@ -178,7 +178,7 @@ const approveLeads = async (req, res) => {
     const { id } = req.params;
 
     // 1️⃣ Fetch the lead
-    const customer = await Leads.findOne({ where: { id } });
+    const customer = await leads.findOne({ where: { id } });
     if (!customer) {
       return httpError(res, 404, "Lead not found");
     }
