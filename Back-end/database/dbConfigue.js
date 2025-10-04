@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const { Sequelize } = require('sequelize');
 
 const sequelize = new Sequelize(
@@ -6,11 +8,11 @@ const sequelize = new Sequelize(
   process.env.DB_PASSWORD,
   {
     host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
+    port: Number(process.env.DB_PORT), 
     dialect: 'mysql',
     dialectOptions: {
       ssl: {
-        rejectUnauthorized: false, // Aiven requires SSL for MySQL
+        ca: fs.readFileSync(path.join(__dirname, 'certs/ca.pem')),
       },
     },
     logging: false,
