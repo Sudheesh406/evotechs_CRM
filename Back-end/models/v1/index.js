@@ -1,4 +1,5 @@
-const Leads = require("./Customer/leads");
+// const Leads = require("./Customer/leads");
+const leads = []
 const contacts = require("./Customer/contacts");
 const signup = require("./Authentication/authModel");
 const meetings = require("./Customer/meetings");
