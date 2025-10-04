@@ -58,8 +58,8 @@ const handleSignup = async (req, res) => {
     return res
       .cookie("crm_checkin_pass", token, {
         httpOnly: true,
-        secure: false,
-        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production", // true on prod
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
         maxAge: 34 * 24 * 60 * 60 * 1000,
       })
       .status(200)
@@ -126,8 +126,8 @@ const handleLogin = async (req, res) => {
     return res
       .cookie("crm_checkin_pass", token, {
         httpOnly: true,
-        secure: false,
-        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production", // true on prod
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
         maxAge: 34 * 24 * 60 * 60 * 1000,
       })
       .status(200)
