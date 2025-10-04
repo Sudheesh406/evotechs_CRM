@@ -32,27 +32,12 @@ const Sidebar = ({ closeSidebar }) => {
   const [menuItems, setMenuItems] = useState();
   const navigate = useNavigate()
 
-
-  const handleLogout = async ()=>{
-  try {
-    const response = await axios.patch('/auth/logout')
-    if(response){
-      localStorage.removeItem("CRMsrtRolE");
-      navigate('/login')
-    }
-  } catch (error) {
-    console.log('error found in logout',error)
-  }
-}
-
   const toggleMenu = (index) => {
     setOpenMenus((prev) => ({
       ...prev,
       [index]: !prev[index],
     }));
   };
-
-
 
 const id = 0
 
@@ -102,8 +87,6 @@ const id = 0
       ],
     },
     { title: "Trash", icon: Trash2, path: "/trash" },
-    { title: "Logout", onClick: handleLogout },
-
     // { title: "Services", icon: Wrench, path: "/services" },
     // { title: "Projects", icon: FolderKanban, path: "/projects" },
   ];
@@ -158,7 +141,6 @@ const id = 0
       ],
     },
     { title: "Trash", icon: Trash2, path: "/trash" },
-    { title: "Logout", onClick: handleLogout },
     // { title: "Services", icon: Wrench, path: "/services" },
     // { title: "Projects", icon: FolderKanban, path: "/projects" },
   ]
@@ -185,6 +167,18 @@ useEffect(() => {
   initRole();
 }, []);
 
+  
+const handleLogout = async ()=>{
+  try {
+    const response = await axios.patch('/auth/logout')
+    if(response){
+      localStorage.removeItem("CRMsrtRolE");
+      navigate('/login')
+    }
+  } catch (error) {
+    console.log('error found in logout',error)
+  }
+}
 
   
   return (
@@ -268,11 +262,11 @@ useEffect(() => {
           <Settings className="w-5 h-5" />
           <span className="font-medium">Settings</span>
         </div> */}
-        {/* <div className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-[#2A3A5F] hover:text-[#E50914] cursor-pointer transition-all duration-200"
+        <div className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-[#2A3A5F] hover:text-[#E50914] cursor-pointer transition-all duration-200"
          onClick={()=>handleLogout()}>
           <LogOut className="w-5 h-5" />
           <span className="font-medium">Logout</span>
-        </div> */}
+        </div>
       </div>
     </div>
   );
