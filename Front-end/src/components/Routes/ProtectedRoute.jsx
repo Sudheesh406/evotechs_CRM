@@ -15,6 +15,7 @@ export default function ProtectedRoute({ allowedRoles, children }) {
         const { data } = await axios.get("/auth/get/role");
         setRole(data?.data?.role);
       } catch (err) {
+
         console.error("Error fetching role:", err);
         setRole(null);
       } finally {
@@ -32,7 +33,11 @@ export default function ProtectedRoute({ allowedRoles, children }) {
       }
     }
 
-  if (!role || !allowedRoles.includes(role)) {
+  if (!role) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  if (!allowedRoles.includes(role)) {
    
     // redirect with "from" location info
     return <Navigate to="/access-denied" replace state={{ from: location }} />;
