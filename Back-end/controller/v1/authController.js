@@ -138,16 +138,13 @@ const handleLogin = async (req, res) => {
   }
 };
 
-
 const logout = async (req, res) => {
   const user = req.user;
-  // console.log('user')
   try {
     if (user) {
       res.clearCookie("crm_checkin_pass", {
-        httpOnly: true,
-        secure: false, // must match how you set it
-        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production", // true on prod
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       });
       return res.status(200).json({ message: "Logout successful" });
     } else {
@@ -157,7 +154,6 @@ const logout = async (req, res) => {
     console.log("error found in logout", error);
   }
 };
-
 
 const roleChecker = async (req, res) => {
   try {
@@ -191,8 +187,6 @@ const getRole = async (req, res) => {
   }
 };
 
-
-
 const getPin = async (req, res) => {
   const user = req.user;
 
@@ -225,7 +219,6 @@ const getPin = async (req, res) => {
     return httpError(res, 500, "Server error", err.message);
   }
 };
-
 
 const createPin = async (req, res) => {
   const user = req.user; // logged-in user
@@ -279,11 +272,10 @@ const createPin = async (req, res) => {
   }
 };
 
-
 const acessHandler = async (req, res) => {
   try {
     const user = req.user;
-  // check if user exists
+    // check if user exists
     const userDetails = await Signup.findOne({ where: { id: user.id } });
     if (!userDetails) return httpError(res, 404, "User not found");
 
@@ -313,16 +305,15 @@ const acessHandler = async (req, res) => {
   }
 };
 
-
 const deleteUser = async (req, res) => {
   try {
     const user = req.user;
-  // check if user exists
+    // check if user exists
     const userDetails = await Signup.findOne({ where: { id: user.id } });
     if (!userDetails) return httpError(res, 404, "User not found");
 
     // optional: check role if needed
-    if (!userDetails.role){
+    if (!userDetails.role) {
       return httpError(res, 403, "Access denied. Admins only.");
     }
     const { id } = req.params;
@@ -336,17 +327,14 @@ const deleteUser = async (req, res) => {
     }
 
     // Toggle verified
-    await exist.destroy()
+    await exist.destroy();
 
-    return res
-      .status(200)
-      .json({ message: "User deleted successfully" });
+    return res.status(200).json({ message: "User deleted successfully" });
   } catch (error) {
     console.log("error found in delete user", error);
     return httpError(res, 500, "Server error", error.message); // ✅ fixed variable
   }
 };
-
 
 const passwordChange = async (req, res) => {
   try {
@@ -406,5 +394,5 @@ module.exports = {
   acessHandler,
   deleteUser,
   getRole,
-  passwordChange
+  passwordChange,
 };
