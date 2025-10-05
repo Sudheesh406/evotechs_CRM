@@ -24,12 +24,13 @@ import {
   Hourglass,
   Eye,
 } from "lucide-react";
-import { s } from "framer-motion/client";
+import { div, s } from "framer-motion/client";
 import { use } from "react";
 
 const Sidebar = ({ closeSidebar }) => {
   const [openMenus, setOpenMenus] = useState({});
   const [menuItems, setMenuItems] = useState();
+  const [loading, setLoading] = useState(true)
   const navigate = useNavigate();
 
   const toggleMenu = (index) => {
@@ -172,6 +173,8 @@ const Sidebar = ({ closeSidebar }) => {
         if (data?.data?.role) {
           acess = data?.data?.role;
         }
+
+        setLoading(false)
         // Set menu
         if (acess === "admin") {
           setMenuItems(adminItems);
@@ -190,13 +193,16 @@ const Sidebar = ({ closeSidebar }) => {
     try {
       const response = await axios.patch("/auth/logout");
       if (response) {
-        localStorage.removeItem("CRMsrtRolE");
         navigate("/login");
       }
     } catch (error) {
       console.log("error found in logout", error);
     }
   };
+
+  if(loading){
+     return <div className="text-white p-4"></div>;
+  }
 
   return (
     <div className="flex flex-col justify-between h-screen bg-[#1F2A40] text-white w-64 shadow-lg">
