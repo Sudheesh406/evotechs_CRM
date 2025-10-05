@@ -143,6 +143,7 @@ const logout = async (req, res) => {
   try {
     if (user) {
       res.clearCookie("crm_checkin_pass", {
+        httpOnly: true,
         secure: process.env.NODE_ENV === "production", // true on prod
         sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       });
