@@ -37,11 +37,15 @@ const AdminMessagePortal = () => {
       if (!selectedStaff) return;
       try {
         const { data } = await axios.get(`/message/get/${selectedStaff.id}`);
-        const formatted = data.data.map(msg => ({
-          text: msg.message,
-          time: msg.sendingTime.slice(0,5),
-          sender: msg.senderId === user ? "admin" : "staff",
-        }));
+          const formatted = data.data.map((msg) => {
+          const [year, month, day] = msg.sendingDate.split("-");
+          return {
+            text: msg.message,
+            time: msg.sendingTime.slice(0, 5),
+            date: `${day}-${month}-${year}`, // rotated format
+            sender: msg.senderId === user ? "staff" : "admin",
+          };
+        });
         setChats(prev => ({ ...prev, [selectedStaff.id]: formatted }));
       } catch (err) { console.log(err); }
     };
@@ -162,7 +166,7 @@ const AdminMessagePortal = () => {
                   >
                     <div className="leading-snug">{msg.text}</div>
                     <div className="text-[10px] text-gray-500 text-right mt-1">
-                      {msg.time}
+                      {msg.time} ({msg.date})
                     </div>
                   </div>
                 </div>

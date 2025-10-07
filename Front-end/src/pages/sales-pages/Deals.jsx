@@ -42,7 +42,7 @@ const DealsKanban = () => {
 
   return (
     <div className="p-4 sm:p-6 bg-gray-50 min-h-[680px]">
-      <h1 className="text-2xl font-semibold mb-4">Deals</h1>
+      <h1 className="text-2xl font-semibold mb-4">Highlights</h1>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {deals.map((deal, idx) => {

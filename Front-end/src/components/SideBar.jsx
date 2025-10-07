@@ -45,16 +45,17 @@ const Sidebar = ({ closeSidebar }) => {
   const staffItems = [
     { title: "Home", icon: Home, path: "/" },
     {
-      title: "Sales",
+      title: "Operations",
       icon: ClipboardList,
       subMenu: [
-        { title: "Leads", path: "/sales/leads", icon: UserPlus },
-        { title: "Contacts", path: "/sales/contacts", icon: Users },
-        { title: "Personalize", path: "/sales/personalize", icon: Shield },
-        { title: "Deals", path: "/sales/deals", icon: Briefcase },
-        { title: "Pending", path: "/sales/pendings", icon: Hourglass },
-        { title: "Rework", path: "/sales/reworks", icon: RotateCcw },
-        { title: "Documents", path: "/sales/documents", icon: FileText },
+        { title: "Leads", path: "/operations/leads", icon: UserPlus },
+        { title: "Contacts", path: "/operations/contacts", icon: Users },
+        { title: "Personalize", path: "/operations/personalize", icon: Shield },
+        { title: "Deals", path: "/operations/deals", icon: Briefcase },
+        { title: "Pending", path: "/operations/pendings", icon: Hourglass },
+        { title: "Rework", path: "/operations/reworks", icon: RotateCcw },
+        { title: "Rework", path: "/operations/reworks", icon: Wrench },
+        // { title: "Documents", path: "/operations/documents", icon: FileText },
       ],
     },
     {
@@ -105,15 +106,15 @@ const Sidebar = ({ closeSidebar }) => {
   const adminItems = [
     { title: "Home", icon: Home, path: "/admin" },
     {
-      title: "Sales",
+      title: "Operations",
       icon: ClipboardList,
       subMenu: [
-        { title: "Deals", path: "/sales/deals", icon: Briefcase },
-        { title: "Pending", path: "/sales/pending/task", icon: Hourglass },
-        { title: "Completed", path: "/sales/completed", icon: Building },
-        { title: "Resolved", path: "/sales/resolved", icon: Eye },
-        { title: "Rework", path: "/sales/rework/port", icon: RotateCcw },
-        { title: "Documents", path: "/sales/documents", icon: FileText },
+        { title: "Highlights", path: "/operations/deals", icon: Briefcase },
+        { title: "Pending", path: "/operations/pending/task", icon: Hourglass },
+        { title: "Completed", path: "/operations/completed", icon: Building },
+        { title: "Resolved", path: "/operations/resolved", icon: Eye },
+        { title: "Rework", path: "/operations/rework/port", icon: RotateCcw },
+        // { title: "Documents", path: "/operations/documents", icon: FileText },
       ],
     },
     {

@@ -8,7 +8,7 @@ import { Menu } from "lucide-react";
 import { useState } from "react";
 
 import AdminDashboard from "./pages/dashboard/AdminDashboard";
-import StaffPendingTask from "./pages/sales-pages/admin_sales_side/StaffPendingTask";
+import StaffPendingTask from "./pages/operation-pages/admin_operation_side/StaffPendingTask";
 import CreateTeam from "./pages/Team-work/admin_team_work_side/CreateTeam";
 import AdminCalendar from "./pages/workspace-pages/admin_workspace_side/AdminCalender";
 import AdminAttendanceView from "./pages/workspace-pages/admin_workspace_side/AdminAttendanceView";
@@ -17,11 +17,11 @@ import AdminTodo from "./pages/workspace-pages/admin_workspace_side/AdminTodo";
 import AdminPinGenerator from "./pages/workspace-pages/admin_workspace_side/AdminPinGenerator";
 import StaffDashboard from "./pages/dashboard/StaffDashboard";
 import Leads from "./pages/sales-pages/Leads";
-import Accounts from "./pages/sales-pages/Accounts";
-import Contacts from "./pages/sales-pages/Contacts";
+import Accounts from "./pages/operation-pages/Accounts";
+import Contacts from "./pages/operation-pages/Contacts";
 import Deals from "./pages/sales-pages/Deals";
-import Documents from "./pages/sales-pages/Documents";
-import Personalize from "./pages/sales-pages/Personalize";
+import Documents from "./pages/operation-pages/Documents";
+import Personalize from "./pages/operation-pages/Personalize";
 import Calls from "./pages/activity-pages/Calls";
 import Task from "./pages/activity-pages/Task";
 import Meetings from "./pages/activity-pages/Meetings";
@@ -31,16 +31,16 @@ import Attendance from "./pages/workspace-pages/Attendance";
 import Auth from "./pages/Auth-pages/Auth";
 import Trash from "./pages/Trash-page/Trash";
 import TaskDetail from "./pages/staff-detail-page/TaskDetail";
-import Pending from "./pages/sales-pages/Pendings";
-import Rework from "./pages/sales-pages/Rework";
+import Pending from "./pages/operation-pages/Pendings";
+import Rework from "./pages/operation-pages/Rework";
 import TeamProfile from "./pages/Team-work/TeamView";
 import TeamWork from "./pages/Team-work/TeamWorkView";
 import TeamWorkDetails from "./pages/Team-work/TeamWorkDetails";
 import TeamTaskDetails from "./pages/Team-work/TeamTaskDetail";
-import StaffTaskDetails from "./pages/sales-pages/admin_sales_side/StaffTaskDetails";
-import StaffTaskVerification from "./pages/sales-pages/admin_sales_side/StaffTaskVerification";
-import CompletedTask from "./pages/sales-pages/admin_sales_side/CompletedTask";
-import ReworkTask from "./pages/sales-pages/admin_sales_side/ReworkTask";
+import StaffTaskDetails from "./pages/operation-pages/admin_operation_side/StaffTaskDetails";
+import StaffTaskVerification from "./pages/operation-pages/admin_operation_side/StaffTaskVerification";
+import CompletedTask from "./pages/operation-pages/admin_operation_side/CompletedTask";
+import ReworkTask from "./pages/operation-pages/admin_operation_side/ReworkTask";
 import ProjectTeam from "./pages/Team-work/admin_team_work_side/ProjectTeam";
 import Worklog from "./pages/workspace-pages/Worklog";
 import TeamLeads from "./pages/Team-work/TeamLeads";
@@ -50,6 +50,8 @@ import AdminWorklog from "./pages/workspace-pages/admin_workspace_side/AdminWork
 import AccessDenied from "./components/AcessDenined";
 import UnAuthorised from "./components/UnAuthorised";
 import HelperRoute from "./components/Routes/HelperRoute";
+
+import Completed from "./pages/sales-pages/Completed";
 
 import ProtectedRoute from "./components/Routes/ProtectedRoute";
 import Sidebar from "./components/SideBar";
@@ -115,7 +117,7 @@ function Layout() {
             }
           />
           <Route
-            path="/sales/pending/task"
+            path="/operations/pending/task"
             element={
               <ProtectedRoute allowedRoles={["admin"]}>
                 <StaffPendingTask />
@@ -163,7 +165,7 @@ function Layout() {
             }
           />
           <Route
-            path="/sales/resolved"
+            path="/operations/resolved"
             element={
               <ProtectedRoute allowedRoles={["admin"]}>
                 <StaffTaskVerification />
@@ -171,7 +173,7 @@ function Layout() {
             }
           />
           <Route
-            path="/sales/completed"
+            path="/operations/completed"
             element={
               <ProtectedRoute allowedRoles={["admin"]}>
                 <CompletedTask />
@@ -179,7 +181,7 @@ function Layout() {
             }
           />
           <Route
-            path="/sales/rework/port"
+            path="/operations/rework/port"
             element={
               <ProtectedRoute allowedRoles={["admin"]}>
                 <ReworkTask />
@@ -237,7 +239,7 @@ function Layout() {
             }
           />
           <Route
-            path="/sales/leads"
+            path="/operations/leads"
             element={
               <ProtectedRoute allowedRoles={["staff"]}>
                 <Leads />
@@ -245,7 +247,7 @@ function Layout() {
             }
           />
           <Route
-            path="/sales/contacts"
+            path="/operations/contacts"
             element={
               <ProtectedRoute allowedRoles={["staff"]}>
                 <Contacts />
@@ -253,7 +255,7 @@ function Layout() {
             }
           />
           <Route
-            path="/sales/accounts"
+            path="/operations/accounts"
             element={
               <ProtectedRoute allowedRoles={["staff"]}>
                 <Accounts />
@@ -261,7 +263,7 @@ function Layout() {
             }
           />
           <Route
-            path="/sales/deals"
+            path="/operations/deals"
             element={
               <ProtectedRoute allowedRoles={["staff", "admin"]}>
                 <Deals />
@@ -269,15 +271,28 @@ function Layout() {
             }
           />
           <Route
-            path="/sales/pendings"
+            path="/operations/pendings"
             element={
               <ProtectedRoute allowedRoles={["staff"]}>
                 <Pending />
               </ProtectedRoute>
             }
           />
+
+
           <Route
-            path="/sales/personalize"
+            path="/sales/completed"
+            element={
+              <ProtectedRoute allowedRoles={["staff"]}>
+                <Completed />
+              </ProtectedRoute>
+            }
+          />
+
+
+          
+          <Route
+            path="/operations/personalize"
             element={
               <ProtectedRoute allowedRoles={["staff"]}>
                 <Personalize />
@@ -285,7 +300,7 @@ function Layout() {
             }
           />
           <Route
-            path="/sales/documents"
+            path="/operations/documents"
             element={
               <ProtectedRoute allowedRoles={["staff", "admin"]}>
                 <Documents />
@@ -293,7 +308,7 @@ function Layout() {
             }
           />
           <Route
-            path="/sales/reworks"
+            path="/operations/reworks"
             element={
               <ProtectedRoute allowedRoles={["staff"]}>
                 <Rework />
