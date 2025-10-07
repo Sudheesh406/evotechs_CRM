@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "../../instance/Axios";
 import { io } from "socket.io-client";
 import { getRoomId } from "../../components/utils/Room";
 
-const socket = io(`${import.meta.env.VITE_BACKEND_URL}`, { transports: ["websocket"] });
+const socket = io(`${import.meta.env.VITE_BACKEND_URL}`, {
+  transports: ["websocket"],
+});
 
 const Messages = () => {
   const [staffList, setStaffList] = useState([]);
@@ -25,7 +27,9 @@ const Messages = () => {
           setStaffList(data.data.existing);
           setUser(data.data.excludedId);
         }
-      } catch (err) { console.log(err); }
+      } catch (err) {
+        console.log(err);
+      }
     };
     fetchStaff();
   }, []);
@@ -35,13 +39,19 @@ const Messages = () => {
       if (!selectedStaff) return;
       try {
         const { data } = await axios.get(`/message/get/${selectedStaff.id}`);
-        const formatted = data.data.map(msg => ({
-          text: msg.message,
-          time: msg.sendingTime.slice(0,5),
-          sender: msg.senderId === user ? "staff" : "admin",
-        }));
-        setChats(prev => ({ ...prev, [selectedStaff.id]: formatted }));
-      } catch (err) { console.log(err); }
+        const formatted = data.data.map((msg) => {
+          const [year, month, day] = msg.sendingDate.split("-");
+          return {
+            text: msg.message,
+            time: msg.sendingTime.slice(0, 5),
+            date: `${day}-${month}-${year}`, // rotated format
+            sender: msg.senderId === user ? "staff" : "admin",
+          };
+        });
+        setChats((prev) => ({ ...prev, [selectedStaff.id]: formatted }));
+      } catch (err) {
+        console.log(err);
+      }
     };
     getMessages();
   }, [selectedStaff]);
@@ -55,7 +65,7 @@ const Messages = () => {
   useEffect(() => {
     socket.on("receiveMessage", ({ senderId, message }) => {
       const otherId = senderId === user ? selectedStaff.id : senderId;
-      setChats(prev => ({
+      setChats((prev) => ({
         ...prev,
         [otherId]: [...(prev[otherId] || []), message],
       }));
@@ -71,7 +81,10 @@ const Messages = () => {
 
     const newMsg = {
       text: message,
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      time: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
       sender: "staff",
     };
 
@@ -93,9 +106,11 @@ const Messages = () => {
     if (textareaRef.current) textareaRef.current.style.height = "auto";
   };
 
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chats, selectedStaff]);
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chats, selectedStaff]);
 
-    return (
+  return (
     <div className="flex h-[92vh] bg-neutral-50 text-gray-800">
       {/* Staff list */}
       <div className="w-1/4 bg-white border-r border-gray-200 flex flex-col">
@@ -111,7 +126,9 @@ const Messages = () => {
                 selectedStaff?.id === staff.id
                   ? "bg-blue-200"
                   : "hover:bg-neutral-100"
-              } ${staff.role === "admin" ? "border-l-4 border-yellow-400" : ""}`}
+              } ${
+                staff.role === "admin" ? "border-l-4 border-yellow-400" : ""
+              }`}
             >
               <div className="font-medium text-gray-900 flex items-center justify-between">
                 <span>
@@ -140,7 +157,9 @@ const Messages = () => {
             <div className="p-5 bg-white border-b border-gray-200 flex items-center shadow-sm">
               <div className="font-semibold text-lg text-gray-900">
                 {selectedStaff.name}{" "}
-                <span className="text-sm text-gray-500">({selectedStaff.email})</span>
+                <span className="text-sm text-gray-500">
+                  ({selectedStaff.email})
+                </span>
               </div>
             </div>
 
@@ -162,8 +181,9 @@ const Messages = () => {
                   >
                     <div className="leading-snug">{msg.text}</div>
                     <div className="text-[10px] text-gray-500 text-right mt-1">
-                      {msg.time}
+                      {msg.time}  ({msg.date})
                     </div>
+                   
                   </div>
                 </div>
               ))}
@@ -188,7 +208,11 @@ const Messages = () => {
                 onClick={handleSend}
                 className={`ml-3 p-3 bg-gradient-to-br from-purple-400 via-violet-500 to-fuchsia-500 text-white rounded-full hover:bg-blue-600 
                   transition-transform duration-200 flex items-center justify-center
-                  ${sending ? "scale-125 -translate-y-1 translate-x-1 rotate-12" : ""}
+                  ${
+                    sending
+                      ? "scale-125 -translate-y-1 translate-x-1 rotate-12"
+                      : ""
+                  }
                   ${beat ? "scale-110" : ""}`}
               >
                 <svg
@@ -199,7 +223,11 @@ const Messages = () => {
                   stroke="currentColor"
                   strokeWidth={2}
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2 12l19-7-7 19-3-8-9-4z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M2 12l19-7-7 19-3-8-9-4z"
+                  />
                 </svg>
               </button>
             </div>
@@ -207,8 +235,12 @@ const Messages = () => {
         ) : (
           <div className="flex-1 flex items-center justify-center bg-neutral-50">
             <div className="text-gray-500 text-center">
-              <div className="text-xl font-semibold">Staff Notice / Announcement</div>
-              <div className="text-sm mt-2 text-gray-400">Choose someone from the left panel</div>
+              <div className="text-xl font-semibold">
+                Staff Notice / Announcement
+              </div>
+              <div className="text-sm mt-2 text-gray-400">
+                Choose someone from the left panel
+              </div>
             </div>
           </div>
         )}

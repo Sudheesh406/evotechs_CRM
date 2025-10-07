@@ -14,7 +14,7 @@ const Auth = () => {
     email: "",
     password: "",
     confirmPassword: "",
-    signupCode: "",
+    AuthorisationCode: "",
   });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
@@ -33,8 +33,8 @@ const Auth = () => {
     if (!form.email) newErrors.email = "Email is required";
     if (!form.password) newErrors.password = "Password is required";
     if (!isLogin && !form.name) newErrors.name = "Full Name is required";
-    if (!isLogin && !form.signupCode)
-      newErrors.signupCode = "Signup Code is required";
+    if (!isLogin && !form.AuthorisationCode)
+      newErrors.AuthorisationCode = "Authorisation code is required";
     if (!isLogin && form.password !== form.confirmPassword) {
       newErrors.confirmPassword = "Passwords do not match";
     }
@@ -125,17 +125,17 @@ const Auth = () => {
                   </label>
                   <input
                     type="text"
-                    name="signupCode"
-                    value={form.signupCode}
+                    name="AuthorisationCode"
+                    value={form.AuthorisationCode}
                     onChange={handleChange}
                     placeholder="Enter your Signup Code"
                     className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      errors.signupCode ? "border-red-500" : ""
+                      errors.AuthorisationCode ? "border-red-500" : ""
                     }`}
                   />
-                  {errors.signupCode && (
+                  {errors.AuthorisationCode && (
                     <p className="text-red-500 text-sm mt-1">
-                      {errors.signupCode}
+                      {errors.AuthorisationCode}
                     </p>
                   )}
                 </div>
@@ -252,7 +252,7 @@ const Auth = () => {
                   email: "",
                   password: "",
                   confirmPassword: "",
-                  signupCode: "",
+                  AuthorisationCode: "",
                 });
               }}
               className="text-blue-600 font-medium hover:underline"

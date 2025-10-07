@@ -74,6 +74,7 @@ export default function AdminCalendarManager() {
         category: item.category,
         status: item.status || "Pending",
       }));
+
       setLeaves(leavesArray);
     } catch (error) {
       console.error("Failed to load leaves", error);
@@ -270,7 +271,7 @@ export default function AdminCalendarManager() {
                 !isMaintenance
               ) {
                 const hasFullDay = d.approvedLeaves.some(
-                  (l) => l.leaveType === "Full Day"
+                  (l) => l.leaveType === "fullday"
                 );
                 cellClass = hasFullDay
                   ? "bg-blue-800 border-blue-500 text-white"

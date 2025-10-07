@@ -88,7 +88,7 @@ const Sidebar = ({ closeSidebar }) => {
         { title: "Calendar", path: "/workspace/calendar", icon: Calendar },
         { title: "Messages", path: "/workspace/messages", icon: MessageSquare },
         {
-          title: "Performance",
+          title: "Work Log",
           path: "/workspace/work/assign",
           icon: FolderKanban,
         },
@@ -153,11 +153,11 @@ const Sidebar = ({ closeSidebar }) => {
         },
         { title: "Assignment", path: "/workspace/todo", icon: FolderKanban },
         {
-          title: "Pinator",
+          title: "Forget Password",
           path: "/workspace/auth/pin/generator",
           icon: FolderKanban,
         },
-        { title: "Work", path: "/workspace/AdminWorklog", icon: FolderKanban },
+        { title: "Work Log", path: "/workspace/AdminWorklog", icon: FolderKanban },
       ],
     },
     { title: "Trash", icon: Trash2, path: "/trash" },

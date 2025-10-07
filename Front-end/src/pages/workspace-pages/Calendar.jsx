@@ -397,7 +397,7 @@ export default function Calendar() {
                 !isMaintenance
               ) {
                 const hasFullDay = d.approvedLeaves.some(
-                  (l) => l.leaveType === "Full Day"
+                  (l) => l.leaveType === "fullday"
                 );
                 cellClass = hasFullDay
                   ? "bg-blue-800 border-blue-500 text-white"

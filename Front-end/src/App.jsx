@@ -319,7 +319,7 @@ function Layout() {
           <Route
             path="/activities/tasks/team/:data"
             element={
-              <ProtectedRoute allowedRoles={["staff"]}>
+              <ProtectedRoute allowedRoles={["staff","admin"]}>
                 <TeamTaskDetails />
               </ProtectedRoute>
             }
@@ -383,7 +383,7 @@ function Layout() {
           <Route
             path="/team/work/manage/:data"
             element={
-              <ProtectedRoute allowedRoles={["staff"]}>
+              <ProtectedRoute allowedRoles={["staff","admin"]}>
                 <TeamWorkDetails />
               </ProtectedRoute>
             }
