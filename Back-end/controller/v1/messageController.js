@@ -32,7 +32,7 @@ function convertToMySQLTime(time12h) {
 }
 
 const createMessages = async (data) => {
-  console.log('data',data)
+
   try {
     const { senderId, receiverId, message } = data;
     const { text, time } = message; // time can be like "2025-09-29 10:29:00" or "10:29 AM"
@@ -64,7 +64,6 @@ const getMessages = async (req, res) => {
   try {
     const user = req.user;
     const { id } = req.params;
-    console.log("id", id);
 
     const existing = await messages.findAll({
       where: {
@@ -76,7 +75,6 @@ const getMessages = async (req, res) => {
       order: [["sendingTime", "ASC"]],
     });
 
-    console.log(existing);
 
     return httpSuccess(res, 201, "message fetched successfully", existing);
   } catch (error) {
