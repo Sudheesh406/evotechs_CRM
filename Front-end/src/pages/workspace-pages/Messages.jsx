@@ -39,15 +39,46 @@ const Messages = () => {
 
       try {
         const { data } = await axios.get(`/message/get/${selectedStaff.id}`);
-        const formatted = data.data?.existing?.map((msg) => {
-          const [year, month, day] = msg.sendingDate.split("-");
-          return {
-            text: msg.message,
-            time: msg.sendingTime.slice(0, 5),
-            date: `${day}-${month}-${year}`,
-            isMine: msg.senderId === user,
-          };
+        const formatted = data.data?.existing?.map((msg) => ({
+          text: msg.message,
+          time: msg.sendingTime,
+          date: msg.sendingDate,
+          isMine: msg.senderId === user,
+          id: msg.id,
+        }));
+
+        // Sort messages chronologically (text date + time)
+        formatted.sort((a, b) => {
+          const [yearA, monthA, dayA] = a.date.split("-");
+          const [yearB, monthB, dayB] = b.date.split("-");
+          let hourA = 0, minA = 0, hourB = 0, minB = 0;
+
+          if (a.time.includes("AM") || a.time.includes("PM")) {
+            // Convert 12-hour format to 24-hour
+            let [timeA, modifierA] = a.time.split(" ");
+            let [hA, mA] = timeA.split(":").map(Number);
+            if (modifierA === "PM" && hA < 12) hA += 12;
+            if (modifierA === "AM" && hA === 12) hA = 0;
+            hourA = hA;
+            minA = mA;
+
+            let [timeB, modifierB] = b.time.split(" ");
+            let [hB, mB] = timeB.split(":").map(Number);
+            if (modifierB === "PM" && hB < 12) hB += 12;
+            if (modifierB === "AM" && hB === 12) hB = 0;
+            hourB = hB;
+            minB = mB;
+          } else {
+            // 24-hour format
+            [hourA, minA] = a.time.split(":").map(Number);
+            [hourB, minB] = b.time.split(":").map(Number);
+          }
+
+          const dateA = new Date(yearA, monthA - 1, dayA, hourA, minA);
+          const dateB = new Date(yearB, monthB - 1, dayB, hourB, minB);
+          return dateA - dateB;
         });
+
         setChats((prev) => ({ ...prev, [selectedStaff.id]: formatted }));
       } catch (err) {
         console.log(err);
@@ -66,16 +97,28 @@ const Messages = () => {
   // Receive messages via socket
   useEffect(() => {
     const handler = ({ senderId, message }) => {
-      // 🧩 Ignore echo of your own messages
-      if (senderId === user) return;
+      if (!message || !selectedStaff) return;
 
       const otherId = senderId === user ? selectedStaff?.id : senderId;
       if (!otherId) return;
 
-      setChats((prev) => ({
-        ...prev,
-        [otherId]: [...(prev[otherId] || []), { ...message, isMine: senderId === user }],
-      }));
+      setChats((prev) => {
+        const updated = [...(prev[otherId] || []), { ...message, isMine: senderId === user }];
+
+        // Sort after receiving new message
+        updated.sort((a, b) => {
+          const [dayA, monthA, yearA] = a.date.split("-");
+          const [dayB, monthB, yearB] = b.date.split("-");
+          const [hourA, minA] = a.time.split(":").map(Number);
+          const [hourB, minB] = b.time.split(":").map(Number);
+
+          const dateA = new Date(yearA, monthA - 1, dayA, hourA, minA);
+          const dateB = new Date(yearB, monthB - 1, dayB, hourB, minB);
+          return dateA - dateB;
+        });
+
+        return { ...prev, [otherId]: updated };
+      });
     };
 
     socket.on("receiveMessage", handler);
@@ -89,18 +132,28 @@ const Messages = () => {
     setSending(true);
     setTimeout(() => setSending(false), 300);
 
+    const now = new Date();
     const newMsg = {
       text: message,
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      date: new Date().toLocaleDateString("en-GB").split("/").join("-"), // e.g., 08-10-2025
+      time: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      date: now.toLocaleDateString("en-GB").split("/").join("-"), // DD-MM-YYYY
       isMine: true,
     };
 
-    // Append locally for instant UI feedback
-    setChats((prev) => ({
-      ...prev,
-      [selectedStaff.id]: [...(prev[selectedStaff.id] || []), newMsg],
-    }));
+    setChats((prev) => {
+      const updated = [...(prev[selectedStaff.id] || []), newMsg];
+      // Sort messages
+      updated.sort((a, b) => {
+        const [dayA, monthA, yearA] = a.date.split("-");
+        const [dayB, monthB, yearB] = b.date.split("-");
+        const [hourA, minA] = a.time.split(":").map(Number);
+        const [hourB, minB] = b.time.split(":").map(Number);
+        const dateA = new Date(yearA, monthA - 1, dayA, hourA, minA);
+        const dateB = new Date(yearB, monthB - 1, dayB, hourB, minB);
+        return dateA - dateB;
+      });
+      return { ...prev, [selectedStaff.id]: updated };
+    });
 
     const room = getRoomId(user, selectedStaff.id);
     socket.emit("send_message", {
