@@ -5,22 +5,25 @@ const roleChecker = require("../../utils/v1/roleChecker");
 const { Op } = require("sequelize");
 
 function convertToMySQLTime(time12h) {
-  // e.g. time12h = "09:58 AM"
-  const [timePart, modifier] = time12h.split(" ");
-  let [hours, minutes] = timePart.split(":");
+  if (!time12h) return null;
 
-  hours = parseInt(hours, 10);
-  if (modifier.toUpperCase() === "PM" && hours !== 12) {
-    hours += 12;
-  }
-  if (modifier.toUpperCase() === "AM" && hours === 12) {
-    hours = 0;
+  let hours, minutes;
+
+  if (time12h.includes("AM") || time12h.includes("PM")) {
+    // 12-hour format
+    const [timePart, modifier] = time12h.split(" ");
+    [hours, minutes] = timePart.split(":").map(Number);
+
+    if (modifier.toUpperCase() === "PM" && hours !== 12) hours += 12;
+    if (modifier.toUpperCase() === "AM" && hours === 12) hours = 0;
+  } else {
+    // 24-hour format, e.g., "10:29:00"
+    [hours, minutes] = time12h.split(":").map(Number);
   }
 
   const now = new Date();
   now.setHours(hours, minutes, 0, 0);
 
-  // Format to MySQL DATETIME
   const yyyy = now.getFullYear();
   const mm = String(now.getMonth() + 1).padStart(2, "0");
   const dd = String(now.getDate()).padStart(2, "0");
@@ -31,26 +34,24 @@ function convertToMySQLTime(time12h) {
   return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
 }
 
-const createMessages = async (data) => {
 
+const createMessages = async (data) => {
   try {
     const { senderId, receiverId, message } = data;
-    const { text, time } = message; // time can be like "2025-09-29 10:29:00" or "10:29 AM"
+    const { text, time } = message;
 
-    // Convert to MySQL DATETIME format if needed
-    const mysqlDateTime = convertToMySQLTime(time); // "2025-09-29 10:29:00"
+    const mysqlDateTime = convertToMySQLTime(time);
+    if (!mysqlDateTime) throw new Error("Invalid time format");
 
-    // Extract date and time separately
-    const [datePart, timePart] = mysqlDateTime.split(" "); // datePart="2025-09-29", timePart="10:29:00"
-
+    const [datePart, timePart] = mysqlDateTime.split(" ");
     const admin = await roleChecker(senderId);
 
     const newMessage = await messages.create({
       message: text,
       sendingTime: timePart,
       sendingDate: datePart,
-      receiverId: receiverId,
-      senderId: senderId,
+      receiverId,
+      senderId,
       isAdmin: admin,
     });
 
@@ -59,6 +60,7 @@ const createMessages = async (data) => {
     console.error("Error in createMessages:", error);
   }
 };
+
 
 
 const getMessages = async (req, res) => {
