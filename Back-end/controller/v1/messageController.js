@@ -36,8 +36,6 @@ function convertToMySQLTime(time12h) {
   return `${hours.toString().padStart(2,"0")}:${minutes.toString().padStart(2,"0")}:00`;
 }
 
-
-
 const createMessages = async (data) => {
   try {
     const { senderId, receiverId, message } = data;
@@ -47,18 +45,22 @@ const createMessages = async (data) => {
       throw new Error("Missing required fields");
     }
     
-    const { text, time } = message;
+    const { text, time, date } = message;
 
-    const mysqlDateTime = convertToMySQLTime(time);
-    if (!mysqlDateTime) throw new Error("Invalid time format");
+    // convert time to MySQL format
+    const sendingTime = convertToMySQLTime(time);
 
-    const [datePart, timePart] = mysqlDateTime.split(" ");
+    // use provided date or fallback to today
+    const sendingDate = date
+      ? date.split("-").reverse().join("-") // optional: convert DD-MM-YYYY → YYYY-MM-DD if needed
+      : new Date().toISOString().split("T")[0];
+
     const admin = await roleChecker(senderId);
 
     const newMessage = await messages.create({
       message: text,
-      sendingTime: timePart,
-      sendingDate: datePart,
+      sendingTime,
+      sendingDate,
       receiverId,
       senderId,
       isAdmin: admin,
@@ -69,6 +71,7 @@ const createMessages = async (data) => {
     console.error("Error in createMessages:", error);
   }
 };
+
 
 
 
