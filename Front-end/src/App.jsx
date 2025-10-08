@@ -12,7 +12,6 @@ import StaffPendingTask from "./pages/operation-pages/admin_operation_side/Staff
 import CreateTeam from "./pages/Team-work/admin_team_work_side/CreateTeam";
 import AdminCalendar from "./pages/workspace-pages/admin_workspace_side/AdminCalender";
 import AdminAttendanceView from "./pages/workspace-pages/admin_workspace_side/AdminAttendanceView";
-import AdminMessagePortal from "./pages/workspace-pages/admin_workspace_side/AdminMessagePortal";
 import AdminTodo from "./pages/workspace-pages/admin_workspace_side/AdminTodo";
 import AdminPinGenerator from "./pages/workspace-pages/admin_workspace_side/AdminPinGenerator";
 import StaffDashboard from "./pages/dashboard/StaffDashboard";
@@ -148,14 +147,7 @@ function Layout() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/workspace/message/port"
-            element={
-              <ProtectedRoute allowedRoles={["admin"]}>
-                <AdminMessagePortal />
-              </ProtectedRoute>
-            }
-          />
+  
           <Route
             path="/activities/task/port/:data"
             element={
@@ -366,7 +358,7 @@ function Layout() {
           <Route
             path="/workspace/messages"
             element={
-              <ProtectedRoute allowedRoles={["staff"]}>
+              <ProtectedRoute allowedRoles={["staff", "admin"]}>
                 <Messages />
               </ProtectedRoute>
             }

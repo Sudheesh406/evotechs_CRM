@@ -51,7 +51,7 @@ const Sidebar = ({ closeSidebar }) => {
         { title: "Leads", path: "/operations/leads", icon: UserPlus },
         { title: "Contacts", path: "/operations/contacts", icon: Users },
         { title: "Personalize", path: "/operations/personalize", icon: Shield },
-        { title: "Deals", path: "/operations/deals", icon: Briefcase },
+        { title: "Highlights", path: "/operations/deals", icon: Briefcase },
         { title: "Pending", path: "/operations/pendings", icon: Hourglass },
         { title: "Rework", path: "/operations/reworks", icon: RotateCcw },
         { title: "Rework", path: "/operations/reworks", icon: Wrench },
@@ -149,7 +149,7 @@ const Sidebar = ({ closeSidebar }) => {
         },
         {
           title: "Messages",
-          path: "/workspace/message/port",
+          path: "/workspace/messages",
           icon: MessageSquare,
         },
         { title: "Assignment", path: "/workspace/todo", icon: FolderKanban },
