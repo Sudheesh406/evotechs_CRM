@@ -34,12 +34,12 @@ module.exports = {
         onDelete: 'CASCADE',
       },
       sendingTime: {
-        type: Sequelize.TIME,           // TIME column
+        type: Sequelize.TEXT,
         allowNull: false,
       
       },
       sendingDate: {
-        type: Sequelize.DATEONLY,       // DATEONLY column
+        type: Sequelize.TEXT,
         allowNull: false,
         
       },

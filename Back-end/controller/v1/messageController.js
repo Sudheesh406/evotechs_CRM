@@ -4,37 +4,6 @@ const signup = require("../../models/v1/Authentication/authModel");
 const roleChecker = require("../../utils/v1/roleChecker");
 const { Op } = require("sequelize");
 
-function convertToMySQLTime(time12h) {
-  // fallback to current time if invalid
-  if (!time12h || typeof time12h !== "string") {
-    const now = new Date();
-    return `${now.getHours().toString().padStart(2,"0")}:${now.getMinutes().toString().padStart(2,"0")}:${now.getSeconds().toString().padStart(2,"0")}`;
-  }
-
-  let hours, minutes;
-
-  if (time12h.includes("AM") || time12h.includes("PM")) {
-    const [timePart, modifier] = time12h.split(" ");
-    if (!timePart || !modifier) {
-      const now = new Date();
-      return `${now.getHours().toString().padStart(2,"0")}:${now.getMinutes().toString().padStart(2,"0")}:${now.getSeconds().toString().padStart(2,"0")}`;
-    }
-
-    [hours, minutes] = timePart.split(":").map(Number);
-    if (modifier.toUpperCase() === "PM" && hours !== 12) hours += 12;
-    if (modifier.toUpperCase() === "AM" && hours === 12) hours = 0;
-  } else {
-    // 24-hour format
-    const parts = time12h.split(":");
-    if (parts.length < 2) {
-      const now = new Date();
-      return `${now.getHours().toString().padStart(2,"0")}:${now.getMinutes().toString().padStart(2,"0")}:${now.getSeconds().toString().padStart(2,"0")}`;
-    }
-    [hours, minutes] = parts.map(Number);
-  }
-
-  return `${hours.toString().padStart(2,"0")}:${minutes.toString().padStart(2,"0")}:00`;
-}
 
 const createMessages = async (data) => {
   try {
@@ -47,20 +16,12 @@ const createMessages = async (data) => {
     
     const { text, time, date } = message;
 
-    // convert time to MySQL format
-    const sendingTime = convertToMySQLTime(time);
-
-    // use provided date or fallback to today
-    const sendingDate = date
-      ? date.split("-").reverse().join("-") // optional: convert DD-MM-YYYY → YYYY-MM-DD if needed
-      : new Date().toISOString().split("T")[0];
-
     const admin = await roleChecker(senderId);
 
     const newMessage = await messages.create({
       message: text,
-      sendingTime,
-      sendingDate,
+      sendingTime : time,
+      sendingDate : date,
       receiverId,
       senderId,
       isAdmin: admin,

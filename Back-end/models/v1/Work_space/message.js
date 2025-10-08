@@ -34,12 +34,12 @@ const messages = sequelize.define('messages', {
     onDelete: "CASCADE",
   },
   sendingTime: {
-    type: DataTypes.TIME,
+    type: DataTypes.TEXT,
     allowNull: false,
     
   },
   sendingDate: {
-    type: DataTypes.DATEONLY,
+    type: DataTypes.TEXT,
     allowNull: false,
     
   },
