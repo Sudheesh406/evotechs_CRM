@@ -54,6 +54,7 @@ const getMessages = async (req, res) => {
           ),
           "ASC",
         ],
+        ["id", "ASC"] 
       ],
     });
 
