@@ -45,16 +45,21 @@ const Sidebar = ({ closeSidebar }) => {
   const staffItems = [
     { title: "Home", icon: Home, path: "/" },
     {
-      title: "Operations",
+      title: "Sales",
       icon: ClipboardList,
       subMenu: [
         { title: "Leads", path: "/operations/leads", icon: UserPlus },
+        { title: "Highlights", path: "/operations/deals", icon: Briefcase },
+      ],
+    },
+    {
+      title: "Operations",
+      icon: ClipboardList,
+      subMenu: [
         { title: "Contacts", path: "/operations/contacts", icon: Users },
         { title: "Personalize", path: "/operations/personalize", icon: Shield },
-        { title: "Highlights", path: "/operations/deals", icon: Briefcase },
         { title: "Pending", path: "/operations/pendings", icon: Hourglass },
         { title: "Rework", path: "/operations/reworks", icon: RotateCcw },
-        { title: "Rework", path: "/operations/reworks", icon: Wrench },
         // { title: "Documents", path: "/operations/documents", icon: FileText },
       ],
     },
