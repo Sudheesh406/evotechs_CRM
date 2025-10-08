@@ -60,6 +60,7 @@ const createMessages = async (data) => {
   }
 };
 
+
 const getMessages = async (req, res) => {
   try {
     const user = req.user;
@@ -72,16 +73,22 @@ const getMessages = async (req, res) => {
           { senderId: id, receiverId: user.id },
         ],
       },
-      order: [["sendingTime", "ASC"]],
-    });
+      order: [
+        ["sendingDate", "ASC"],  // first sort by date
+        ["sendingTime", "ASC"],  // then by time
+      ],
+    });  
 
 
-    return httpSuccess(res, 201, "message fetched successfully", existing);
+    const userId = user.id;
+
+    return httpSuccess(res, 201, "Messages fetched successfully", { existing, userId });
   } catch (error) {
-    console.log("error found in getting messages", error);
+    console.log("Error found in getting messages", error);
     return httpError(res, 500, "Server error", error.message || error);
   }
 };
+
 
 
 const getAllMembers = async (req, res) => {
