@@ -34,6 +34,7 @@ const createMessages = async (data) => {
   }
 };
 
+
 const getMessages = async (req, res) => {
   try {
     const user = req.user;
@@ -46,6 +47,14 @@ const getMessages = async (req, res) => {
           { senderId: id, receiverId: user.id },
         ],
       },
+      order: [
+        [
+          Sequelize.literal(
+            "STR_TO_DATE(CONCAT(sendingDate, ' ', sendingTime), '%Y-%m-%d %h:%i %p')"
+          ),
+          "ASC",
+        ],
+      ],
     });
 
     const userId = user.id;
@@ -59,6 +68,7 @@ const getMessages = async (req, res) => {
     return httpError(res, 500, "Server error", error.message || error);
   }
 };
+
 
 const getAllMembers = async (req, res) => {
   try {
