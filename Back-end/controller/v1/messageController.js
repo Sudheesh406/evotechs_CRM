@@ -2,7 +2,7 @@ const { httpSuccess, httpError } = require("../../utils/v1/httpResponse");
 const messages = require("../../models/v1/Work_space/message");
 const signup = require("../../models/v1/Authentication/authModel");
 const roleChecker = require("../../utils/v1/roleChecker");
-const { Op } = require("sequelize");
+const { Op, Sequelize } = require("sequelize");
 
 const createMessages = async (data) => {
   try {
