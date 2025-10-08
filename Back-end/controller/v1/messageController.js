@@ -5,39 +5,48 @@ const roleChecker = require("../../utils/v1/roleChecker");
 const { Op } = require("sequelize");
 
 function convertToMySQLTime(time12h) {
-  if (!time12h) return null;
+  // fallback to current time if invalid
+  if (!time12h || typeof time12h !== "string") {
+    const now = new Date();
+    return `${now.getHours().toString().padStart(2,"0")}:${now.getMinutes().toString().padStart(2,"0")}:${now.getSeconds().toString().padStart(2,"0")}`;
+  }
 
   let hours, minutes;
 
   if (time12h.includes("AM") || time12h.includes("PM")) {
-    // 12-hour format
     const [timePart, modifier] = time12h.split(" ");
-    [hours, minutes] = timePart.split(":").map(Number);
+    if (!timePart || !modifier) {
+      const now = new Date();
+      return `${now.getHours().toString().padStart(2,"0")}:${now.getMinutes().toString().padStart(2,"0")}:${now.getSeconds().toString().padStart(2,"0")}`;
+    }
 
+    [hours, minutes] = timePart.split(":").map(Number);
     if (modifier.toUpperCase() === "PM" && hours !== 12) hours += 12;
     if (modifier.toUpperCase() === "AM" && hours === 12) hours = 0;
   } else {
-    // 24-hour format, e.g., "10:29:00"
-    [hours, minutes] = time12h.split(":").map(Number);
+    // 24-hour format
+    const parts = time12h.split(":");
+    if (parts.length < 2) {
+      const now = new Date();
+      return `${now.getHours().toString().padStart(2,"0")}:${now.getMinutes().toString().padStart(2,"0")}:${now.getSeconds().toString().padStart(2,"0")}`;
+    }
+    [hours, minutes] = parts.map(Number);
   }
 
-  const now = new Date();
-  now.setHours(hours, minutes, 0, 0);
-
-  const yyyy = now.getFullYear();
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const dd = String(now.getDate()).padStart(2, "0");
-  const hh = String(now.getHours()).padStart(2, "0");
-  const min = String(now.getMinutes()).padStart(2, "0");
-  const ss = String(now.getSeconds()).padStart(2, "0");
-
-  return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
+  return `${hours.toString().padStart(2,"0")}:${minutes.toString().padStart(2,"0")}:00`;
 }
+
 
 
 const createMessages = async (data) => {
   try {
     const { senderId, receiverId, message } = data;
+
+    console.log("Received data:", data);
+    if (!senderId || !receiverId || !message) {
+      throw new Error("Missing required fields");
+    }
+    
     const { text, time } = message;
 
     const mysqlDateTime = convertToMySQLTime(time);
