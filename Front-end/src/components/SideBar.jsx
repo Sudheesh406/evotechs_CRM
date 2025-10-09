@@ -50,6 +50,7 @@ const Sidebar = ({ closeSidebar }) => {
       subMenu: [
         { title: "Leads", path: "/operations/leads", icon: UserPlus },
         { title: "Highlights", path: "/operations/deals", icon: Briefcase },
+        { title: "Completed", path: "/sales/completed", icon: Briefcase },
       ],
     },
     {

@@ -11,6 +11,7 @@ const Table2 = ({
 }) => {
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      {/* Desktop / Large Screens */}
       <div className="hidden lg:block overflow-x-auto">
         <table className="min-w-full border-collapse text-sm">
           <thead className="bg-gradient-to-r from-indigo-50 to-indigo-100 text-indigo-700">
@@ -47,24 +48,68 @@ const Table2 = ({
                       {renderCell ? renderCell(col.key, row) : row[col.key]}
                     </td>
                   ))}
-                  <td className="p-3 text-center">
-                    {showAction && value && (
-                      <button
-                        className="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600"
-                        onClick={(e) => {
-                          e.stopPropagation(); // prevent row click
-                          onActionClick && onActionClick(row); // <-- call parent handler
-                        }}
-                      >
-                      Reassignment
-                      </button>
-                    )}
-                  </td>
+                  {value && (
+                    <td className="p-3 text-center">
+                      {showAction && (
+                        <button
+                          className="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onActionClick && onActionClick(row);
+                          }}
+                        >
+                          Reassignment
+                        </button>
+                      )}
+                    </td>
+                  )}
                 </tr>
               );
             })}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile / Tablet Layout */}
+      <div className="block lg:hidden space-y-4 p-2">
+        {data.map((row, idx) => {
+          const showAction = row.staffId !== currentStaffId;
+          return (
+            <div
+              key={idx}
+              className="bg-indigo-50 border border-indigo-100 rounded-lg p-4 shadow-sm hover:shadow-md transition cursor-pointer"
+              onClick={() => onRowClick && onRowClick(row)}
+            >
+              {columns.map((col) => (
+                <div
+                  key={col.key}
+                  className="flex justify-between py-1 border-b last:border-b-0"
+                >
+                  <span className="font-medium text-indigo-700">
+                    {col.label}:
+                  </span>
+                  <span className="text-gray-700 text-right">
+                    {renderCell ? renderCell(col.key, row) : row[col.key]}
+                  </span>
+                </div>
+              ))}
+
+              {value && showAction && (
+                <div className="mt-3 text-right">
+                  <button
+                    className="px-3 py-1 bg-indigo-500 text-white text-sm rounded hover:bg-indigo-600"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onActionClick && onActionClick(row);
+                    }}
+                  >
+                    Reassignment
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

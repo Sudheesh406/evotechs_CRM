@@ -39,6 +39,7 @@ import TeamTaskDetails from "./pages/Team-work/TeamTaskDetail";
 import StaffTaskDetails from "./pages/operation-pages/admin_operation_side/StaffTaskDetails";
 import StaffTaskVerification from "./pages/operation-pages/admin_operation_side/StaffTaskVerification";
 import CompletedTask from "./pages/operation-pages/admin_operation_side/CompletedTask";
+import Completed from "./pages/sales-pages/Completed";
 import ReworkTask from "./pages/operation-pages/admin_operation_side/ReworkTask";
 import ProjectTeam from "./pages/Team-work/admin_team_work_side/ProjectTeam";
 import Worklog from "./pages/workspace-pages/Worklog";
@@ -49,8 +50,8 @@ import AdminWorklog from "./pages/workspace-pages/admin_workspace_side/AdminWork
 import AccessDenied from "./components/AcessDenined";
 import UnAuthorised from "./components/UnAuthorised";
 import HelperRoute from "./components/Routes/HelperRoute";
-
-import Completed from "./pages/sales-pages/Completed";
+import SubTaskPage from "./pages/activity-pages/SubTaskPage";
+import TaskStatusDisplay from "./pages/activity-pages/TaskStatusDisplay";
 
 import ProtectedRoute from "./components/Routes/ProtectedRoute";
 import Sidebar from "./components/SideBar";
@@ -281,7 +282,6 @@ function Layout() {
             }
           />
 
-
           
           <Route
             path="/operations/personalize"
@@ -320,6 +320,22 @@ function Layout() {
             element={
               <ProtectedRoute allowedRoles={["staff"]}>
                 <TaskDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/activities/tasks/subtask/:id"
+            element={
+              <ProtectedRoute allowedRoles={["staff"]}>
+                <SubTaskPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/activities/tasks/status/:data"
+            element={
+              <ProtectedRoute allowedRoles={["staff"]}>
+                <TaskStatusDisplay />
               </ProtectedRoute>
             }
           />
