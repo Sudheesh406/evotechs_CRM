@@ -4,6 +4,7 @@ const { authenticate } = require("../../middleware/v1/verification/Auth");
 const {
   createTask,
   getTask,
+  getTaskByStage,
   editTask,
   deleteTask,
   taskStageUpdate,
@@ -21,6 +22,7 @@ const {
 
 Router.post("/create", authenticate, createTask);
 Router.get("/get", authenticate, getTask);
+Router.get("/get/:data", authenticate, getTaskByStage);
 Router.put("/edit/:id", authenticate, editTask);
 Router.patch("/taskUpdate/:id", authenticate, taskStageUpdate);
 Router.delete("/delete/:id", authenticate, deleteTask);

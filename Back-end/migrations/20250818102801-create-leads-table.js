@@ -18,7 +18,7 @@ module.exports = {
       },
       email: {
         type: Sequelize.STRING,
-        allowNull: false,
+        allowNull: true,
       },
       phone: {
         type: Sequelize.STRING,
@@ -29,9 +29,13 @@ module.exports = {
         allowNull: true,
       },
       priority: {
-        type: Sequelize.ENUM('high', 'normal', 'low'),
-        allowNull: false,
-        defaultValue: 'normal',
+        type: Sequelize.ENUM('NotAnClient', 'Client', 'NoUpdates', 'WaitingPeriod'),
+        allowNull: true,
+        defaultValue: 'WaitingPeriod',
+      },
+      location: {
+        type: Sequelize.STRING,
+        allowNull: true,
       },
       verified: {
         type: Sequelize.BOOLEAN,

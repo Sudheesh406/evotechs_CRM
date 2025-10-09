@@ -72,6 +72,44 @@ const getTask = async (req, res) => {
   }
 };
 
+
+const getTaskByStage = async (req, res) => {
+  const user = req.user;
+  const data  = req.params.data
+ let stage = null
+  try {
+
+    if(data == 'Not Started'){
+      stage = '1'
+    }else if(data == 'In Progress'){
+      stage = '2'
+    }else if(data == 'Completed'){
+      stage = '3'
+    }
+
+    const allTask = await task.findAll({
+      where: { staffId: user.id, softDelete: false, stage },
+      order: [["createdAt", "DESC"]],
+      include: [
+        {
+          model: contacts,
+          as: "customer", // must match the alias
+          attributes: ["id", "name", "phone", "amount"],
+        },
+      ],
+    });
+
+    if (allTask.length === 0) {
+      return httpError(res, 404, "No tasks found");
+    }
+
+    return httpSuccess(res, 200, "Tasks retrieved successfully", allTask);
+  } catch (error) {
+    console.error("Error in getTask:", error);
+    return httpError(res, 500, "Server error", error.message || error);
+  }
+};
+
 const editTask = async (req, res) => {
   try {
     const user = req.user;
@@ -131,13 +169,14 @@ const taskStageUpdate = async (req, res) => {
     const user = req.user;
     const taskId = req.params.id;
     const data = req.body;
+
     const existingTask = await task.findOne({
       where: { id: taskId, staffId: user.id },
     });
+
     if (!existingTask) {
       return httpError(res, 404, "Task not found");
     }
-    // console.log(existingTask.stage, data.data);
     await existingTask.update({ stage: data.data });
     return httpSuccess(
       res,
@@ -240,6 +279,7 @@ const updateStagesAndNotes = async (req, res) => {
     });
   }
 };
+
 
 const getTeamTaskDetails = async (req, res) => {
   try {
@@ -644,6 +684,7 @@ const getTaskForAdmin = async (req, res) => {
 module.exports = {
   createTask,
   getTask,
+  getTaskByStage,
   editTask,
   deleteTask,
   taskStageUpdate,

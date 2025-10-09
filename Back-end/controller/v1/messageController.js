@@ -8,7 +8,7 @@ const createMessages = async (data) => {
   try {
     const { senderId, receiverId, message } = data;
 
-    console.log("Received data:", data);
+    // console.log("Received data:", data);
     if (!senderId || !receiverId || !message) {
       throw new Error("Missing required fields");
     }
@@ -28,7 +28,7 @@ const createMessages = async (data) => {
       isAdmin: admin,
     });
 
-    console.log("Message created successfully:", newMessage);
+    // console.log("Message created successfully:", newMessage);
   } catch (error) {
     console.error("Error in createMessages:", error);
   }

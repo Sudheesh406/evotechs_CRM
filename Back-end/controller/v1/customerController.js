@@ -8,18 +8,18 @@ const { Op } = require("sequelize");
 const createLeads = async (req, res) => {
   try {
     const user = req.user;
+    console.log("body:", req.body);
 
-    const { name, description, email, phone, source, priority, amount } =
+    const { name, description, location, phone, source, priority, amount, email } =
       req.body;
 
     // Validate required fields
     if (
       !name ||
       !description ||
-      !email ||
       !phone ||
       !source ||
-      !priority ||
+      !location ||
       !amount
     ) {
       return httpError(res, 400, "All fields are required");
@@ -30,15 +30,16 @@ const createLeads = async (req, res) => {
     if (existingLead) {
       return httpError(res, 409, "A lead with this email already exists");
     }
-
+    const Priority = null
     // Create the lead
     const result = await leads.create({
       name,
       description,
       email,
       phone,
+      location,
       source,
-      priority,
+      Priority ,
       amount,
       staffId: user?.id,
     });
