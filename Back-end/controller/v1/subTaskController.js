@@ -7,26 +7,33 @@ const createSubTask = async (req, res) => {
   try {
     const user = req.user;
     const {data} = req.body;
-    const {id} = req.params;
 
-    if (!data || !id) {
+    console.log("datda:", data);
+
+   if (!data.title || !data.details || !data.taskId || data.details.length === 0) {
         return httpError(res, 400, "Missing required fields: data or id");
     }
 
-    const admin = roleChecker(user.id);
+    const admin = await roleChecker(user.id);
+    console.log("admin:", admin);
     if(admin){
-            httpError(res,403,"Only Staff can create Sub-Task")
+       httpError(res,403,"Only Staff can create Sub-Task")
     }
 
-
-    const parentTask = await task.findOne({ where: { id: id, staffId: user.id } });
+    const parentTask = await task.findOne({ where: { id: data.taskId, staffId: user.id } });
     if (!parentTask) {
         return httpError(res, 404, "task not found");
     }
-    // const newSubTask = await subTask.create({
-    //     requirement: parentTask.requirement,
-    //     phone: parentTask.phone,
-    // });
+
+
+    const newSubTask = await subTask.create({
+        staffId: user.id,
+        taskId: data.taskId,
+        notChecked: data.details,
+        title: data.title,
+    });
+
+    return httpSuccess(res, 201, "Sub-Task created successfully", newSubTask);
 
   } catch (error) {
     console.error("Error in createSubTask:", error);
@@ -34,8 +41,36 @@ const createSubTask = async (req, res) => {
   }
 }
 
+
+const getSubTasks = async (req, res) => {
+  try {
+    const user = req.user;
+    const taskId = req.params.id;
+    if(!taskId){
+        return httpError(res,400,"Task ID is required")
+    }
+
+    const data = await subTask.findAll({where:{staffId:user.id,taskId,softDelete:false}});
+    if(!data){
+        return httpError(res,404,"No Sub-Task found")
+    }
+
+    console.log("data:", data);
+
+  return httpSuccess(res, 200, "Sub-Tasks fetched successfully", data);
+    
+  } catch (error) {
+    console.error("Error in getSubTasks:", error);
+    return httpError(res, 500, "Internal Server Error");
+  }
+}
+
+
+//--------------------- here is the spott to update -----------------------//
+
 //----------------- pending in subTask ------------------//
 
   module.exports = {
     createSubTask,
+    getSubTasks
   };

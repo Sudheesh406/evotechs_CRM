@@ -27,6 +27,7 @@ const worklogRoute = require("./routes/v1/worklogRoute");
 const dealRoute = require("./routes/v1/dealRoute");
 const messageRoute = require("./routes/v1/messageRoute");
 const trashRoute = require("./routes/v1/trashRoute");
+const subTaskRoute = require("./routes/v1/subTaskRoute");
 
 app.use(express.json());
 app.use(cookieParser());
@@ -54,6 +55,7 @@ app.use("/api/worklog", worklogRoute);
 app.use("/api/deals", dealRoute);
 app.use("/api/message", messageRoute);
 app.use("/api/trash", trashRoute);
+app.use("/api/sub-task", subTaskRoute);
 
 const server = http.createServer(app);
 
