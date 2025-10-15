@@ -58,6 +58,7 @@ const Task = () => {
   };
 
   const fetchTasks = async () => {
+
     try {
       Swal.fire({
         title: "Loading Tasks...",
@@ -80,11 +81,11 @@ const Task = () => {
     } catch (err) {
       console.error(err);
       Swal.close();
-      Swal.fire({
-        icon: "error",
-        title: "Failed!",
-        text: "Could not fetch tasks.",
-      });
+      // Swal.fire({
+      //   icon: "error",
+      //   title: "Failed!",
+      //   text: "Could not fetch tasks.",
+      // });
     }
   };
 
@@ -114,29 +115,52 @@ const Task = () => {
     }
   };
 
-  const handleDelete = async (taskId) => {
-    const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "This will permanently delete the task!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Yes, delete it!",
-    });
+const handleDelete = async (taskId) => {
+  const result = await Swal.fire({
+    title: "Are you sure?",
+    text: "This will move to Trash!",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Yes, delete it!",
+  });
 
-    if (result.isConfirmed) {
-      try {
-        Swal.fire({ title: "Deleting...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-        await axios.delete(`/task/delete/${taskId}`);
+  if (result.isConfirmed) {
+    try {
+      Swal.fire({
+        title: "Deleting...",
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading(),
+      });
+
+      const response = await axios.delete(`/task/delete/${taskId}`);
+
+      // ✅ Make sure deletion was successful
+      if (response.status === 200 || response.status === 204) {
         Swal.close();
-        Swal.fire({ icon: "success", title: "Deleted!", showConfirmButton: false });
+        await Swal.fire({
+          icon: "success",
+          title: "Deleted!",
+          showConfirmButton: false,
+          timer: 1000,
+        });
+
+        // ✅ Now refresh task list
         fetchTasks();
-      } catch (err) {
-        console.error(err);
-        Swal.close();
-        Swal.fire({ icon: "error", title: "Failed!", text: "Could not delete task." });
+      } else {
+        throw new Error("Unexpected response from server");
       }
+    } catch (err) {
+      console.error("Delete error:", err);
+      Swal.close();
+      Swal.fire({
+        icon: "error",
+        title: "Failed!",
+        text: "Could not delete task.",
+      });
     }
-  };
+  }
+};
+
 
   const handleTaskUpdate = async (data, difference) => {
     setStage(difference ? Number(stage) + 1 : Number(stage) - 1);

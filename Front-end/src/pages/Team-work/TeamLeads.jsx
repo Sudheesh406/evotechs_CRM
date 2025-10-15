@@ -30,6 +30,7 @@ export default function TeamLeads() {
         priority: lead.priority || "Normal",
         email: lead.email,
         phone: lead.phone,
+        location : lead.location,
         followerName: lead.assignedStaff?.name || "-",
         followerEmail: lead.assignedStaff?.email || "-",
       }));
@@ -52,6 +53,7 @@ export default function TeamLeads() {
     { key: "priority", label: "Priority" },
     { key: "email", label: "Email" },
     { key: "phone", label: "Phone" },
+    { key: "location", label: "Location" },
     { key: "followerName", label: "Follower Name" },
     { key: "followerEmail", label: "Follower Email" },
   ];
@@ -64,7 +66,6 @@ export default function TeamLeads() {
 const handleActionClick = (row) => {
  
 };
-
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">

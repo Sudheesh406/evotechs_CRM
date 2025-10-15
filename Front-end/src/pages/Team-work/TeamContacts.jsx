@@ -29,6 +29,7 @@ export default function TeamContacts() {
         priority: contact.priority || "Normal",
         email: contact.email,
         phone: contact.phone,
+        location: contact.location,
         followerName: contact.assignedStaff?.name || "-",
         followerEmail: contact.assignedStaff?.email || "-",
       }));
@@ -51,6 +52,7 @@ export default function TeamContacts() {
     { key: "priority", label: "Priority" },
     { key: "email", label: "Email" },
     { key: "phone", label: "Phone" },
+    { key: "location", label: "Location" },
     { key: "followerName", label: "Follower Name" },
     { key: "followerEmail", label: "Follower Email" },
   ];

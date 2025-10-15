@@ -1,28 +1,29 @@
 import React, { useEffect, useState } from "react";
 import axios from "../instance/Axios";
 import { NavLink, useNavigate } from "react-router-dom";
+
 import {
   Home,
-  Users,
-  FileText,
   ClipboardList,
+  Briefcase,
+  UserPlus,
+  Users,
+  Shield,
+  Hourglass,
+  RotateCcw,
   Calendar,
   Phone,
+  Boxes,
+  CheckSquare,
+  MessageSquare,
+  FolderKanban,
+  Trash2,
+  Building,
+  Eye,
+  Lock,
   Settings,
   LogOut,
-  CheckSquare,
-  Shield,
-  MessageSquare,
-  Building,
-  UserPlus,
-  Briefcase,
-  Boxes,
-  RotateCcw,
-  Trash2,
-  Wrench,
-  FolderKanban,
-  Hourglass,
-  Eye,
+  Trash
 } from "lucide-react";
 import { div, s } from "framer-motion/client";
 import { use } from "react";
@@ -42,135 +43,119 @@ const Sidebar = ({ closeSidebar }) => {
 
   const id = 0;
 
-  const staffItems = [
-    { title: "Home", icon: Home, path: "/" },
-    {
-      title: "Sales",
-      icon: ClipboardList,
-      subMenu: [
-        { title: "Leads", path: "/operations/leads", icon: UserPlus },
-        { title: "Highlights", path: "/operations/deals", icon: Briefcase },
-        { title: "Completed", path: "/sales/completed", icon: Briefcase },
-      ],
-    },
-    {
-      title: "Operations",
-      icon: ClipboardList,
-      subMenu: [
-        { title: "Contacts", path: "/operations/contacts", icon: Users },
-        { title: "Personalize", path: "/operations/personalize", icon: Shield },
-        { title: "Pending", path: "/operations/pendings", icon: Hourglass },
-        { title: "Rework", path: "/operations/reworks", icon: RotateCcw },
-        // { title: "Documents", path: "/operations/documents", icon: FileText },
-      ],
-    },
-    {
-      title: "Activities",
-      icon: Calendar,
-      subMenu: [
-        { title: "Tasks", path: "/activities/tasks", icon: ClipboardList },
-        { title: "Meetings", path: "/activities/meetings", icon: Calendar },
-        { title: "Calls", path: "/activities/calls", icon: Phone },
-      ],
-    },
-    {
-      title: "Team",
-      icon: Boxes,
-      subMenu: [
-        { title: "Info", path: "/team/profile", icon: CheckSquare },
-        { title: "Projects", path: `/team/work/${id}`, icon: Calendar },
-        { title: "Leads", path: "/team/leads", icon: UserPlus },
-        { title: "Contacts", path: "/team/contacts", icon: Users },
-      ],
-    },
-    {
-      title: "Workspace",
-      icon: Users,
-      subMenu: [
-        {
-          title: "Attendance",
-          path: "/workspace/attendance",
-          icon: CheckSquare,
-        },
-        { title: "Calendar", path: "/workspace/calendar", icon: Calendar },
-        { title: "Messages", path: "/workspace/messages", icon: MessageSquare },
-        {
-          title: "Work Log",
-          path: "/workspace/work/assign",
-          icon: FolderKanban,
-        },
-      ],
-    },
-    { title: "Trash", icon: Trash2, path: "/trash" },
-    // { title: "Services", icon: Wrench, path: "/services" },
-    // { title: "Projects", icon: FolderKanban, path: "/projects" },
-  ];
+ const staffItems = [
+  { title: "Home", icon: Home, path: "/" },
 
-  //------------------------ Admin Items-------------------------//
-  //--------------------------------------------------------------//
+  {
+    title: "Sales",
+    icon: Briefcase,
+    subMenu: [
+      { title: "Leads", path: "/operations/leads", icon: UserPlus },
+      { title: "Highlights", path: "/operations/deals", icon: ClipboardList },
+      { title: "Completed", path: "/sales/completed", icon: CheckSquare },
+      { title: "Pending", path: "/sales/pendings", icon: Hourglass },
+      { title: "Rejected", path: "/sales/rejected", icon: Trash },
+    ],
+  },
 
-  const adminItems = [
-    { title: "Home", icon: Home, path: "/admin" },
-    {
-      title: "Operations",
-      icon: ClipboardList,
-      subMenu: [
-        { title: "Highlights", path: "/operations/deals", icon: Briefcase },
-        { title: "Pending", path: "/operations/pending/task", icon: Hourglass },
-        { title: "Completed", path: "/operations/completed", icon: Building },
-        { title: "Resolved", path: "/operations/resolved", icon: Eye },
-        { title: "Rework", path: "/operations/rework/port", icon: RotateCcw },
-        // { title: "Documents", path: "/operations/documents", icon: FileText },
-      ],
-    },
-    {
-      title: "Activities",
-      icon: Calendar,
-      subMenu: [
-        { title: "Tasks", path: "/activities/task/port", icon: ClipboardList },
-      ],
-    },
-    {
-      title: "Team",
-      icon: Boxes,
-      subMenu: [
-        { title: "Customise", path: "/team/customise", icon: CheckSquare },
-        { title: "Projects", path: `/team/work/${id}`, icon: Calendar },
-        // { title: "Notacess", path: "/team/messages", icon: MessageSquare },
-      ],
-    },
-    {
-      title: "Workspace",
-      icon: Users,
-      subMenu: [
-        {
-          title: "Attendance",
-          path: "/workspace/attendance/view",
-          icon: CheckSquare,
-        },
-        {
-          title: "Calendar",
-          path: "/workspace/calendar/customise",
-          icon: Calendar,
-        },
-        {
-          title: "Messages",
-          path: "/workspace/messages",
-          icon: MessageSquare,
-        },
-        { title: "Assignment", path: "/workspace/todo", icon: FolderKanban },
-        {
-          title: "Forget Password",
-          path: "/workspace/auth/pin/generator",
-          icon: FolderKanban,
-        },
-        { title: "Work Log", path: "/workspace/AdminWorklog", icon: FolderKanban },
-      ],
-    },
-    { title: "Trash", icon: Trash2, path: "/trash" },
-    // { title: "Services", icon: Wrench, path: "/services" },
-    // { title: "Projects", icon: FolderKanban, path: "/projects" },
-  ];
+  {
+    title: "Operations",
+    icon: ClipboardList,
+    subMenu: [
+      { title: "Contacts", path: "/operations/contacts", icon: Users },
+      { title: "Personalize", path: "/operations/personalize", icon: Shield },
+      { title: "Pending", path: "/operations/pendings", icon: Hourglass },
+      { title: "Rework", path: "/operations/reworks", icon: RotateCcw },
+    ],
+  },
+
+  {
+    title: "Activities",
+    icon: Calendar,
+    subMenu: [
+      { title: "Tasks", path: "/activities/tasks", icon: ClipboardList },
+      { title: "Meetings", path: "/activities/meetings", icon: Calendar },
+      { title: "Calls", path: "/activities/calls", icon: Phone },
+      { title: "Subtask Removed", path: "/activities/tasks/subtask/removed", icon: CheckSquare },
+    ],
+  },
+
+  {
+    title: "Team",
+    icon: Boxes,
+    subMenu: [
+      { title: "Info", path: "/team/profile", icon: Users },
+      { title: "Projects", path: `/team/work/${id}`, icon: FolderKanban },
+      { title: "Leads", path: "/team/leads", icon: UserPlus },
+      { title: "Contacts", path: "/team/contacts", icon: Phone },
+    ],
+  },
+
+  {
+    title: "Workspace",
+    icon: Building,
+    subMenu: [
+      { title: "Attendance", path: "/workspace/attendance", icon: CheckSquare },
+      { title: "Calendar", path: "/workspace/calendar", icon: Calendar },
+      { title: "Messages", path: "/workspace/messages", icon: MessageSquare },
+      { title: "Work Log", path: "/workspace/work/assign", icon: FolderKanban },
+    ],
+  },
+
+  { title: "Trash", icon: Trash2, path: "/trash" },
+];
+
+
+//------------------------ Admin Items -------------------------//
+
+const adminItems = [
+  { title: "Home", icon: Home, path: "/admin" },
+
+  {
+    title: "Operations",
+    icon: ClipboardList,
+    subMenu: [
+      { title: "Highlights", path: "/operations/deals", icon: Briefcase },
+      { title: "Pending", path: "/operations/pending/task", icon: Hourglass },
+      { title: "Completed", path: "/operations/completed", icon: CheckSquare },
+      { title: "Resolved", path: "/operations/resolved", icon: Eye },
+      { title: "Rework", path: "/operations/rework/port", icon: RotateCcw },
+    ],
+  },
+
+  {
+    title: "Activities",
+    icon: Calendar,
+    subMenu: [
+      { title: "Tasks", path: "/activities/task/port", icon: ClipboardList },
+    ],
+  },
+
+  {
+    title: "Team",
+    icon: Boxes,
+    subMenu: [
+      { title: "Customise", path: "/team/customise", icon: Settings },
+      { title: "Projects", path: `/team/work/${id}`, icon: FolderKanban },
+    ],
+  },
+
+  {
+    title: "Workspace",
+    icon: Building,
+    subMenu: [
+      { title: "Attendance", path: "/workspace/attendance/view", icon: CheckSquare },
+      { title: "Calendar", path: "/workspace/calendar/customise", icon: Calendar },
+      { title: "Messages", path: "/workspace/messages", icon: MessageSquare },
+      { title: "Assignment", path: "/workspace/todo", icon: ClipboardList },
+      { title: "Forget Password", path: "/workspace/auth/pin/generator", icon: Lock },
+      { title: "Work Log", path: "/workspace/AdminWorklog", icon: FolderKanban },
+    ],
+  },
+
+  { title: "Trash", icon: Trash2, path: "/trash" },
+];
+
 
   useEffect(() => {
     async function initRole() {

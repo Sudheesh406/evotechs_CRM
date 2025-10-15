@@ -52,6 +52,10 @@ import UnAuthorised from "./components/UnAuthorised";
 import HelperRoute from "./components/Routes/HelperRoute";
 import SubTaskPage from "./pages/activity-pages/SubTaskPage";
 import TaskStatusDisplay from "./pages/activity-pages/TaskStatusDisplay";
+import TeamSubtask from "./pages/Team-work/TeamSubtask";
+import LeadPending from "./pages/sales-pages/LeadPending";
+import LeadRejected from "./pages/sales-pages/LeadReject";
+import RemovedSubTask from "./pages/activity-pages/RemovedSubTask";
 
 import ProtectedRoute from "./components/Routes/ProtectedRoute";
 import Sidebar from "./components/SideBar";
@@ -271,6 +275,25 @@ function Layout() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/sales/pendings"
+            element={
+              <ProtectedRoute allowedRoles={["staff"]}>
+                <LeadPending />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/sales/rejected"
+            element={
+              <ProtectedRoute allowedRoles={["staff"]}>
+                <LeadRejected />
+              </ProtectedRoute>
+            }
+          />
+       
+
+
 
 
           <Route
@@ -282,7 +305,6 @@ function Layout() {
             }
           />
 
-          
           <Route
             path="/operations/personalize"
             element={
@@ -339,6 +361,16 @@ function Layout() {
               </ProtectedRoute>
             }
           />
+           <Route
+            path="/activities/tasks/subtask/removed"
+            element={
+              <ProtectedRoute allowedRoles={["staff"]}>
+                <RemovedSubTask />
+              </ProtectedRoute>
+            }
+          />
+
+          
           <Route
             path="/activities/tasks/team/:data"
             element={
@@ -432,6 +464,14 @@ function Layout() {
             element={
               <ProtectedRoute allowedRoles={["staff"]}>
                 <TeamContacts />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/team/task/subtask/:id"
+            element={
+              <ProtectedRoute allowedRoles={["staff","admin"]}>
+                <TeamSubtask />
               </ProtectedRoute>
             }
           />

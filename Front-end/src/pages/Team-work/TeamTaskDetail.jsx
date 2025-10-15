@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "../../instance/Axios";
 import CallModal from "../../components/modals/CallModal";
 import MeetingModal from "../../components/modals/MeetingModal";
@@ -11,7 +11,9 @@ import {
   CheckSquare,
   Paperclip,
   ArrowLeft,
+  Eye,
 } from "lucide-react";
+
 import { useNavigate, useParams } from "react-router-dom";
 
 /* --- Main Component --- */
@@ -19,6 +21,9 @@ export default function TaskDetail() {
   const state = true;
   const navigate = useNavigate();
   const { data } = useParams();
+  const jsonData = JSON.parse(data);
+  const id = jsonData.taskId
+   
 
   // UI state
   const [addMenuOpen, setAddMenuOpen] = useState(false);
@@ -175,7 +180,16 @@ export default function TaskDetail() {
   return (
     <div className="min-h-[680px] bg-gray-50 p-6 space-y-8">
       {/* --- Back Button --- */}
-      <div className="max-w-6xl mx-auto flex items-center mb-4">
+      <div className="max-w-6xl mx-auto flex items-center mb-4 justify-between">
+        <button
+          onClick={() => navigate(`/team/task/subtask/${id}`)}
+          className="flex items-center gap-2 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 
+             px-4 py-2 rounded-lg shadow-md hover:shadow-lg hover:scale-105 transform transition-all duration-200"
+        >
+          <Eye size={16} /> {/* You can import { Plus } from lucide-react */}
+          SubTask
+        </button>
+
         <button
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-sm text-gray-700 bg-gray-200 px-3 py-2 rounded-lg hover:bg-gray-300 transition"

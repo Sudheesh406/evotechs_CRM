@@ -4,7 +4,6 @@ import DataTable from "../../components/Table2";
 import axios from "../../instance/Axios";
 import Swal from "sweetalert2";
 
-
 const contacts = () => {
   const [leads, setLeads] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -20,6 +19,7 @@ const contacts = () => {
     description: "",
     email: "",
     phone: "",
+    location: "",
     source: "",
     priority: "",
     amount: "",
@@ -35,6 +35,7 @@ const contacts = () => {
       className: "text-indigo-600 hover:underline cursor-pointer",
     },
     { label: "Phone", key: "phone" },
+    { label: "Location", key: "location" },
     { label: "Contact Source", key: "source" },
     { label: "Priority", key: "priority" },
     { label: "Amount", key: "amount" },
@@ -74,6 +75,7 @@ const contacts = () => {
         description: contact.description || "",
         email: contact.email || "",
         phone: contact.phone || "",
+        location: contact.location || "",
         source: contact.source || "",
         priority: contact.priority || "",
         amount: contact.amount || "",
@@ -87,6 +89,7 @@ const contacts = () => {
         description: "",
         email: "",
         phone: "",
+        location: "",
         source: "",
         priority: "",
         amount: "",
@@ -175,6 +178,7 @@ const handleSubmit = async (e) => {
       description: "",
       email: "",
       phone: "",
+      location: "",
       source: "",
       priority: "",
       amount: "",
@@ -231,13 +235,23 @@ const handleDelete = async (id) => {
           getLeads(page); // Refresh the list after user clicks OK
         });
       } catch (error) {
-        console.log("Error deleting contact", error);
-        Swal.fire({
-          title: "Error!",
-          text: "Something went wrong while deleting the contact.",
-          icon: "error",
-          confirmButtonColor: "#d33",
-        });
+
+        if(error.response?.status === 406){
+          Swal.fire({
+            title: "Error!",
+            text: "A Task is created in this contact. please delete that permanently",
+            icon: "error",
+            confirmButtonColor: "#d33",
+          });
+        }else{
+          console.log("Error deleting contact", error.response);
+          Swal.fire({
+            title: "Error!",
+            text: "Something went wrong while deleting the contact.",
+            icon: "error",
+            confirmButtonColor: "#d33",
+          });
+        }
       }
     }
   });
@@ -341,72 +355,90 @@ const handleDelete = async (id) => {
       </div>
 
       {/* Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-          <div className="bg-white rounded-lg w-full max-w-md p-6 relative">
-            <button
-              onClick={() => closeModal()}
-              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
-            >
-              <X />
-            </button>
-            <h2 className="text-xl font-semibold mb-4">
-              {editingId ? "Edit contact" : "Create New contact"}
-            </h2>
-            <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-              {[
-                { label: "Name", key: "name" },
-                { label: "Description", key: "description" },
-                { label: "Email", key: "email", type: "email" },
-                { label: "Phone", key: "phone", type: "tel" },
-                { label: "Source", key: "source" },
-                { label: "Priority", key: "priority" },
-                { label: "Amount", key: "amount" },
-              ].map((field) => (
-                <div key={field.key} className="flex flex-col">
-                  <label className="text-gray-700">{field.label}</label>
-                  {field.key === "priority" ? (
-                    <select
-                      name="priority"
-                      value={formData.priority}
-                      onChange={handleChange}
-                      className={`border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.priority ? "border-red-500" : "border-gray-300"
-                      }`}
-                    >
-                      <option value="">Select Priority</option>
-                      <option value="High">High</option>
-                      <option value="Normal">Normal</option>
-                      <option value="Low">Low</option>
-                    </select>
-                  ) : (
-                    <input
-                      type={field.type || "text"}
-                      name={field.key}
-                      value={formData[field.key]}
-                      onChange={handleChange}
-                      className={`border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors[field.key] ? "border-red-500" : "border-gray-300"
-                      }`}
-                    />
-                  )}
-                  {errors[field.key] && (
-                    <span className="text-red-500 text-sm mt-1">
-                      {errors[field.key]}
-                    </span>
-                  )}
-                </div>
-              ))}
-              <button
-                type="submit"
-                className="bg-blue-600 text-white px-4 py-2 rounded mt-2"
+     {isModalOpen && (
+  <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
+    {/* Scrollable container */}
+    <div className="bg-white rounded-lg w-full max-w-2xl p-6 relative overflow-y-auto max-h-[90vh]">
+      {/* Close Button */}
+      <button
+        onClick={() => closeModal()}
+        className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
+      >
+        <X />
+      </button>
+
+      {/* Title */}
+      <h2 className="text-xl font-semibold mb-4">
+        {editingId ? "Edit Contact" : "Create New Contact"}
+      </h2>
+
+      {/* Form */}
+      <form
+        onSubmit={handleSubmit}
+        className="grid grid-cols-1 md:grid-cols-2 gap-4"
+      >
+        {[
+          { label: "Name", key: "name" },
+          { label: "Description", key: "description" },
+          { label: "Email", key: "email", type: "email" },
+          { label: "Phone", key: "phone", type: "tel" },
+          { label: "Location", key: "location" },
+          { label: "Source", key: "source" },
+          { label: "Priority", key: "priority" },
+          { label: "Amount", key: "amount" },
+        ].map((field) => (
+          <div key={field.key} className="flex flex-col">
+            <label className="text-gray-700 font-medium mb-1">
+              {field.label}
+            </label>
+
+            {field.key === "priority" ? (
+              <select
+                name="priority"
+                value={formData.priority}
+                onChange={handleChange}
+                className={`border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  errors.priority ? "border-red-500" : "border-gray-300"
+                }`}
               >
-                {editingId ? "Update contact" : "Save contact"}
-              </button>
-            </form>
+                <option value="">Select Priority</option>
+                <option value="High">High</option>
+                <option value="Normal">Normal</option>
+                <option value="Low">Low</option>
+              </select>
+            ) : (
+              <input
+                type={field.type || "text"}
+                name={field.key}
+                value={formData[field.key]}
+                onChange={handleChange}
+                className={`border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  errors[field.key] ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+            )}
+
+            {errors[field.key] && (
+              <span className="text-red-500 text-sm mt-1">
+                {errors[field.key]}
+              </span>
+            )}
           </div>
+        ))}
+
+        {/* Submit Button */}
+        <div className="col-span-1 md:col-span-2 flex justify-end mt-3">
+          <button
+            type="submit"
+            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+          >
+            {editingId ? "Update Contact" : "Save Contact"}
+          </button>
         </div>
-      )}
+      </form>
+    </div>
+  </div>
+)}
     </div>
   );
 };

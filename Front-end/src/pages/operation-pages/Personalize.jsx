@@ -10,7 +10,11 @@ export default function Personalize() {
   const [newItems, setNewItems] = useState([""]);
   const [editingId, setEditingId] = useState(null);
   const [menuOpenId, setMenuOpenId] = useState(null);
-  const [formErrors, setFormErrors] = useState({ title: "", items: [], general: "" });
+  const [formErrors, setFormErrors] = useState({
+    title: "",
+    items: [],
+    general: "",
+  });
   const [originalData, setOriginalData] = useState({ title: "", items: [] });
 
   const modalRef = useRef(null);
@@ -33,7 +37,10 @@ export default function Personalize() {
     setEditingId(list.id);
     setNewListTitle(list.project);
     setNewItems(list.data.length > 0 ? list.data : [""]);
-    setOriginalData({ title: list.project, items: list.data.length > 0 ? list.data : [""] });
+    setOriginalData({
+      title: list.project,
+      items: list.data.length > 0 ? list.data : [""],
+    });
     setFormErrors({ title: "", items: [], general: "" });
     setShowModal(true);
     setMenuOpenId(null);
@@ -41,13 +48,13 @@ export default function Personalize() {
 
   const handleDelete = async (id) => {
     const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: "This will permanently delete the list.",
-      icon: 'warning',
+      title: "Are you sure?",
+      text: "This will move to trash.",
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Yes, delete it!'
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
     });
 
     if (result.isConfirmed) {
@@ -55,16 +62,24 @@ export default function Personalize() {
         const response = await axios.delete(`/requirement/delete/${id}`);
         if (response) {
           setLists(lists.filter((list) => list.id !== id));
-          Swal.fire('Deleted!', 'Your list has been deleted.', 'success');
+          Swal.fire("Deleted!", "Your list has been deleted.", "success");
         }
       } catch (error) {
-        Swal.fire('Error', 'Failed to delete the list.', 'error');
-        console.log("Error deleting requirement:", error);
+        if (error.response?.status === 406) {
+          Swal.fire({
+            title: "Error!",
+            text: "A Task is created in this Requirement. please delete that permanently",
+            icon: "error",
+            confirmButtonColor: "#d33",
+          });
+        } else {
+          Swal.fire("Error", "Failed to delete the list.", "error");
+          console.log("Error deleting requirement:", error);
+        }
       }
     }
   };
 
-  
   const handleSubmit = async () => {
     let errors = { title: "", items: [], general: "" };
     let hasError = false;
@@ -75,7 +90,9 @@ export default function Personalize() {
     }
 
     const trimmedItems = newItems.map((item) => item.trim());
-    errors.items = trimmedItems.map((item) => (item === "" ? "Item is required" : ""));
+    errors.items = trimmedItems.map((item) =>
+      item === "" ? "Item is required" : ""
+    );
     if (errors.items.some((e) => e !== "")) hasError = true;
 
     if (editingId && !hasError) {
@@ -98,21 +115,32 @@ export default function Personalize() {
 
     try {
       if (editingId) {
-        const response = await axios.put(`/requirement/edit/${editingId}`, data);
-        setLists(lists.map((list) => (list.id === editingId ? response.data.data : list)));
-        Swal.fire('Success', 'List updated successfully!', 'success');
+        const response = await axios.put(
+          `/requirement/edit/${editingId}`,
+          data
+        );
+        setLists(
+          lists.map((list) =>
+            list.id === editingId ? response.data.data : list
+          )
+        );
+        Swal.fire("Success", "List updated successfully!", "success");
       } else {
         const response = await axios.post("/requirement/create", data);
         setLists([...lists, response.data.data]);
-        Swal.fire('Success', 'List created successfully!', 'success');
+        Swal.fire("Success", "List created successfully!", "success");
       }
 
       resetForm();
     } catch (error) {
       if (error.response && error.response.status === 409) {
-        Swal.fire('Error', 'A list with this title already exists. Please check your Requirements or trash', 'error');
+        Swal.fire(
+          "Error",
+          "A list with this title already exists. Please check your Requirements or trash",
+          "error"
+        );
       } else {
-        Swal.fire('Error', 'Something went wrong.', 'error');
+        Swal.fire("Error", "Something went wrong.", "error");
       }
       console.log("Error in handleSubmit:", error);
     }
@@ -134,7 +162,7 @@ export default function Personalize() {
         setLists(response.data.data);
       }
     } catch (error) {
-      Swal.fire('Error', 'Failed to get requirements.', 'error');
+      Swal.fire("Error", "Failed to get requirements.", "error");
       console.log("Error in getRequirements:", error);
     }
   };
@@ -145,7 +173,11 @@ export default function Personalize() {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (showModal && modalRef.current && !modalRef.current.contains(event.target)) {
+      if (
+        showModal &&
+        modalRef.current &&
+        !modalRef.current.contains(event.target)
+      ) {
         resetForm();
       }
       if (menuOpenId) {
@@ -240,10 +272,11 @@ export default function Personalize() {
 
       {/* Modal */}
       {showModal && (
-        <div
-          className="fixed inset-0 bg-black/30 backdrop-blur-[1px] flex items-center justify-center z-50"
-        >
-          <div ref={modalRef} className="bg-white rounded-lg shadow-lg w-96 p-6 relative">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-[1px] flex items-center justify-center z-50">
+          <div
+            ref={modalRef}
+            className="bg-white rounded-lg shadow-lg w-96 p-6 relative"
+          >
             <button
               onClick={resetForm}
               className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 hover:bg-gray-300 w-[24px]"

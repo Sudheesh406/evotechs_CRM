@@ -111,7 +111,7 @@ function Trash() {
       case "projects":
         return item.details.project || "-";
       case "task":
-        return item.details.name || "-";
+        return item.details.requirement || "-";
       case "teams":
         return item.details.teamName || "-";
       case "Assignment":
