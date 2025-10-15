@@ -1,5 +1,6 @@
 const { httpSuccess, httpError } = require("../../utils/v1/httpResponse");
 const requirement = require("../../models/v1/Project/requirements");
+const task = require('../../models/v1/Project/task')
 const trash = require('../../models/v1/Trash/trash')
 const { Op } = require("sequelize");
 
@@ -136,6 +137,11 @@ const deleteRequirement = async (req, res) => {
     if (!existingRequirement) {
       return httpError(res, 404, "Requirement not found");
     }
+
+    const taskDetails = await task.findOne({where:{requirement: existingRequirement.project }})
+     if(taskDetails){
+      return httpError(res, 406, "A Task is created in this contact");
+     }
 
     const moment = require("moment-timezone");
 

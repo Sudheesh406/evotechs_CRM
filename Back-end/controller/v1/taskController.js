@@ -61,10 +61,6 @@ const getTask = async (req, res) => {
       ],
     });
 
-    if (allTask.length === 0) {
-      return httpError(res, 404, "No tasks found");
-    }
-
     return httpSuccess(res, 200, "Tasks retrieved successfully", allTask);
   } catch (error) {
     console.error("Error in getTask:", error);
@@ -130,6 +126,7 @@ const editTask = async (req, res) => {
   }
 };
 
+
 const deleteTask = async (req, res) => {
   try {
     const user = req.user;
@@ -137,6 +134,7 @@ const deleteTask = async (req, res) => {
     const existingTask = await task.findOne({
       where: { id: taskId, staffId: user.id },
     });
+    
     if (!existingTask) {
       return httpError(res, 404, "Task not found");
     }

@@ -1,7 +1,8 @@
 const express = require("express");
 const Router = express.Router();
 const {createLeads, getLeads, updateLeads, deleteLeads, approveLeads,
-    deleteContact, updateContact, getContact, createContact,
+    deleteContact, updateContact, getContact, createContact, getPendingLeads,
+    getRejectLeads
 } = require('../../controller/v1/customerController')
 
 const {getCompletedLeads} = require('../../controller/v1/CompletedLeads')
@@ -15,6 +16,8 @@ Router.put("/lead/update/:id",authenticate, updateLeads);
 Router.delete("/lead/delete/:id",authenticate, deleteLeads);
 Router.patch("/lead/confirm/:id",authenticate, approveLeads);
 Router.get("/lead/get",authenticate, getLeads);
+Router.get("/pending/lead/get",authenticate, getPendingLeads);
+Router.get("/reject/lead/get",authenticate, getRejectLeads);
 Router.get("/lead/complete/get",authenticate, getCompletedLeads);
 
 //contacts

@@ -16,10 +16,10 @@ const handleSignup = async (req, res) => {
       return httpError(res, 400, "All fields are required");
     }
 
-    const verified = await secretCode.findOne({ where: { code: AuthorisationCode } });
-    if (!verified) {
-      return httpError(res, 400, "Signup code is not correct");
-    }
+    // const verified = await secretCode.findOne({ where: { code: AuthorisationCode } });
+    // if (!verified) {
+    //   return httpError(res, 400, "Signup code is not correct");
+    // }
 
     // // 2. Check if email exists
     const existingUser = await signup.findOne({ where: { email } });
@@ -71,6 +71,7 @@ const handleSignup = async (req, res) => {
     return httpError(res, 500, "Server error", err.message);
   }
 };
+
 
 const handleLogin = async (req, res) => {
   try {
@@ -138,6 +139,7 @@ const handleLogin = async (req, res) => {
   }
 };
 
+
 const logout = async (req, res) => {
   const user = req.user;
   try {
@@ -156,6 +158,7 @@ const logout = async (req, res) => {
   }
 };
 
+
 const roleChecker = async (req, res) => {
   try {
     const user = req.user;
@@ -172,6 +175,7 @@ const roleChecker = async (req, res) => {
   }
 };
 
+
 const getRole = async (req, res) => {
   try {
     const user = req.user;
@@ -187,6 +191,7 @@ const getRole = async (req, res) => {
     return httpError(res, 500, "Server error", err.message);
   }
 };
+
 
 const getPin = async (req, res) => {
   const user = req.user;
@@ -220,6 +225,7 @@ const getPin = async (req, res) => {
     return httpError(res, 500, "Server error", err.message);
   }
 };
+
 
 const createPin = async (req, res) => {
   const user = req.user; // logged-in user
@@ -273,6 +279,7 @@ const createPin = async (req, res) => {
   }
 };
 
+
 const acessHandler = async (req, res) => {
   try {
     const user = req.user;
@@ -305,6 +312,7 @@ const acessHandler = async (req, res) => {
     return httpError(res, 500, "Server error", error.message); // ✅ fixed variable
   }
 };
+
 
 const deleteUser = async (req, res) => {
   try {

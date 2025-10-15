@@ -1,13 +1,14 @@
 const { httpError, httpSuccess } = require("../../utils/v1/httpResponse");
-const trash = require('../../models/v1/Trash/trash');
-const calls = require('../../models/v1/Customer/calls');
-const contacts = require('../../models/v1/Customer/contacts');
-const leads = require('../../models/v1/Customer/leads');
-const meetings = require('../../models/v1/Customer/meetings');
-const requires = require('../../models/v1/Project/requirements');
-const task = require('../../models/v1/Project/task');
-const team = require('../../models/v1/Team_work/team');
-const workAssign = require('../../models/v1/Work_space/workAssign');
+const trash = require("../../models/v1/Trash/trash");
+const calls = require("../../models/v1/Customer/calls");
+const contacts = require("../../models/v1/Customer/contacts");
+const leads = require("../../models/v1/Customer/leads");
+const meetings = require("../../models/v1/Customer/meetings");
+const requires = require("../../models/v1/Project/requirements");
+const task = require("../../models/v1/Project/task");
+const team = require("../../models/v1/Team_work/team");
+const workAssign = require("../../models/v1/Work_space/workAssign");
+const subTask = require("../../models/v1/Project/subTask");
 
 const { Op } = require("sequelize");
 
@@ -71,7 +72,10 @@ const getTrash = async (req, res) => {
     }
 
     // Fetch trash entries
-    const trashEntries = await trash.findAll({ where, order: [['date', 'DESC']] });
+    const trashEntries = await trash.findAll({
+      where,
+      order: [["date", "DESC"]],
+    });
 
     // Enrich each entry with actual details
     const enriched = await Promise.all(
@@ -129,21 +133,22 @@ const modelMap = {
   projects: requires, // if requires is actually the project model
   task,
   teams: team,
-  Assignment: workAssign
+  Assignment: workAssign,
 };
-
 
 const restore = async (req, res) => {
   try {
     const user = req.user;
     const { id, data } = req.body;
-    console.log(id, data)
+    console.log(id, data);
 
     if (!id || !data) {
       return httpError(res, 400, "id and data type is required");
     }
 
-    const existing = await trash.findOne({ where: { data, id, staffId: user.id } });
+    const existing = await trash.findOne({
+      where: { data, id, staffId: user.id },
+    });
     if (!existing) return httpError(res, 404, "No data found for this ID");
 
     const Model = modelMap[data];
@@ -156,27 +161,26 @@ const restore = async (req, res) => {
     await value.update({ softDelete: false });
 
     return httpSuccess(res, 200, "Trash restored successfully");
-
   } catch (error) {
     console.error("Error restoring trash:", error);
     return httpError(res, 500, "Server error", error.message);
   }
 };
 
-
 const permenantDelete = async (req, res) => {
   try {
     const user = req.user;
     const { id, data } = req.body;
-    console.log(id, data)
+    console.log(id, data);
 
     if (!id || !data) {
       return httpError(res, 400, "id and data type is required");
     }
 
-    const existing = await trash.findOne({ where: { data, id, staffId: user.id } });
+    const existing = await trash.findOne({
+      where: { data, id, staffId: user.id },
+    });
     if (!existing) return httpError(res, 404, "No data found for this ID");
-    
 
     const Model = modelMap[data];
     if (!Model) return httpError(res, 400, "Invalid data type");
@@ -184,11 +188,19 @@ const permenantDelete = async (req, res) => {
     const value = await Model.findOne({ where: { id: existing.dataId } });
     if (!value) return httpError(res, 500, "Server error");
 
+    if (data == "task") {
+      await subTask.destroy({
+        where: {
+          staffId: value.staffId,
+          taskId: value.id,
+        },
+      });
+    }
+
     await existing.destroy();
     await value.destroy();
 
     return httpSuccess(res, 200, "Trash deleted successfully");
-
   } catch (error) {
     console.error("Error deleting trash:", error);
     return httpError(res, 500, "Server error", error.message);

@@ -1,15 +1,31 @@
 const express = require("express");
 const Router = express.Router();
 
-const {createSubTask} = require('../../controller/v1/subTaskController')
-const {authenticate} = require('../../middleware/v1/verification/Auth')
+const {
+  createSubTask,
+  getSubTasks,
+  updateSubTasks,
+  checkInUpdate,
+  deleteSubtask,
+  deleteNotCheckedData,
+  getTeamSubTasks,
+  getRemovedSubTask,
+  restoreSubtask,
+  permanentDeleteSubtask
+} = require("../../controller/v1/subTaskController");
 
-Router.post("/create",authenticate, createSubTask);
-// Router.post("/get",authenticate, getCalls);
-// Router.put("/edit/:id",authenticate, editCalls);
-// Router.delete('/delete/:id', authenticate, deleteCalls)
+const { authenticate } = require("../../middleware/v1/verification/Auth");
 
-// Router.post('/create/from_task',authenticate, createCallFromTask)
-// Router.post('/create/from_task_team',authenticate, createTeamCallFromTask)
+Router.post("/create", authenticate, createSubTask);
+Router.get("/get/:id", authenticate, getSubTasks);
+Router.get("/get/team/:id", authenticate, getTeamSubTasks);
+Router.put("/update/:id", authenticate, updateSubTasks);
+Router.patch("/update-checkin/:id", authenticate, checkInUpdate);
+Router.delete("/delete/:id", authenticate, deleteSubtask);
+Router.delete("/delete/sub/:id", authenticate, deleteNotCheckedData);
+Router.get("/removed", authenticate, getRemovedSubTask);
+Router.patch("/restore/:id", authenticate, restoreSubtask);
+Router.patch("/permenante/delete/:id", authenticate, permanentDeleteSubtask);
 
-module.exports = Router
+
+module.exports = Router;

@@ -1,6 +1,7 @@
 const Contacts = require("../../models/v1/Customer/contacts");
 const leads = require("../../models/v1/Customer/leads");
 const trash = require("../../models/v1/Trash/trash");
+const task = require('../../models/v1/Project/task')
 const { httpSuccess, httpError } = require("../../utils/v1/httpResponse");
 const { Op } = require("sequelize");
 
@@ -8,8 +9,6 @@ const { Op } = require("sequelize");
 const createLeads = async (req, res) => {
   try {
     const user = req.user;
-    console.log("body:", req.body);
-
     const { name, description, location, phone, source, priority, amount, email } =
       req.body;
 
@@ -51,6 +50,7 @@ const createLeads = async (req, res) => {
   }
 };
 
+
 const getLeads = async (req, res) => {
   try {
     const user = req.user;
@@ -90,6 +90,7 @@ const getLeads = async (req, res) => {
   }
 };
 
+
 const updateLeads = async (req, res) => {
   try {
     const user = req.user;
@@ -107,12 +108,31 @@ const updateLeads = async (req, res) => {
       where: { email: data.email, id: { [Op.ne]: id } },
     });
 
-    if (existEmail)
+    if (existEmail){
       return httpError(res, 409, "Another lead already exists with this email");
+    }
 
     const existPhone = await leads.findOne({
       where: { phone: data.phone, id: { [Op.ne]: id } },
     });
+
+    const contactDetails = await Contacts.findAll({where:{phone : data.phone, staffId: user.id}})
+    let client = data.priority;
+    
+    if(!contactDetails || contactDetails.length == 0){
+     if(client === 'Client'){
+       Contacts.create({
+         staffId : user.id,
+         amount : data.amount,
+         location : data.location,
+         source : data.source,
+         phone : data.phone,
+         email : data.email,
+         description : data.description,
+         name : data.name,
+       })
+     }
+    }
 
     if (existPhone)
       return httpError(
@@ -128,6 +148,7 @@ const updateLeads = async (req, res) => {
     return httpError(res, 500, "Internal Server Error");
   }
 };
+
 
 const deleteLeads = async (req, res) => {
   try {
@@ -145,6 +166,8 @@ const deleteLeads = async (req, res) => {
     if (customer.staffId !== user.id) {
       return httpError(res, 403, "Access denied");
     }
+
+    
 
     const moment = require("moment-timezone");
 
@@ -172,6 +195,7 @@ const deleteLeads = async (req, res) => {
     return httpError(res, 500, "Internal Server Error");
   }
 };
+
 
 const approveLeads = async (req, res) => {
   try {
@@ -203,6 +227,7 @@ const approveLeads = async (req, res) => {
       description: customer.description,
       email: customer.email,
       phone: customer.phone,
+      location: customer.location,
       source: customer.source,
       priority: customer.priority,
       amount: customer.amount,
@@ -226,6 +251,7 @@ const approveLeads = async (req, res) => {
     return httpError(res, 500, "Internal Server Error");
   }
 };
+
 
 //contacts
 const createContact = async (req, res) => {
@@ -272,6 +298,7 @@ const createContact = async (req, res) => {
     return httpError(res, 500, "Server error", err.message);
   }
 };
+
 
 const getContact = async (req, res) => {
   try {
@@ -373,6 +400,11 @@ const deleteContact = async (req, res) => {
       return httpError(res, 403, "Access denied");
     }
 
+    const taskDetails = await task.findOne({where:{phone: customer.phone }})
+     if(taskDetails || taskDetails.lenght > 0 ){
+      return httpError(res, 406, "A Task is with this requirement");
+     }
+
     const moment = require("moment-timezone");
 
     // Get current Indian Railway time (IST)
@@ -399,6 +431,90 @@ const deleteContact = async (req, res) => {
   }
 };
 
+const getPendingLeads = async (req, res) => {
+  try {
+    const user = req.user;
+    const { page = 1, limit = 10, search = "" } = req.query;
+
+    const offset = (page - 1) * limit;
+
+    // 🔍 Build dynamic where condition
+    const whereCondition = {
+      staffId: user.id,
+      softDelete: false,
+      priority: {
+        [Op.in]: ["NoUpdates", "WaitingPeriod"],
+      },
+    };
+
+    if (search.trim()) {
+      whereCondition[Op.or] = [
+        { name: { [Op.like]: `%${search}%` } },
+        { phone: { [Op.like]: `%${search}%` } },
+      ];
+    }
+
+    const { count, rows } = await leads.findAndCountAll({
+      where: whereCondition,
+      order: [["id", "DESC"]],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+    });
+
+    return httpSuccess(res, 200, "Leads fetched successfully", {
+      total: count,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      leads: rows,
+    });
+  } catch (error) {
+    console.error("Error in getting Leads", error);
+    return httpError(res, 500, "Internal Server Error");
+  }
+};
+
+
+const getRejectLeads = async (req, res) => {
+  try {
+    const user = req.user;
+    const { page = 1, limit = 10, search = "" } = req.query;
+
+    const offset = (page - 1) * limit;
+
+    // 🔍 Build dynamic where condition
+    const whereCondition = {
+      staffId: user.id,
+      softDelete: false,
+      priority: 'NotAnClient',
+    };
+
+    if (search.trim()) {
+      whereCondition[Op.or] = [
+        { name: { [Op.like]: `%${search}%` } },
+        { phone: { [Op.like]: `%${search}%` } },
+      ];
+    }
+
+    const { count, rows } = await leads.findAndCountAll({
+      where: whereCondition,
+      order: [["id", "DESC"]],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+    });
+
+    return httpSuccess(res, 200, "Leads fetched successfully", {
+      total: count,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      leads: rows,
+    });
+  } catch (error) {
+    console.error("Error in getting Leads", error);
+    return httpError(res, 500, "Internal Server Error");
+  }
+};
+
+
 module.exports = {
   createLeads,
   getLeads,
@@ -409,4 +525,6 @@ module.exports = {
   updateContact,
   getContact,
   createContact,
+  getPendingLeads,
+  getRejectLeads
 };
