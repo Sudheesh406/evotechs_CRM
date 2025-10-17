@@ -4,28 +4,29 @@ const signup = require("../../models/v1/Authentication/authModel");
 const roleChecker = require("../../utils/v1/roleChecker");
 const { Op, Sequelize } = require("sequelize");
 
+
+
 const createMessages = async (data) => {
   try {
     const { senderId, receiverId, message } = data;
 
-        console.log('data',data)
-
+    console.log('data', data);
 
     if (!senderId || !receiverId || !message) {
       throw new Error("Missing required fields");
     }
 
-    const { text, time, date } = message;
+    // Use the actual keys from message object
+    const { text, sendingDate: date, sendingTime: time } = message;
 
-    // Convert date to YYYY-MM-DD (if provided in DD-MM-YYYY)
-    const sendingDate = date.includes("-")
+    // Convert date to YYYY-MM-DD if needed
+    const sendingDate = date.includes("-") 
       ? date.split("-").reverse().join("-") // ["17","10","2025"] -> "2025-10-17"
       : date;
 
-    // Ensure sendingTime is in HH:MM:SS 24-hour format for DB storage
+    // Process time
     let sendingTime = time;
 
-    // If time is in 12-hour format with AM/PM, convert to 24-hour HH:MM:SS
     const ampmMatch = sendingTime.match(/(\d{1,2}):(\d{2})\s?(AM|PM)/i);
     if (ampmMatch) {
       let [_, hr, min, ampm] = ampmMatch;
@@ -37,10 +38,8 @@ const createMessages = async (data) => {
       sendingTime = sendingTime + ":00"; // HH:MM → HH:MM:SS
     }
 
-    // Check admin role
     const isAdmin = await roleChecker(senderId);
 
-    // Save message in database
     const newMessage = await messages.create({
       message: text,
       sendingDate,
@@ -57,6 +56,8 @@ const createMessages = async (data) => {
     throw error;
   }
 };
+
+
 
 
 const getMessages = async (req, res) => {
