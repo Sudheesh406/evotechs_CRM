@@ -61,23 +61,20 @@ const Auth = () => {
   };
 
   // login function
-const handleLogin = async (data) => {
-  try {
-    const response = await apiClient.post("/auth/login", data);
-
-    setServerError(""); // clear error if login succeeds
-
-    if (response?.data?.userDetails?.role === "admin") {
-      localStorage.setItem("CRMsrtRolE", "admin");
-      navigate("/admin");
-    } else if (response?.data?.userDetails?.role === "staff") {
-      navigate("/");
+  const handleLogin = async (data) => {
+    try {
+      const response = await axios.post("/auth/login", data);
+      setServerError(""); // clear error if success
+      if (response?.data?.userDetails?.role === "admin") {
+        localStorage.setItem("CRMsrtRolE", "admin");
+        navigate("/admin");
+      } else if (response?.data?.userDetails?.role === "staff") {
+        navigate("/");
+      }
+    } catch (error) {
+      setServerError(error.response?.data?.message || "Something went wrong");
     }
-  } catch (error) {
-    setServerError(error.response?.data?.message || "Something went wrong");
-  }
-};
-
+  };
 
   
   return (
