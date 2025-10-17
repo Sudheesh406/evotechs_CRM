@@ -16,4 +16,4 @@ const sequelize = new Sequelize(
   }
 );
 
-module.exports = sequelize; // export the instance directly
+module.exports = {sequelize}; // export the instance directly
