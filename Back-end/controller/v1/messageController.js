@@ -57,6 +57,8 @@ const createMessages = async (data) => {
 
 
 
+// Assuming you have Sequelize, Op, messages, httpSuccess, and httpError imported.
+
 const getMessages = async (req, res) => {
   try {
     const user = req.user;
@@ -71,17 +73,20 @@ const getMessages = async (req, res) => {
       },
       order: [
         [
+          // Using a precise format string to ensure correct chronological sorting.
+          // '%h' is for 12-hour time, '%i' for minutes, '%p' for AM/PM.
           Sequelize.literal(
             "STR_TO_DATE(CONCAT(sendingDate, ' ', sendingTime), '%Y-%m-%d %h:%i %p')"
           ),
-          "ASC",
+          "ASC", // Ensure ascending order by time
         ],
-        ["id", "ASC"] 
+        ["id", "ASC"], // Secondary sort by ID in case of identical timestamp (for stability)
       ],
     });
 
     const userId = user.id;
 
+    // The data returned from the backend is now chronologically sorted.
     return httpSuccess(res, 200, "Messages fetched successfully", {
       existing,
       userId,
@@ -91,6 +96,7 @@ const getMessages = async (req, res) => {
     return httpError(res, 500, "Server error", error.message || error);
   }
 };
+
 
 
 const getAllMembers = async (req, res) => {

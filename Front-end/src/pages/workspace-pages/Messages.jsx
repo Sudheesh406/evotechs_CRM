@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import axios from "../../instance/Axios";
+import axios from "../../instance/Axios"; // Assuming axios is correctly imported
 import { io } from "socket.io-client";
-import { getRoomId } from "../../components/utils/Room";
+import { getRoomId } from "../../components/utils/Room"; // Assuming getRoomId is correctly imported
 
 const socket = io("/", {
   path: "/socket.io",
@@ -51,38 +51,8 @@ const Messages = () => {
           id: msg.id,
         }));
 
-        // Sort messages chronologically
-        formatted.sort((a, b) => {
-          const [yearA, monthA, dayA] = a.date.split("-");
-          const [yearB, monthB, dayB] = b.date.split("-");
-          let hourA = 0,
-            minA = 0,
-            hourB = 0,
-            minB = 0;
-
-          if (a.time.includes("AM") || a.time.includes("PM")) {
-            let [timeA, modifierA] = a.time.split(" ");
-            let [hA, mA] = timeA.split(":").map(Number);
-            if (modifierA === "PM" && hA < 12) hA += 12;
-            if (modifierA === "AM" && hA === 12) hA = 0;
-            hourA = hA;
-            minA = mA;
-
-            let [timeB, modifierB] = b.time.split(" ");
-            let [hB, mB] = timeB.split(":").map(Number);
-            if (modifierB === "PM" && hB < 12) hB += 12;
-            if (modifierB === "AM" && hB === 12) hB = 0;
-            hourB = hB;
-            minB = mB;
-          } else {
-            [hourA, minA] = a.time.split(":").map(Number);
-            [hourB, minB] = b.time.split(":").map(Number);
-          }
-
-          const dateA = new Date(yearA, monthA - 1, dayA, hourA, minA);
-          const dateB = new Date(yearB, monthB - 1, dayB, hourB, minB);
-          return dateA - dateB;
-        });
+        // ⚠️ Crucial Change: Removed client-side sorting.
+        // We now rely entirely on the backend's (SQL's) accurate chronological sort.
 
         setChats((prev) => ({ ...prev, [selectedStaff.id]: formatted }));
       } catch (err) {
@@ -113,15 +83,33 @@ const Messages = () => {
       setChats((prev) => {
         const updated = [...(prev[otherId] || []), { ...message, isMine: false }];
 
-        // Sort after receiving new message
+        // ⚠️ Crucial Fix: Correct date parsing for YYYY-MM-DD format,
+        // and also ensure time conversion to 24-hour is done for sorting consistency.
+        
+        // This sorting is necessary because the new message arrives out of band.
         updated.sort((a, b) => {
-          const [dayA, monthA, yearA] = a.date.split("-");
-          const [dayB, monthB, yearB] = b.date.split("-");
-          const [hourA, minA] = a.time.split(":").map(Number);
-          const [hourB, minB] = b.time.split(":").map(Number);
+          // Date is in YYYY-MM-DD format from `handleSend` (a, b.date is string)
+          const dateA = new Date(`${a.date} ${a.time}`); // E.g., '2025-10-17 04:55 PM'
+          const dateB = new Date(`${b.date} ${b.time}`); 
 
-          const dateA = new Date(yearA, monthA - 1, dayA, hourA, minA);
-          const dateB = new Date(yearB, monthB - 1, dayB, hourB, minB);
+          // If the Date constructor fails to parse the string,
+          // falling back to manual parsing (like the original code) is necessary.
+          // However, using the Date constructor with the ISO date format is generally best.
+          
+          if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) {
+              // Fallback for manual 12-hour time parsing if necessary (reusing initial fetch logic)
+              const parseDateTime = (dateStr, timeStr) => {
+                  const [year, month, day] = dateStr.split("-").map(Number);
+                  let [time, modifier] = timeStr.split(" ");
+                  let [h, m] = time.split(":").map(Number);
+                  if (modifier === "PM" && h < 12) h += 12;
+                  if (modifier === "AM" && h === 12) h = 0;
+                  return new Date(year, month - 1, day, h, m);
+              };
+
+              return parseDateTime(a.date, a.time) - parseDateTime(b.date, b.time);
+          }
+
           return dateA - dateB;
         });
 
@@ -138,12 +126,16 @@ const Messages = () => {
     if (!message.trim() || !selectedStaff || !user) return;
 
     setSending(true);
+    // ⚠️ Minor Improvement: Set a sensible timeout that matches the expected latency
+    // This is just a visual effect and can be removed if a real-time status is used.
     setTimeout(() => setSending(false), 300);
 
     const now = new Date();
     const newMsg = {
       text: message,
+      // Time stored in 12-hour format with AM/PM for display
       time: now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
+      // Date stored in YYYY-MM-DD format for consistency and sorting (ISO format)
       date: now.toISOString().split("T")[0],
       isMine: true,
     };
@@ -234,6 +226,7 @@ const Messages = () => {
                   >
                     <div className="leading-snug">{msg.text}</div>
                     <div className="text-[10px] text-gray-500 text-right mt-1">
+                      {/* Display time and date */}
                       {msg.time} ({msg.date})
                     </div>
                   </div>
