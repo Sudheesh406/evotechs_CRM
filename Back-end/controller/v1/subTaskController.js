@@ -217,7 +217,6 @@ const deleteSubtask = async (req, res) => {
 };
 
 
-
 const deleteNotCheckedData = async (req, res) => {
   try {
     const user = req.user;
