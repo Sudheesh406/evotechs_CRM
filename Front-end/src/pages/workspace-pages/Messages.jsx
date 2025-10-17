@@ -3,7 +3,11 @@ import axios from "../../instance/Axios";
 import { io } from "socket.io-client";
 import { getRoomId } from "../../components/utils/Room";
 
-const socket = io(`${import.meta.env.VITE_BACKEND_URL}`, { transports: ["websocket"] });
+const socket = io("https://evopvtltd.cloud", {
+  withCredentials: true,
+  transports: ["websocket", "polling"],
+});
+
 
 const Messages = () => {
   const [staffList, setStaffList] = useState([]);
