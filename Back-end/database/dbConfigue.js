@@ -5,19 +5,16 @@ const sequelize = new Sequelize(
   process.env.DB_USER,
   process.env.DB_PASSWORD,
   {
-    host: process.env.HOST,
+    host: process.env.DB_HOST,
+    port: Number(process.env.DB_PORT),
     dialect: 'mysql',
-    logging: false, // disable SQL logging (optional)
+    dialectOptions: {
+      // Optional, only if SSL is needed
+      ssl: process.env.DB_SSL === 'true' ? { /* your SSL options */ } : undefined,
+    },
   }
 );
 
-const connectDB = async () => {
-  try {
-    await sequelize.authenticate();
-    console.log('Database connected successfully.');
-  } catch (error) {
-    console.error('Unable to connect to the database:', error);
-  }
-};
-
-module.exports = { sequelize, connectDB };
+sequelize.authenticate()
+  .then(() => console.log('Database connected successfully.'))
+  .catch(err => console.error('Database connection error:', err));
