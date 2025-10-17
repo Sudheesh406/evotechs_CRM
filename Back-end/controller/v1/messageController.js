@@ -4,35 +4,57 @@ const signup = require("../../models/v1/Authentication/authModel");
 const roleChecker = require("../../utils/v1/roleChecker");
 const { Op, Sequelize } = require("sequelize");
 
+
 const createMessages = async (data) => {
   try {
     const { senderId, receiverId, message } = data;
 
-    // console.log("Received data:", data);
     if (!senderId || !receiverId || !message) {
       throw new Error("Missing required fields");
     }
 
     const { text, time, date } = message;
-    const parts = date.split("-"); // ["08", "10", "2025"]
+
+    // Convert DD-MM-YYYY → YYYY-MM-DD
+    const parts = date.split("-"); // e.g. ["17", "10", "2025"]
     const rotated = `${parts[2]}-${parts[1]}-${parts[0]}`;
 
+    // 🔹 Ensure time is always in 12-hour AM/PM format
+    let formattedTime = time;
+
+    // If it's 24-hour format (e.g., "16:24"), convert to "04:24 PM"
+    if (/^\d{2}:\d{2}$/.test(time)) {
+      const [hourStr, minute] = time.split(":");
+      let hour = parseInt(hourStr, 10);
+      const ampm = hour >= 12 ? "PM" : "AM";
+      hour = hour % 12 || 12; // 0→12, 13→1, etc.
+      formattedTime = `${hour.toString().padStart(2, "0")}:${minute} ${ampm}`;
+    }
+
+    // If it's lowercase (e.g., "04:10 pm"), normalize to uppercase "PM"
+    if (/am|pm/.test(formattedTime)) {
+      formattedTime = formattedTime.replace(/am/i, "AM").replace(/pm/i, "PM");
+    }
+
+    // Check admin role
     const admin = await roleChecker(senderId);
 
+    // Save message in database
     const newMessage = await messages.create({
       message: text,
-      sendingTime: time,
+      sendingTime: formattedTime, // Always AM/PM
       sendingDate: rotated,
       receiverId,
       senderId,
       isAdmin: admin,
     });
 
-    // console.log("Message created successfully:", newMessage);
+    console.log("✅ Message created successfully:", newMessage.dataValues);
   } catch (error) {
-    console.error("Error in createMessages:", error);
+    console.error("❌ Error in createMessages:", error);
   }
 };
+
 
 
 const getMessages = async (req, res) => {

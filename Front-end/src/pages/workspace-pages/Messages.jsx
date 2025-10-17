@@ -10,7 +10,6 @@ const socket = io("/", {
 });
 
 
-
 const Messages = () => {
   const [staffList, setStaffList] = useState([]);
   const [selectedStaff, setSelectedStaff] = useState(null);
@@ -141,7 +140,7 @@ const Messages = () => {
     const now = new Date();
     const newMsg = {
       text: message,
-      time: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      time: now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
       date: now.toLocaleDateString("en-GB").split("/").join("-"), // DD-MM-YYYY
       isMine: true,
     };
