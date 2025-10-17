@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import logo from "../../assets/images/logo1.png";
-import axios from "../../instance/Axios";
+import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react"; // 👈 new
 
