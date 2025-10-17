@@ -1,4 +1,3 @@
-// db.js
 const { Sequelize } = require('sequelize');
 
 const sequelize = new Sequelize(
@@ -6,14 +5,19 @@ const sequelize = new Sequelize(
   process.env.DB_USER,
   process.env.DB_PASSWORD,
   {
-    host: process.env.DB_HOST,
-    port: Number(process.env.DB_PORT),
+    host: process.env.HOST,
     dialect: 'mysql',
-    dialectOptions: {
-      ssl: process.env.DB_SSL === 'true' ? { /* your SSL options */ } : undefined,
-    },
-    logging: false, // optional
+    logging: false, // disable SQL logging (optional)
   }
 );
 
-module.exports = {sequelize}; // export the instance directly
+const connectDB = async () => {
+  try {
+    await sequelize.authenticate();
+    console.log('Database connected successfully.');
+  } catch (error) {
+    console.error('Unable to connect to the database:', error);
+  }
+};
+
+module.exports = { sequelize, connectDB };
