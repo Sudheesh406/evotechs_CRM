@@ -1,3 +1,4 @@
+// db.js
 const { Sequelize } = require('sequelize');
 
 const sequelize = new Sequelize(
@@ -9,12 +10,10 @@ const sequelize = new Sequelize(
     port: Number(process.env.DB_PORT),
     dialect: 'mysql',
     dialectOptions: {
-      // Optional, only if SSL is needed
       ssl: process.env.DB_SSL === 'true' ? { /* your SSL options */ } : undefined,
     },
+    logging: false, // optional
   }
 );
 
-sequelize.authenticate()
-  .then(() => console.log('Database connected successfully.'))
-  .catch(err => console.error('Database connection error:', err));
+module.exports = sequelize; // export the instance directly
