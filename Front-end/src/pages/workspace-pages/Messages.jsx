@@ -9,6 +9,7 @@ const socket = io("/", {
   withCredentials: true,
 });
 
+
 const Messages = () => {
   const [staffList, setStaffList] = useState([]);
   const [selectedStaff, setSelectedStaff] = useState(null);
@@ -51,13 +52,14 @@ const Messages = () => {
           id: msg.id,
         }));
 
-        // Sort messages chronologically
+        // Sort messages chronologically (text date + time)
         formatted.sort((a, b) => {
           const [yearA, monthA, dayA] = a.date.split("-");
           const [yearB, monthB, dayB] = b.date.split("-");
           let hourA = 0, minA = 0, hourB = 0, minB = 0;
 
           if (a.time.includes("AM") || a.time.includes("PM")) {
+            // Convert 12-hour format to 24-hour
             let [timeA, modifierA] = a.time.split(" ");
             let [hA, mA] = timeA.split(":").map(Number);
             if (modifierA === "PM" && hA < 12) hA += 12;
@@ -72,6 +74,7 @@ const Messages = () => {
             hourB = hB;
             minB = mB;
           } else {
+            // 24-hour format
             [hourA, minA] = a.time.split(":").map(Number);
             [hourB, minB] = b.time.split(":").map(Number);
           }
@@ -101,6 +104,8 @@ const Messages = () => {
     const handler = ({ senderId, message }) => {
       if (!message || !selectedStaff) return;
 
+       if (senderId === user) return;
+       
       const otherId = senderId === user ? selectedStaff?.id : senderId;
       if (!otherId) return;
 
@@ -109,28 +114,10 @@ const Messages = () => {
 
         // Sort after receiving new message
         updated.sort((a, b) => {
-          const [yearA, monthA, dayA] = a.date.split("-");
-          const [yearB, monthB, dayB] = b.date.split("-");
-          let hourA = 0, minA = 0, hourB = 0, minB = 0;
-
-          if (a.time.includes("AM") || a.time.includes("PM")) {
-            let [timeA, modifierA] = a.time.split(" ");
-            let [hA, mA] = timeA.split(":").map(Number);
-            if (modifierA === "PM" && hA < 12) hA += 12;
-            if (modifierA === "AM" && hA === 12) hA = 0;
-            hourA = hA;
-            minA = mA;
-
-            let [timeB, modifierB] = b.time.split(" ");
-            let [hB, mB] = timeB.split(":").map(Number);
-            if (modifierB === "PM" && hB < 12) hB += 12;
-            if (modifierB === "AM" && hB === 12) hB = 0;
-            hourB = hB;
-            minB = mB;
-          } else {
-            [hourA, minA] = a.time.split(":").map(Number);
-            [hourB, minB] = b.time.split(":").map(Number);
-          }
+          const [dayA, monthA, yearA] = a.date.split("-");
+          const [dayB, monthB, yearB] = b.date.split("-");
+          const [hourA, minA] = a.time.split(":").map(Number);
+          const [hourB, minB] = b.time.split(":").map(Number);
 
           const dateA = new Date(yearA, monthA - 1, dayA, hourA, minA);
           const dateB = new Date(yearB, monthB - 1, dayB, hourB, minB);
@@ -146,31 +133,32 @@ const Messages = () => {
   }, [selectedStaff, user]);
 
   // Send message
-  const handleSend = () => {
-    if (!message.trim() || !selectedStaff || !user) return;
+const handleSend = () => {
+  if (!message.trim() || !selectedStaff || !user) return;
 
-    setSending(true);
-    setTimeout(() => setSending(false), 300);
+  setSending(true);
+  setTimeout(() => setSending(false), 300);
 
-    const now = new Date();
-    const newMsg = {
-      text: message,
-      time: now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
-      date: now.toISOString().split("T")[0],
-      isMine: true,
-    };
-
-    const room = getRoomId(user, selectedStaff.id);
-    socket.emit("send_message", {
-      senderId: user,
-      receiverId: selectedStaff.id,
-      room,
-      message: newMsg,
-    });
-
-    setMessage("");
-    if (textareaRef.current) textareaRef.current.style.height = "auto";
+  const now = new Date();
+  const newMsg = {
+    text: message,
+    time: now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
+    date: now.toISOString().split("T")[0],
+    isMine: true,
   };
+
+  const room = getRoomId(user, selectedStaff.id);
+  socket.emit("send_message", {
+    senderId: user,
+    receiverId: selectedStaff.id,
+    room,
+    message: newMsg,
+  });
+
+  setMessage("");
+  if (textareaRef.current) textareaRef.current.style.height = "auto";
+};
+
 
   // Auto-scroll to bottom
   useEffect(() => {
