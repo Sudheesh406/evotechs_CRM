@@ -4,38 +4,29 @@ const signup = require("../../models/v1/Authentication/authModel");
 const roleChecker = require("../../utils/v1/roleChecker");
 const { Op, Sequelize } = require("sequelize");
 
-
-
 const createMessages = async (data) => {
   try {
     const { senderId, receiverId, message } = data;
-
-    console.log('data', data);
+    console.log("data", data);
 
     if (!senderId || !receiverId || !message) {
       throw new Error("Missing required fields");
     }
 
-    // Use the actual keys from message object
+    // Use correct message keys
     const { text, sendingDate: date, sendingTime: time } = message;
 
-    // Convert date to YYYY-MM-DD if needed
-    const sendingDate = date.includes("-") 
-      ? date.split("-").reverse().join("-") // ["17","10","2025"] -> "2025-10-17"
-      : date;
+    // ✅ Only convert if DD-MM-YYYY, otherwise keep as-is
+    let sendingDate = date;
+    if (/^\d{2}-\d{2}-\d{4}$/.test(date)) {
+      const [day, month, year] = date.split("-");
+      sendingDate = `${year}-${month}-${day}`;
+    }
 
-    // Process time
+    // ✅ Ensure HH:MM:SS
     let sendingTime = time;
-
-    const ampmMatch = sendingTime.match(/(\d{1,2}):(\d{2})\s?(AM|PM)/i);
-    if (ampmMatch) {
-      let [_, hr, min, ampm] = ampmMatch;
-      hr = parseInt(hr, 10);
-      if (ampm.toUpperCase() === "PM" && hr !== 12) hr += 12;
-      if (ampm.toUpperCase() === "AM" && hr === 12) hr = 0;
-      sendingTime = `${hr.toString().padStart(2, "0")}:${min}:00`;
-    } else if (/^\d{2}:\d{2}$/.test(sendingTime)) {
-      sendingTime = sendingTime + ":00"; // HH:MM → HH:MM:SS
+    if (/^\d{2}:\d{2}$/.test(sendingTime)) {
+      sendingTime = `${sendingTime}:00`;
     }
 
     const isAdmin = await roleChecker(senderId);
