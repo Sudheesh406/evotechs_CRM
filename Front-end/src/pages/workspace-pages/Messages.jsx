@@ -3,10 +3,12 @@ import axios from "../../instance/Axios";
 import { io } from "socket.io-client";
 import { getRoomId } from "../../components/utils/Room";
 
-const socket = io("https://evopvtltd.cloud", {
-  withCredentials: true,
+const socket = io("/", {
+  path: "/socket.io",
   transports: ["websocket", "polling"],
+  withCredentials: true,
 });
+
 
 
 const Messages = () => {
