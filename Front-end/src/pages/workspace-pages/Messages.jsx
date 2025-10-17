@@ -130,47 +130,56 @@ const Messages = () => {
     return () => socket.off("receiveMessage", handler);
   }, [selectedStaff, user]);
 
+
+  
   // Send message
-  const handleSend = () => {
-    if (!message.trim() || !selectedStaff || !user) return;
+  const handleSend = async () => {
+  if (!message.trim() || !selectedStaff || !user) return;
 
-    setSending(true);
-    setTimeout(() => setSending(false), 300);
+  setSending(true);
+  setTimeout(() => setSending(false), 300);
 
-    const now = new Date();
-    const newMsg = {
-      text: message,
-      time: now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
-      date: now.toLocaleDateString("en-GB").split("/").join("-"), // DD-MM-YYYY
-      isMine: true,
-    };
+  const now = new Date();
+  const tempMsg = {
+    text: message,
+    time: now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
+    date: now.toISOString().split("T")[0], // YYYY-MM-DD
+    isMine: true,
+    temp: true, // temporary flag
+  };
 
-    setChats((prev) => {
-      const updated = [...(prev[selectedStaff.id] || []), newMsg];
-      // Sort messages
-      updated.sort((a, b) => {
-        const [dayA, monthA, yearA] = a.date.split("-");
-        const [dayB, monthB, yearB] = b.date.split("-");
-        const [hourA, minA] = a.time.split(":").map(Number);
-        const [hourB, minB] = b.time.split(":").map(Number);
-        const dateA = new Date(yearA, monthA - 1, dayA, hourA, minA);
-        const dateB = new Date(yearB, monthB - 1, dayB, hourB, minB);
-        return dateA - dateB;
-      });
-      return { ...prev, [selectedStaff.id]: updated };
-    });
+  // Add temporary message for immediate UI
+  setChats((prev) => {
+    const updated = [...(prev[selectedStaff.id] || []), tempMsg];
+    return { ...prev, [selectedStaff.id]: updated };
+  });
 
+  try {
     const room = getRoomId(user, selectedStaff.id);
-    socket.emit("send_message", {
+
+    // Send to backend
+    const { data } = await axios.post("/message/create", {
       senderId: user,
       receiverId: selectedStaff.id,
+      message: tempMsg,
       room,
-      message: newMsg,
     });
 
-    setMessage("");
-    if (textareaRef.current) textareaRef.current.style.height = "auto";
-  };
+    // Replace temp message with saved message from backend
+    setChats((prev) => {
+      const updated = [...(prev[selectedStaff.id] || [])];
+      const index = updated.findIndex((m) => m.temp);
+      if (index !== -1) updated[index] = { ...data.savedMessage, isMine: true };
+      return { ...prev, [selectedStaff.id]: updated };
+    });
+  } catch (err) {
+    console.log("Error sending message:", err);
+  }
+
+  setMessage("");
+  if (textareaRef.current) textareaRef.current.style.height = "auto";
+};
+
 
   // Auto-scroll to bottom
   useEffect(() => {
