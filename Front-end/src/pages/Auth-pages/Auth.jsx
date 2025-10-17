@@ -63,7 +63,7 @@ const Auth = () => {
   // login function
   const handleLogin = async (data) => {
     try {
-      const response = await axios.post("/auth/loginow", data);
+      const response = await axios.post("/auth/login", data);
       setServerError(""); // clear error if success
       if (response?.data?.userDetails?.role === "admin") {
         localStorage.setItem("CRMsrtRolE", "admin");
