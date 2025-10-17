@@ -49,8 +49,6 @@ const createMessages = async (data) => {
 };
 
 
-
-
 const getMessages = async (req, res) => {
   try {
     const user = req.user;

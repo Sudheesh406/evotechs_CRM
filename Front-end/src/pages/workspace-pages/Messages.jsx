@@ -12,9 +12,9 @@ const socket = io("/", {
 const Messages = () => {
   const [staffList, setStaffList] = useState([]);
   const [selectedStaff, setSelectedStaff] = useState(null);
-  const [chats, setChats] = useState({});
+  const [chats, setChats] = useState({}); // { staffId: [msgs...] }
   const [message, setMessage] = useState("");
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(null); // will store numeric id
   const [sending, setSending] = useState(false);
 
   const textareaRef = useRef(null);
@@ -26,8 +26,10 @@ const Messages = () => {
       try {
         const { data } = await axios.get("/message/get/all/staff/");
         if (data.data) {
-          setStaffList(data.data.existing);
-          setUser(data.data.excludedId);
+          setStaffList(data.data.existing || []);
+          // normalize to number if possible
+          const excludedId = data.data.excludedId;
+          setUser(excludedId !== undefined && excludedId !== null ? Number(excludedId) : null);
         }
       } catch (err) {
         console.log(err);
@@ -39,19 +41,26 @@ const Messages = () => {
   // Fetch messages for selected staff
   useEffect(() => {
     const getMessages = async () => {
-      if (!selectedStaff || !user) return;
+      if (!selectedStaff || user == null) return;
 
       try {
         const { data } = await axios.get(`/message/get/${selectedStaff.id}`);
-        const formatted = data.data?.existing?.map((msg) => ({
+        const formatted = (data.data?.existing || []).map((msg) => ({
           text: msg.message,
           sendingDate: msg.sendingDate, // YYYY-MM-DD from backend
           sendingTime: msg.sendingTime, // HH:MM:SS from backend
-          isMine: msg.senderId === user,
+          isMine: Number(msg.senderId) === Number(user),
           id: msg.id,
+          raw: msg, // keep raw in case you need it
         }));
 
-        // Save messages for this staff
+        // ensure sorted by date/time (stable)
+        formatted.sort(
+          (a, b) =>
+            new Date(`${a.sendingDate}T${a.sendingTime}`) - new Date(`${b.sendingDate}T${b.sendingTime}`) ||
+            (a.id || 0) - (b.id || 0)
+        );
+
         setChats((prev) => ({ ...prev, [selectedStaff.id]: formatted }));
       } catch (err) {
         console.log(err);
@@ -60,30 +69,44 @@ const Messages = () => {
     getMessages();
   }, [selectedStaff, user]);
 
-  // Join socket room
+  // Join socket room when selection changes
   useEffect(() => {
-    if (!selectedStaff || !user) return;
+    if (!selectedStaff || user == null) return;
     const room = getRoomId(user, selectedStaff.id);
     socket.emit("joinRoom", room);
   }, [selectedStaff, user]);
 
-  // Receive messages via socket
+  // Receive messages via socket (single handler, normalize incoming payload)
   useEffect(() => {
-    const handler = ({ senderId, message }) => {
-      if (!message || !selectedStaff) return;
-      if (senderId === user) return;
+    const handler = ({ senderId, message: incomingMessage }) => {
+      // incomingMessage may be an object or string depending on server
+      if (!incomingMessage) return;
 
-      const otherId = senderId;
+      // If the server broadcasted senderId === user (your own), ignore it (you already optimistic-updated)
+      if (Number(senderId) === Number(user)) return;
+
+      // Normalize message object
+      const normalized = {
+        text:
+          incomingMessage.text ??
+          incomingMessage.message ??
+          (typeof incomingMessage === "string" ? incomingMessage : "") ,
+        sendingDate: incomingMessage.sendingDate ?? incomingMessage.sending_date ?? null,
+        sendingTime: incomingMessage.sendingTime ?? incomingMessage.sending_time ?? null,
+        isMine: false, // force false because senderId !== current user
+        id: incomingMessage.id ?? `srv-${Date.now()}`, // fallback id
+      };
+
+      const otherId = Number(senderId);
       if (!otherId) return;
 
       setChats((prev) => {
-        const updated = [...(prev[otherId] || []), message];
+        const updated = [...(prev[otherId] || []), normalized];
 
-        // Sort messages by date+time
         updated.sort(
           (a, b) =>
-            new Date(`${a.sendingDate}T${a.sendingTime}`) -
-            new Date(`${b.sendingDate}T${b.sendingTime}`)
+            new Date(`${a.sendingDate}T${a.sendingTime}`) - new Date(`${b.sendingDate}T${b.sendingTime}`) ||
+            (a.id || 0).toString().localeCompare((b.id || 0).toString())
         );
 
         return { ...prev, [otherId]: updated };
@@ -92,11 +115,11 @@ const Messages = () => {
 
     socket.on("receiveMessage", handler);
     return () => socket.off("receiveMessage", handler);
-  }, [selectedStaff, user]);
+  }, [user]); // note: don't depend on selectedStaff so that all incoming messages update proper chats
 
   // Send message
-  const handleSend = () => {
-    if (!message.trim() || !selectedStaff || !user) return;
+  const handleSend = async () => {
+    if (!message.trim() || !selectedStaff || user == null) return;
 
     setSending(true);
     setTimeout(() => setSending(false), 300);
@@ -105,32 +128,55 @@ const Messages = () => {
     const sendingDate = now.toISOString().split("T")[0]; // YYYY-MM-DD
     const sendingTime = now.toTimeString().split(" ")[0]; // HH:MM:SS 24h
 
+    // create optimistic message with a temporary id
+    const tempId = `temp-${Date.now()}`;
+
     const newMsg = {
       text: message,
       sendingDate,
       sendingTime,
       isMine: true,
+      id: tempId,
     };
 
-    // Optimistic update
+    // Optimistic update (add to selected staff chat)
     setChats((prev) => ({
       ...prev,
       [selectedStaff.id]: [...(prev[selectedStaff.id] || []), newMsg],
     }));
 
+    // Emit to server - do NOT send isMine flag
     const room = getRoomId(user, selectedStaff.id);
     socket.emit("send_message", {
       senderId: user,
       receiverId: selectedStaff.id,
       room,
-      message: newMsg,
+      message: {
+        text: newMsg.text,
+        sendingDate: newMsg.sendingDate,
+        sendingTime: newMsg.sendingTime,
+        // do not include isMine
+      },
     });
+
+    // Optionally you can POST to backend to persist if needed (commented out)
+    // try {
+    //   await axios.post("/message/send", {
+    //     senderId: user,
+    //     receiverId: selectedStaff.id,
+    //     message: newMsg.text,
+    //     sendingDate: newMsg.sendingDate,
+    //     sendingTime: newMsg.sendingTime,
+    //   });
+    // } catch (err) {
+    //   console.error("Failed to persist message:", err);
+    // }
 
     setMessage("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
   };
 
-  // Auto-scroll to bottom
+  // Auto-scroll to bottom when chats change or selection changes
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chats, selectedStaff]);
@@ -184,9 +230,9 @@ const Messages = () => {
 
             {/* Messages */}
             <div className="flex-1 p-6 overflow-y-auto bg-neutral-50">
-              {(chats[selectedStaff.id] || []).map((msg, index) => (
+              {(chats[selectedStaff.id] || []).map((msg) => (
                 <div
-                  key={index}
+                  key={msg.id ?? `${selectedStaff.id}-${Math.random()}`}
                   className={`flex mb-4 ${msg.isMine ? "justify-end" : "justify-start"}`}
                 >
                   <div
@@ -198,11 +244,14 @@ const Messages = () => {
                   >
                     <div className="leading-snug">{msg.text}</div>
                     <div className="text-[10px] text-gray-500 text-right mt-1">
-                      {new Date(`${msg.sendingDate}T${msg.sendingTime}`).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}{" "}
-                      ({msg.sendingDate})
+                      {msg.sendingDate && msg.sendingTime
+                        ? new Date(`${msg.sendingDate}T${msg.sendingTime}`).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : ""}
+                      {" "}
+                      ({msg.sendingDate ?? ""})
                     </div>
                   </div>
                 </div>
