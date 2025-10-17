@@ -63,7 +63,8 @@ const Auth = () => {
   // login function
 const handleLogin = async (data) => {
   try {
-    const response = await apiClient.post("/auth/login", data); // ✅ use apiClient
+    const response = await apiClient.post("/auth/login", data);
+
     setServerError(""); // clear error if login succeeds
 
     if (response?.data?.userDetails?.role === "admin") {
