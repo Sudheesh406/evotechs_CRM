@@ -33,15 +33,13 @@ const messages = sequelize.define('messages', {
     onUpdate: 'CASCADE',
     onDelete: "CASCADE",
   },
-  sendingTime: {
-    type: DataTypes.TEXT,
-    allowNull: false,
-    
-  },
   sendingDate: {
-    type: DataTypes.TEXT,
+    type: DataTypes.DATEONLY, // stores only date (YYYY-MM-DD)
     allowNull: false,
-    
+  },
+  sendingTime: {
+    type: DataTypes.TIME, // stores only time (HH:MM:SS)
+    allowNull: false,
   },
   teamId: {
     type: DataTypes.INTEGER,

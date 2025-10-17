@@ -33,15 +33,13 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
       },
-      sendingTime: {
-        type: Sequelize.TEXT,
-        allowNull: false,
-      
-      },
       sendingDate: {
-        type: Sequelize.TEXT,
+        type: Sequelize.DATEONLY, // stores only date (YYYY-MM-DD)
         allowNull: false,
-        
+      },
+      sendingTime: {
+        type: Sequelize.TIME, // stores only time (HH:MM:SS)
+        allowNull: false,
       },
       teamId: {
         type: Sequelize.INTEGER,

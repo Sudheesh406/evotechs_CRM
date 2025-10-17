@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import axios from "../../instance/Axios"; // Assuming axios is correctly imported
+import axios from "../../instance/Axios";
 import { io } from "socket.io-client";
-import { getRoomId } from "../../components/utils/Room"; // Assuming getRoomId is correctly imported
+import { getRoomId } from "../../components/utils/Room";
 
 const socket = io("/", {
   path: "/socket.io",
@@ -45,15 +45,13 @@ const Messages = () => {
         const { data } = await axios.get(`/message/get/${selectedStaff.id}`);
         const formatted = data.data?.existing?.map((msg) => ({
           text: msg.message,
-          time: msg.sendingTime,
-          date: msg.sendingDate,
+          sendingDate: msg.sendingDate, // YYYY-MM-DD from backend
+          sendingTime: msg.sendingTime, // HH:MM:SS from backend
           isMine: msg.senderId === user,
           id: msg.id,
         }));
 
-        // ⚠️ Crucial Change: Removed client-side sorting.
-        // We now rely entirely on the backend's (SQL's) accurate chronological sort.
-
+        // Save messages for this staff
         setChats((prev) => ({ ...prev, [selectedStaff.id]: formatted }));
       } catch (err) {
         console.log(err);
@@ -73,45 +71,20 @@ const Messages = () => {
   useEffect(() => {
     const handler = ({ senderId, message }) => {
       if (!message || !selectedStaff) return;
-
-      // Ignore your own message coming from server
       if (senderId === user) return;
 
       const otherId = senderId;
       if (!otherId) return;
 
       setChats((prev) => {
-        const updated = [...(prev[otherId] || []), { ...message, isMine: false }];
+        const updated = [...(prev[otherId] || []), message];
 
-        // ⚠️ Crucial Fix: Correct date parsing for YYYY-MM-DD format,
-        // and also ensure time conversion to 24-hour is done for sorting consistency.
-        
-        // This sorting is necessary because the new message arrives out of band.
-        updated.sort((a, b) => {
-          // Date is in YYYY-MM-DD format from `handleSend` (a, b.date is string)
-          const dateA = new Date(`${a.date} ${a.time}`); // E.g., '2025-10-17 04:55 PM'
-          const dateB = new Date(`${b.date} ${b.time}`); 
-
-          // If the Date constructor fails to parse the string,
-          // falling back to manual parsing (like the original code) is necessary.
-          // However, using the Date constructor with the ISO date format is generally best.
-          
-          if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) {
-              // Fallback for manual 12-hour time parsing if necessary (reusing initial fetch logic)
-              const parseDateTime = (dateStr, timeStr) => {
-                  const [year, month, day] = dateStr.split("-").map(Number);
-                  let [time, modifier] = timeStr.split(" ");
-                  let [h, m] = time.split(":").map(Number);
-                  if (modifier === "PM" && h < 12) h += 12;
-                  if (modifier === "AM" && h === 12) h = 0;
-                  return new Date(year, month - 1, day, h, m);
-              };
-
-              return parseDateTime(a.date, a.time) - parseDateTime(b.date, b.time);
-          }
-
-          return dateA - dateB;
-        });
+        // Sort messages by date+time
+        updated.sort(
+          (a, b) =>
+            new Date(`${a.sendingDate}T${a.sendingTime}`) -
+            new Date(`${b.sendingDate}T${b.sendingTime}`)
+        );
 
         return { ...prev, [otherId]: updated };
       });
@@ -126,21 +99,20 @@ const Messages = () => {
     if (!message.trim() || !selectedStaff || !user) return;
 
     setSending(true);
-    // ⚠️ Minor Improvement: Set a sensible timeout that matches the expected latency
-    // This is just a visual effect and can be removed if a real-time status is used.
     setTimeout(() => setSending(false), 300);
 
     const now = new Date();
+    const sendingDate = now.toISOString().split("T")[0]; // YYYY-MM-DD
+    const sendingTime = now.toTimeString().split(" ")[0]; // HH:MM:SS 24h
+
     const newMsg = {
       text: message,
-      // Time stored in 12-hour format with AM/PM for display
-      time: now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
-      // Date stored in YYYY-MM-DD format for consistency and sorting (ISO format)
-      date: now.toISOString().split("T")[0],
+      sendingDate,
+      sendingTime,
       isMine: true,
     };
 
-    // Optimistically add message
+    // Optimistic update
     setChats((prev) => ({
       ...prev,
       [selectedStaff.id]: [...(prev[selectedStaff.id] || []), newMsg],
@@ -226,8 +198,11 @@ const Messages = () => {
                   >
                     <div className="leading-snug">{msg.text}</div>
                     <div className="text-[10px] text-gray-500 text-right mt-1">
-                      {/* Display time and date */}
-                      {msg.time} ({msg.date})
+                      {new Date(`${msg.sendingDate}T${msg.sendingTime}`).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}{" "}
+                      ({msg.sendingDate})
                     </div>
                   </div>
                 </div>
@@ -263,11 +238,7 @@ const Messages = () => {
                   stroke="currentColor"
                   strokeWidth={2}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M2 12l19-7-7 19-3-8-9-4z"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2 12l19-7-7 19-3-8-9-4z" />
                 </svg>
               </button>
             </div>
@@ -276,9 +247,7 @@ const Messages = () => {
           <div className="flex-1 flex items-center justify-center bg-neutral-50">
             <div className="text-gray-500 text-center">
               <div className="text-xl font-semibold">Staff Notice / Announcement</div>
-              <div className="text-sm mt-2 text-gray-400">
-                Choose someone from the left panel
-              </div>
+              <div className="text-sm mt-2 text-gray-400">Choose someone from the left panel</div>
             </div>
           </div>
         )}
