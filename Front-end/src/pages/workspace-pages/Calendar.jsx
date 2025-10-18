@@ -1,10 +1,12 @@
+// src/components/Calendar.jsx
+
 import React, { useState, useEffect, useCallback } from "react";
 import LeaveModal from "../../components/modals/LeaveModal";
 import LeaveList from "../../components/LeaveList";
 import axios from "../../instance/Axios";
 import Swal from "sweetalert2";
 
-/* Helpers to convert between YYYY-MM-DD (input) and DD/MM/YYYY (display/storage) */
+/* Helpers */
 const formatDateObjToDDMMYYYY = (date) => {
   const day = String(date.getDate()).padStart(2, "0");
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -111,8 +113,12 @@ export default function Calendar() {
     } else setDisplayedMonth((m) => m + 1);
   };
 
+  // Only open modal for days that are not holiday/maintenance
   const onDayClick = (day) => {
-    if (day.holidayItem) return;
+    if (day.holidayItem) {
+      // explicit guard — don't open modal on holidays
+      return;
+    }
 
     setEditingLeave(null);
     setFormData({
@@ -320,14 +326,12 @@ export default function Calendar() {
             </button>
           </div>
 
-          {/* Weekdays */}
           <div className="grid grid-cols-7 text-center text-xs font-semibold text-gray-500 uppercase mb-3">
             {weekDays.map((wd) => (
               <div key={wd}>{wd}</div>
             ))}
           </div>
 
-          {/* Days */}
           <div className="grid grid-cols-7 gap-2">
             {Array.from({
               length: new Date(displayedYear, displayedMonth, 1).getDay(),
@@ -399,17 +403,23 @@ export default function Calendar() {
               return (
                 <div
                   key={d.formatted}
-                  onClick={() => onDayClick(d)}
-                  className={`relative rounded-lg h-16 flex flex-col items-center justify-center text-sm cursor-pointer border shadow-sm transition ${cellClass}`}
+                  // only attach click when not a holiday/maintenance
+                  onClick={() => {
+                    if (!d.holidayItem && !isMaintenance) onDayClick(d);
+                  }}
+                  // allow popover to render outside the cell
+                  className={`relative rounded-lg h-16 flex flex-col items-center justify-center text-sm cursor-pointer border shadow-sm transition overflow-visible ${cellClass}`}
                 >
                   {showTooltip ? (
                     <div className="group relative w-full h-full flex flex-col items-center justify-center">
                       <div className="font-medium">{d.day}</div>
+
                       {d.holidayItem && (
                         <div className="text-[10px] px-1 text-center mt-1 w-full truncate">
                           {d.holidayItem.description}
                         </div>
                       )}
+
                       {hasApprovedLeave &&
                         !isSunday &&
                         !isHoliday &&
@@ -420,9 +430,15 @@ export default function Calendar() {
                               .join(", ")}
                           </div>
                         )}
+
+                      {/* POPUP: now pointer-events-auto, visible, not clipped, stops propagation */}
                       <div
-                        className="opacity-0 group-hover:opacity-100 absolute z-20 transition-opacity duration-300 pointer-events-none top-full mt-1 w-64 md:left-full md:ml-2 bg-white text-gray-800 rounded-lg shadow-xl border border-gray-200 text-left"
+                        className="opacity-0 group-hover:opacity-100 absolute z-50 transition-opacity duration-200 pointer-events-auto top-full mt-1 md:left-full md:ml-2 bg-white text-gray-800 rounded-lg shadow-xl border border-gray-200 text-left"
                         style={{ minWidth: "150px" }}
+                        onClick={(e) => {
+                          // prevent clicks on the popover from propagating to the cell
+                          e.stopPropagation();
+                        }}
                       >
                         {tooltipContent}
                       </div>
@@ -440,9 +456,7 @@ export default function Calendar() {
                         !isHoliday &&
                         !isMaintenance && (
                           <div className="text-[10px] px-1 text-center mt-1 w-full truncate">
-                            {d.approvedLeaves
-                              .map((l) => l.leaveType)
-                              .join(", ")}
+                            {d.approvedLeaves.map((l) => l.leaveType).join(", ")}
                           </div>
                         )}
                     </>
@@ -452,7 +466,6 @@ export default function Calendar() {
             })}
           </div>
 
-          {/* Legend */}
           <div className="mt-4 flex flex-wrap gap-4 items-center text-sm">
             <div className="flex items-center gap-2">
               <span className="w-4 h-4 bg-red-500 rounded-sm border"></span>
