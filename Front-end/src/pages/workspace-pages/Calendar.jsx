@@ -372,7 +372,7 @@ export default function Calendar() {
                   : "bg-orange-500 border-orange-300 text-white";
               }
 
-              let tooltipContent = "d";
+              let tooltipContent = "Sunday";
               if (d.holidayItem) {
                 // FIX 3: Updated holiday tooltip content
                 tooltipContent = (
