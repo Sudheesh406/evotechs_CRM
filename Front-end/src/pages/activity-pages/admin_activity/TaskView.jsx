@@ -3,16 +3,13 @@ import axios from "../../../instance/Axios";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 // NOTE: If using react-router-dom, you would import 'useNavigate' here
-// import { useNavigate } from "react-router-dom"; 
 
 // SweetAlert instance
 const MySwal = withReactContent(Swal);
 
 // Task Column Component
 const TaskColumn = ({ status, cards }) => {
-  // If you were using react-router-dom, you'd uncomment this:
-  // const navigate = useNavigate();
-
+  
   const getPriorityColor = (priority) => {
     switch (priority) {
       case "High":
@@ -24,45 +21,35 @@ const TaskColumn = ({ status, cards }) => {
     }
   };
 
-  // Function to handle navigation to the details page
-  const handleViewDetails = (taskId) => {
-    // 💡 IMPORTANT: In a real app, replace the console.log/MySwal with actual routing:
-    // e.g., navigate(`/tasks/${taskId}`); 
-    
-    console.log(`Navigating to details for task ID: ${taskId}`);
+  // Function to handle the column action (e.g., Edit Column/View Stage Details)
+  const handleColumnAction = (status) => {
+    // 💡 IMPORTANT: Replace this with actual column/stage action logic (e.g., opening a settings modal)
+    console.log(`Action triggered for column: ${status}`);
     MySwal.fire({
-      icon: "info",
-      title: "Navigation Placeholder",
-      text: `Task ID ${taskId} details page would open here.`,
+      icon: "question",
+      title: "Column Action",
+      text: `Action menu would open for the "${status}" column.`,
+      showCancelButton: true,
+      confirmButtonText: 'View Stage Settings',
     });
   };
 
   return (
     <div className="bg-gradient-to-b from-white to-gray-50 rounded-xl p-4 flex flex-col shadow-md hover:shadow-xl transition-all">
-      <h2 className="text-lg font-bold mb-4 flex justify-between items-center">
-        {status} <span className="text-gray-500 font-medium">{cards.length}</span>
-      </h2>
-
-      <div className="space-y-4 overflow-y-auto flex-1 pr-2 max-h-[75vh]">
-        {cards.length > 0 ? (
-          cards.map((task) => (
-            <div
-              key={task.id}
-              // Added 'relative' positioning for the '...' button
-              className="bg-white rounded-xl p-4 shadow-sm hover:shadow-lg transition cursor-pointer border border-gray-100 relative"
-              // OPTIONAL: Uncomment to make clicking the card open details too
-              // onClick={() => handleViewDetails(task.id)}
-            >
-              
-              {/* Ellipsis/Kebab Menu Button */}
-              <button
+      <h2 className="text-lg font-bold mb-4 flex justify-between items-center relative">
+        {status} 
+        
+        {/* Three-dot menu button next to the status name */}
+        <div className="flex items-center space-x-2">
+            <span className="text-gray-500 font-medium">{cards.length}</span>
+            <button
                 onClick={(e) => {
-                  e.stopPropagation(); // Prevents a general card click handler from firing
-                  handleViewDetails(task.id);
+                    e.stopPropagation(); // Stop event propagation if needed
+                    handleColumnAction(status);
                 }}
-                className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition"
-                aria-label={`View details for task ${task.id}`}
-              >
+                className="text-gray-400 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition"
+                aria-label={`Column actions for ${status}`}
+            >
                 {/* SVG for the three-dot icon */}
                 <svg
                   className="w-5 h-5"
@@ -78,11 +65,21 @@ const TaskColumn = ({ status, cards }) => {
                     d="M5 12h.01M12 12h.01M19 12h.01"
                   ></path>
                 </svg>
-              </button>
+            </button>
+        </div>
+      </h2>
 
-              {/* Customer Details - Added pr-6 for spacing */}
+      <div className="space-y-4 overflow-y-auto flex-1 pr-2 max-h-[75vh]">
+        {cards.length > 0 ? (
+          cards.map((task) => (
+            <div
+              key={task.id}
+              className="bg-white rounded-xl p-4 shadow-sm hover:shadow-lg transition cursor-pointer border border-gray-100"
+              // Removed the 'relative' and the '...' button from the card itself
+            >
+              {/* Customer Details */}
               {task.customer && (
-                <div className="mb-2 pr-6">
+                <div className="mb-2">
                   <h3 className="text-lg font-semibold text-gray-800 truncate">{task.customer.name}</h3>
                   {task.customer.email && <p className="text-gray-500 text-sm">Email: {task.customer.email}</p>}
                   {task.customer.phone && <p className="text-gray-500 text-sm">Phone: {task.customer.phone}</p>}
