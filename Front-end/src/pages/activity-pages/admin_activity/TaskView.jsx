@@ -2,12 +2,17 @@ import { useState, useEffect } from "react";
 import axios from "../../../instance/Axios";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
+// NOTE: If using react-router-dom, you would import 'useNavigate' here
+// import { useNavigate } from "react-router-dom"; 
 
 // SweetAlert instance
 const MySwal = withReactContent(Swal);
 
 // Task Column Component
 const TaskColumn = ({ status, cards }) => {
+  // If you were using react-router-dom, you'd uncomment this:
+  // const navigate = useNavigate();
+
   const getPriorityColor = (priority) => {
     switch (priority) {
       case "High":
@@ -17,6 +22,19 @@ const TaskColumn = ({ status, cards }) => {
       default:
         return "bg-green-100 text-green-800";
     }
+  };
+
+  // Function to handle navigation to the details page
+  const handleViewDetails = (taskId) => {
+    // 💡 IMPORTANT: In a real app, replace the console.log/MySwal with actual routing:
+    // e.g., navigate(`/tasks/${taskId}`); 
+    
+    console.log(`Navigating to details for task ID: ${taskId}`);
+    MySwal.fire({
+      icon: "info",
+      title: "Navigation Placeholder",
+      text: `Task ID ${taskId} details page would open here.`,
+    });
   };
 
   return (
@@ -30,11 +48,41 @@ const TaskColumn = ({ status, cards }) => {
           cards.map((task) => (
             <div
               key={task.id}
-              className="bg-white rounded-xl p-4 shadow-sm hover:shadow-lg transition cursor-pointer border border-gray-100"
+              // Added 'relative' positioning for the '...' button
+              className="bg-white rounded-xl p-4 shadow-sm hover:shadow-lg transition cursor-pointer border border-gray-100 relative"
+              // OPTIONAL: Uncomment to make clicking the card open details too
+              // onClick={() => handleViewDetails(task.id)}
             >
-              {/* Customer Details */}
+              
+              {/* Ellipsis/Kebab Menu Button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevents a general card click handler from firing
+                  handleViewDetails(task.id);
+                }}
+                className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition"
+                aria-label={`View details for task ${task.id}`}
+              >
+                {/* SVG for the three-dot icon */}
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 12h.01M12 12h.01M19 12h.01"
+                  ></path>
+                </svg>
+              </button>
+
+              {/* Customer Details - Added pr-6 for spacing */}
               {task.customer && (
-                <div className="mb-2">
+                <div className="mb-2 pr-6">
                   <h3 className="text-lg font-semibold text-gray-800 truncate">{task.customer.name}</h3>
                   {task.customer.email && <p className="text-gray-500 text-sm">Email: {task.customer.email}</p>}
                   {task.customer.phone && <p className="text-gray-500 text-sm">Phone: {task.customer.phone}</p>}
