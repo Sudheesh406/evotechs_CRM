@@ -1,12 +1,10 @@
-// src/components/Calendar.jsx
-
 import React, { useState, useEffect, useCallback } from "react";
 import LeaveModal from "../../components/modals/LeaveModal";
 import LeaveList from "../../components/LeaveList";
 import axios from "../../instance/Axios";
 import Swal from "sweetalert2";
 
-/* Helpers */
+/* Helpers to convert between YYYY-MM-DD (input) and DD/MM/YYYY (display/storage) */
 const formatDateObjToDDMMYYYY = (date) => {
   const day = String(date.getDate()).padStart(2, "0");
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -113,10 +111,9 @@ export default function Calendar() {
     } else setDisplayedMonth((m) => m + 1);
   };
 
-  // Only open modal for days that are not holiday/maintenance
   const onDayClick = (day) => {
+    // FIX 1: Do not show modal if the day is a holiday
     if (day.holidayItem) {
-      // explicit guard — don't open modal on holidays
       return;
     }
 
@@ -326,12 +323,14 @@ export default function Calendar() {
             </button>
           </div>
 
+          {/* Weekdays */}
           <div className="grid grid-cols-7 text-center text-xs font-semibold text-gray-500 uppercase mb-3">
             {weekDays.map((wd) => (
               <div key={wd}>{wd}</div>
             ))}
           </div>
 
+          {/* Days */}
           <div className="grid grid-cols-7 gap-2">
             {Array.from({
               length: new Date(displayedYear, displayedMonth, 1).getDay(),
@@ -345,7 +344,8 @@ export default function Calendar() {
                 d.holidayItem && d.holidayItem.type === "maintenance";
               const isHoliday = !!d.holidayItem;
               const hasApprovedLeave = d.approvedLeaves.length > 0;
-              const showTooltip = isHoliday || hasApprovedLeave;
+              // FIX 2: Ensure tooltip is shown for holidays AND approved leaves
+              const showTooltip = isHoliday || hasApprovedLeave; 
 
               let cellClass = "bg-white border-gray-200 hover:bg-gray-50";
               if (isSunday || isHoliday)
@@ -368,8 +368,9 @@ export default function Calendar() {
                   : "bg-orange-500 border-orange-300 text-white";
               }
 
-              let tooltipContent;
+              let tooltipContent = 'd';
               if (d.holidayItem) {
+                // FIX 3: Updated holiday tooltip content
                 tooltipContent = (
                   <div className="p-2">
                     <div className="font-bold text-red-500 uppercase">
@@ -377,7 +378,9 @@ export default function Calendar() {
                         ? "Maintenance Day"
                         : "Public Holiday"}
                     </div>
-                    <div className="text-xs">{d.holidayItem.description}</div>
+                    <div className="text-xs">
+                      {d.holidayItem.description || "Holiday"}
+                    </div>
                   </div>
                 );
               } else if (hasApprovedLeave) {
@@ -403,69 +406,37 @@ export default function Calendar() {
               return (
                 <div
                   key={d.formatted}
-                  // only attach click when not a holiday/maintenance
-                  onClick={() => {
-                    if (!d.holidayItem && !isMaintenance) onDayClick(d);
-                  }}
-                  // allow popover to render outside the cell
-                  className={`relative rounded-lg h-16 flex flex-col items-center justify-center text-sm cursor-pointer border shadow-sm transition overflow-visible ${cellClass}`}
+                  onClick={() => onDayClick(d)}
+                  className={`relative rounded-lg h-16 flex flex-col items-center justify-center text-sm cursor-pointer border shadow-sm transition ${cellClass}`}
                 >
-                  {showTooltip ? (
-                    <div className="group relative w-full h-full flex flex-col items-center justify-center">
-                      <div className="font-medium">{d.day}</div>
-
-                      {d.holidayItem && (
+                  {/* The tooltip structure needs to be present for the hover effect */}
+                  <div className="group relative w-full h-full flex flex-col items-center justify-center">
+                    <div className="font-medium">{d.day}</div>
+                    {/* Display holiday or leave summary text directly on the cell */}
+                    {(d.holidayItem || (hasApprovedLeave && !isSunday && !isHoliday && !isMaintenance)) && (
                         <div className="text-[10px] px-1 text-center mt-1 w-full truncate">
-                          {d.holidayItem.description}
+                          {d.holidayItem 
+                            ? (d.holidayItem.description || "Holiday")
+                            : d.approvedLeaves.map((l) => l.leaveType).join(", ")}
                         </div>
-                      )}
-
-                      {hasApprovedLeave &&
-                        !isSunday &&
-                        !isHoliday &&
-                        !isMaintenance && (
-                          <div className="text-[10px] px-1 text-center mt-1 w-full truncate">
-                            {d.approvedLeaves
-                              .map((l) => l.leaveType)
-                              .join(", ")}
-                          </div>
-                        )}
-
-                      {/* POPUP: now pointer-events-auto, visible, not clipped, stops propagation */}
+                    )}
+                    
+                    {/* Tooltip content that appears on hover */}
+                    {showTooltip && tooltipContent && (
                       <div
-                        className="opacity-0 group-hover:opacity-100 absolute z-50 transition-opacity duration-200 pointer-events-auto top-full mt-1 md:left-full md:ml-2 bg-white text-gray-800 rounded-lg shadow-xl border border-gray-200 text-left"
+                        className="opacity-0 group-hover:opacity-100 absolute z-20 transition-opacity duration-300 pointer-events-none top-full mt-1 w-64 md:left-full md:ml-2 bg-white text-gray-800 rounded-lg shadow-xl border border-gray-200 text-left"
                         style={{ minWidth: "150px" }}
-                        onClick={(e) => {
-                          // prevent clicks on the popover from propagating to the cell
-                          e.stopPropagation();
-                        }}
                       >
                         {tooltipContent}
                       </div>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="font-medium">{d.day}</div>
-                      {d.holidayItem && (
-                        <div className="text-[10px] px-1 text-center mt-1 w-full truncate">
-                          {d.holidayItem.description}
-                        </div>
-                      )}
-                      {d.approvedLeaves.length > 0 &&
-                        !isSunday &&
-                        !isHoliday &&
-                        !isMaintenance && (
-                          <div className="text-[10px] px-1 text-center mt-1 w-full truncate">
-                            {d.approvedLeaves.map((l) => l.leaveType).join(", ")}
-                          </div>
-                        )}
-                    </>
-                  )}
+                    )}
+                  </div>
                 </div>
               );
             })}
           </div>
 
+          {/* Legend */}
           <div className="mt-4 flex flex-wrap gap-4 items-center text-sm">
             <div className="flex items-center gap-2">
               <span className="w-4 h-4 bg-red-500 rounded-sm border"></span>
