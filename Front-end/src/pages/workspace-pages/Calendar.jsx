@@ -380,6 +380,8 @@ export default function Calendar() {
                     <div className="font-bold text-red-500 uppercase">
                       {d.holidayItem.type === "maintenance"
                         ? "Maintenance Day"
+                        : d.holidayItem.type === "companyHoliday"
+                        ? "Company Holiday"
                         : "Public Holiday"}
                     </div>
                     <div className="text-xs">

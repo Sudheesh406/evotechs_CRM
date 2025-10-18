@@ -32,7 +32,9 @@ export default function LeaveList({ leaves, handleCreateLeave, handleEditLeave, 
             </thead>
             <tbody className="divide-y divide-gray-200">
               {leaves.map((l) => {
-                const isApproved = l.status === "Approve";
+                // Disable actions if leave is approved or rejected
+                const isLocked = l.status === "Approve" || l.status === "Reject";
+
                 return (
                   <tr key={l.id}>
                     <td className="px-4 py-2">{l.leaveType}</td>
@@ -40,7 +42,6 @@ export default function LeaveList({ leaves, handleCreateLeave, handleEditLeave, 
                     <td className="px-4 py-2">{l.startDate}</td>
                     <td className="px-4 py-2">{l.endDate}</td>
                     <td className="px-4 py-2 font-medium">
-                      {/* Status badge for better visibility */}
                       <span
                         className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
                           l.status === "Approve"
@@ -58,32 +59,33 @@ export default function LeaveList({ leaves, handleCreateLeave, handleEditLeave, 
                       {/* Edit Button */}
                       <button
                         onClick={() => handleEditLeave(l)}
-                        disabled={isApproved}
+                        disabled={isLocked}
                         className={`px-2 py-1 text-white rounded transition text-xs ${
-                          isApproved
+                          isLocked
                             ? "bg-gray-400 cursor-not-allowed"
                             : "bg-blue-500 hover:bg-blue-600"
                         }`}
                         title={
-                          isApproved
-                            ? "Approved leaves cannot be edited"
+                          isLocked
+                            ? "Approved or rejected leaves cannot be edited"
                             : "Edit Leave"
                         }
                       >
                         Edit
                       </button>
+
                       {/* Delete Button */}
                       <button
                         onClick={() => handleDeleteLeave(l)}
-                        disabled={isApproved}
+                        disabled={isLocked}
                         className={`px-2 py-1 text-white rounded transition text-xs ${
-                          isApproved
+                          isLocked
                             ? "bg-gray-400 cursor-not-allowed"
                             : "bg-red-500 hover:bg-red-600"
                         }`}
                         title={
-                          isApproved
-                            ? "Approved leaves cannot be deleted"
+                          isLocked
+                            ? "Approved or rejected leaves cannot be deleted"
                             : "Delete Leave"
                         }
                       >

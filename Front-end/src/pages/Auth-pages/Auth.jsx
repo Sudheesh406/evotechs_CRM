@@ -121,7 +121,7 @@ const Auth = () => {
 
                 <div>
                   <label className="block text-gray-700 text-sm font-medium mb-1">
-                    Signup Code
+                    Authorisation Code
                   </label>
                   <input
                     type="text"
