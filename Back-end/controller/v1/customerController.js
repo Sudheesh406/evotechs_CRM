@@ -383,12 +383,13 @@ const updateContact = async (req, res) => {
   }
 };
 
+
 const deleteContact = async (req, res) => {
   try {
     const user = req.user;
     const { id } = req.params;
 
-    // Find the Contacts
+    // Find the contact
     const customer = await Contacts.findOne({ where: { id } });
 
     if (!customer) {
@@ -400,28 +401,27 @@ const deleteContact = async (req, res) => {
       return httpError(res, 403, "Access denied");
     }
 
-    const taskDetails = await task.findOne({where:{phone: customer.phone }})
-     if(taskDetails || taskDetails.lenght > 0 ){
-      return httpError(res, 406, "A Task is with this requirement");
-     }
+    // Check if any task is linked with this contact's phone
+    const taskDetails = await task.findOne({ where: { phone: customer.phone } });
+    if (taskDetails) {
+      return httpError(res, 406, "A Task is associated with this contact");
+    }
 
     const moment = require("moment-timezone");
-
-    // Get current Indian Railway time (IST)
     const now = moment().tz("Asia/Kolkata");
-
-    const currentDate = now.format("YYYY-MM-DD"); // only date
+    const currentDate = now.format("YYYY-MM-DD");
     const currentTime = now.format("HH:mm:ss");
 
+    // Add to trash log
     await trash.create({
       data: "contacts",
       dataId: id,
-      staffId: user.id, // can be null if no staff
+      staffId: user.id,
       date: currentDate,
       time: currentTime,
-      // dateTime will automatically use default: DataTypes.NOW
     });
-    // Perform soft delete
+
+    // Soft delete
     const updated = await customer.update({ softDelete: true });
 
     return httpSuccess(res, 200, "Contact soft deleted successfully", updated);
@@ -430,6 +430,7 @@ const deleteContact = async (req, res) => {
     return httpError(res, 500, "Internal Server Error");
   }
 };
+
 
 const getPendingLeads = async (req, res) => {
   try {

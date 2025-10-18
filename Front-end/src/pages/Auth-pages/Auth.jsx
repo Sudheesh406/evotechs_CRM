@@ -128,7 +128,7 @@ const Auth = () => {
                     name="AuthorisationCode"
                     value={form.AuthorisationCode}
                     onChange={handleChange}
-                    placeholder="Enter your Signup Code"
+                    placeholder="Enter Authorisation Code"
                     className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                       errors.AuthorisationCode ? "border-red-500" : ""
                     }`}

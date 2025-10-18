@@ -16,10 +16,10 @@ const handleSignup = async (req, res) => {
       return httpError(res, 400, "All fields are required");
     }
 
-    // const verified = await secretCode.findOne({ where: { code: AuthorisationCode } });
-    // if (!verified) {
-    //   return httpError(res, 400, "Signup code is not correct");
-    // }
+    const verified = await secretCode.findOne({ where: { code: AuthorisationCode } });
+    if (!verified) {
+      return httpError(res, 400, "Signup code is not correct");
+    }
 
     // // 2. Check if email exists
     const existingUser = await signup.findOne({ where: { email } });
