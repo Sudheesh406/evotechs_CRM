@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "../../../instance/Axios";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
+import { useNavigate } from "react-router-dom";
 // NOTE: If using react-router-dom, you would import 'useNavigate' here
 
 // SweetAlert instance
@@ -9,7 +10,10 @@ const MySwal = withReactContent(Swal);
 
 // Task Column Component
 const TaskColumn = ({ status, cards }) => {
-  
+
+  const navigate = useNavigate()
+
+
   const getPriorityColor = (priority) => {
     switch (priority) {
       case "High":
@@ -21,51 +25,46 @@ const TaskColumn = ({ status, cards }) => {
     }
   };
 
+
+  
+
   // Function to handle the column action (e.g., Edit Column/View Stage Details)
   const handleColumnAction = (status) => {
-    // 💡 IMPORTANT: Replace this with actual column/stage action logic (e.g., opening a settings modal)
-    console.log(`Action triggered for column: ${status}`);
-    MySwal.fire({
-      icon: "question",
-      title: "Column Action",
-      text: `Action menu would open for the "${status}" column.`,
-      showCancelButton: true,
-      confirmButtonText: 'View Stage Settings',
-    });
+    const dataToSend = encodeURIComponent(JSON.stringify({ status }));
+    navigate(`/activities/task/details/port/${dataToSend}`)
   };
 
   return (
     <div className="bg-gradient-to-b from-white to-gray-50 rounded-xl p-4 flex flex-col shadow-md hover:shadow-xl transition-all">
       <h2 className="text-lg font-bold mb-4 flex justify-between items-center relative">
-        {status} 
-        
+        {status}
+
         {/* Three-dot menu button next to the status name */}
         <div className="flex items-center space-x-2">
-            <span className="text-gray-500 font-medium">{cards.length}</span>
-            <button
-                onClick={(e) => {
-                    e.stopPropagation(); // Stop event propagation if needed
-                    handleColumnAction(status);
-                }}
-                className="text-gray-400 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition"
-                aria-label={`Column actions for ${status}`}
+          <span className="text-gray-500 font-medium">{cards.length}</span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleColumnAction(status);
+            }}
+            className="text-gray-400 hover:text-gray-700 p-3 rounded-full hover:bg-gray-100 transition"
+            aria-label={`Column actions for ${status}`}
+          >
+            <svg
+              className="w-6 h-6" // Increase icon size
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
             >
-                {/* SVG for the three-dot icon */}
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M5 12h.01M12 12h.01M19 12h.01"
-                  ></path>
-                </svg>
-            </button>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M5 12h.01M12 12h.01M19 12h.01"
+              />
+            </svg>
+          </button>
         </div>
       </h2>
 
@@ -80,11 +79,23 @@ const TaskColumn = ({ status, cards }) => {
               {/* Customer Details */}
               {task.customer && (
                 <div className="mb-2">
-                  <h3 className="text-lg font-semibold text-gray-800 truncate">{task.customer.name}</h3>
-                  {task.customer.email && <p className="text-gray-500 text-sm">Email: {task.customer.email}</p>}
-                  {task.customer.phone && <p className="text-gray-500 text-sm">Phone: {task.customer.phone}</p>}
+                  <h3 className="text-lg font-semibold text-gray-800 truncate">
+                    {task.customer.name}
+                  </h3>
+                  {task.customer.email && (
+                    <p className="text-gray-500 text-sm">
+                      Email: {task.customer.email}
+                    </p>
+                  )}
+                  {task.customer.phone && (
+                    <p className="text-gray-500 text-sm">
+                      Phone: {task.customer.phone}
+                    </p>
+                  )}
                   {task.customer.amount && (
-                    <p className="text-gray-700 text-sm font-medium">Amount: ${task.customer.amount}</p>
+                    <p className="text-gray-700 text-sm font-medium">
+                      Amount: ${task.customer.amount}
+                    </p>
                   )}
                 </div>
               )}
@@ -92,19 +103,25 @@ const TaskColumn = ({ status, cards }) => {
               {/* Task Details */}
               {task.requirement && (
                 <p className="text-gray-700 text-sm mb-1">
-                  <span className="font-medium">Requirement:</span> {task.requirement}
+                  <span className="font-medium">Requirement:</span>{" "}
+                  {task.requirement}
                 </p>
               )}
               {task.description && (
                 <p className="text-gray-500 text-sm mb-2 line-clamp-3">
-                  <span className="font-medium">Description:</span> {task.description}
+                  <span className="font-medium">Description:</span>{" "}
+                  {task.description}
                 </p>
               )}
 
               <div className="flex items-center justify-between mb-2">
-                <span className="text-gray-700 text-sm font-medium">Stage: {task.stage}</span>
+                <span className="text-gray-700 text-sm font-medium">
+                  Stage: {task.stage}
+                </span>
                 <span
-                  className={`text-xs font-semibold px-2 py-1 rounded-full ${getPriorityColor(task.priority)}`}
+                  className={`text-xs font-semibold px-2 py-1 rounded-full ${getPriorityColor(
+                    task.priority
+                  )}`}
                 >
                   {task.priority}
                 </span>
@@ -113,14 +130,17 @@ const TaskColumn = ({ status, cards }) => {
               {/* Staff Details */}
               {task.staff && (
                 <p className="text-gray-600 text-sm">
-                  <span className="font-medium">Assigned To:</span> {task.staff.name}{" "}
+                  <span className="font-medium">Assigned To:</span>{" "}
+                  {task.staff.name}{" "}
                   {task.staff.email && `(${task.staff.email})`}
                 </p>
               )}
             </div>
           ))
         ) : (
-          <p className="text-gray-400 text-center py-10 italic">No tasks found.</p>
+          <p className="text-gray-400 text-center py-10 italic">
+            No tasks found.
+          </p>
         )}
       </div>
     </div>
@@ -143,7 +163,9 @@ const TaskView = () => {
 
     try {
       const response = await axios.get("/task/admin/get");
-      const fetchedTasks = Array.isArray(response.data.data) ? response.data.data : [];
+      const fetchedTasks = Array.isArray(response.data.data)
+        ? response.data.data
+        : [];
       setTasks(fetchedTasks);
 
       // Close loading popup
@@ -171,8 +193,12 @@ const TaskView = () => {
   const tasksArray = Array.isArray(tasks) ? tasks : [];
 
   const tasksByStage = {
-    "Not Started": tasksArray.filter((t) => t.stage === "To Do" || t.stage === "1"),
-    "In Progress": tasksArray.filter((t) => t.stage === "In Progress" || t.stage === "2"),
+    "Not Started": tasksArray.filter(
+      (t) => t.stage === "To Do" || t.stage === "1"
+    ),
+    "In Progress": tasksArray.filter(
+      (t) => t.stage === "In Progress" || t.stage === "2"
+    ),
     Review: tasksArray.filter((t) => t.stage === "3"),
     Completed: tasksArray.filter((t) => t.stage === "4"),
   };

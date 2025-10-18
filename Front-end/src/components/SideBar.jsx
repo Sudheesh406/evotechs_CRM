@@ -57,7 +57,7 @@ const Sidebar = ({ closeSidebar }) => {
       { title: "Rejected", path: "/sales/rejected", icon: Trash },
     ],
   },
-
+  
   {
     title: "Operations",
     icon: ClipboardList,

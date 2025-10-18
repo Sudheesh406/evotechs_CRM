@@ -364,12 +364,12 @@ const Leads = () => {
                 >
                   <Trash size={16} />
                 </button>
-                <button
+                {/* <button
                   onClick={() => handleApprove(row.id)}
                   className=" p-1 text-green-600 rounded hover:bg-green-200"
                 >
                   <CheckCircle size={16} />
-                </button>
+                </button> */}
               </div>
             );
           }
@@ -487,5 +487,6 @@ const Leads = () => {
     </div>
   );
 };
+
 
 export default Leads;

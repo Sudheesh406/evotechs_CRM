@@ -56,6 +56,7 @@ import TeamSubtask from "./pages/Team-work/TeamSubtask";
 import LeadPending from "./pages/sales-pages/LeadPending";
 import LeadRejected from "./pages/sales-pages/LeadReject";
 import RemovedSubTask from "./pages/activity-pages/RemovedSubTask";
+import TaskDetailsDisplay from "./pages/activity-pages/admin_activity/TaskDetailsDisplay";
 
 import ProtectedRoute from "./components/Routes/ProtectedRoute";
 import Sidebar from "./components/SideBar";
@@ -209,6 +210,18 @@ function Layout() {
               </ProtectedRoute>
             }
           />
+
+
+          <Route
+            path="/activities/task/details/port/:data"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <TaskDetailsDisplay/>
+              </ProtectedRoute>
+            }
+          />
+
+
           <Route
             path="/workspace/auth/pin/generator"
             element={

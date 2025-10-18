@@ -172,7 +172,7 @@ const StaffDashboard = () => {
 
                 {filteredTasks.length === 0 && (
                   <div className="text-center text-gray-400 mt-2 p-4">
-                    No {status} tasks found.
+                    No {status} assignment found.
                   </div>
                 )}
               </div>
