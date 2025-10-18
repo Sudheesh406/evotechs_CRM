@@ -24,8 +24,6 @@ const TaskColumn = ({ status, cards }) => {
         return "bg-green-100 text-green-800";
     }
   };
-
-
   
 
   // Function to handle the column action (e.g., Edit Column/View Stage Details)

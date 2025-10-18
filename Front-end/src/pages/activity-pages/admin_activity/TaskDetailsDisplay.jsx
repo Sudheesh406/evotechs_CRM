@@ -1,15 +1,13 @@
 import { useParams } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const TaskDetailsDisplay = () => {
   // Data for the card (you can pass this as props in a real app)
 
-  const [setTaskDate, taskDate] = useState()
+  const [setTaskData, taskData] = useState()
   const [setCurrentStage, currentStage] = useState()
 
   const {data} = useParams()
-
-  console.log(data)
 
   const caseData = {
     customerName: 'greeshma',
@@ -21,7 +19,6 @@ const TaskDetailsDisplay = () => {
     priority: 'Normal',
     description: 'customer name greeshma. home loan. pathanamthitta',
   };
-
 
     let parsed = null;
   if (data) {
@@ -46,6 +43,11 @@ const TaskDetailsDisplay = () => {
       setLoading(false);
     }
   };
+
+
+  useEffect(()=>{
+    getTaskDetails()
+  },[])
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-8">

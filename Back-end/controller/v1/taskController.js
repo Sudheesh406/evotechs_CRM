@@ -69,6 +69,29 @@ const getTask = async (req, res) => {
 };
 
 
+const getTaskByStatus = async (req,res)=>{
+  try {
+    const user = req.user
+    const parsed = req.body.parsed
+    console.log('req.body',req.body)
+    console.log('parsed',parsed)
+//  let stage = null
+
+//     if(data == 'Not Started'){
+//       stage = '1'
+//     }else if(data == 'In Progress'){
+//       stage = '2'
+//     }else if(data == 'Completed'){
+//       stage = '3'
+//     }
+    
+  } catch (error) {
+     console.error("Error in getTask:", error);
+    return httpError(res, 500, "Server error", error.message || error);
+  }
+}
+
+
 const getTaskByStage = async (req, res) => {
   const user = req.user;
   const data  = req.params.data
@@ -696,4 +719,5 @@ module.exports = {
   reworkUpdate,
   newUpdate,
   getTaskForAdmin,
+  getTaskByStatus
 };

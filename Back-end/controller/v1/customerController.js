@@ -339,6 +339,7 @@ const getContact = async (req, res) => {
   }
 };
 
+
 const updateContact = async (req, res) => {
   try {
     const user = req.user;
