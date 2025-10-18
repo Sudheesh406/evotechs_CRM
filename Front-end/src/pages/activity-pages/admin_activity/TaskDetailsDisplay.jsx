@@ -7,6 +7,7 @@ const TaskDetailsDisplay = () => {
 
   const [setTaskData, taskData] = useState()
   const [setCurrentStage, currentStage] = useState()
+  const [setLoading, loading] = useState(true)
 
   const {data} = useParams()
 
