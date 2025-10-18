@@ -29,9 +29,8 @@ export default function AdminCalendarManager() {
   const now = new Date();
   const [displayedMonth, setDisplayedMonth] = useState(now.getMonth());
   const [displayedYear, setDisplayedYear] = useState(now.getFullYear());
-
   const [holidays, setHolidays] = useState([]);
-  const [leaves, setLeaves] = useState([]); // ✅ state for leave requests
+  const [leaves, setLeaves] = useState([]); // ✅ leave requests
 
   // form state
   const [dateInput, setDateInput] = useState(""); // yyyy-mm-dd
@@ -41,10 +40,9 @@ export default function AdminCalendarManager() {
 
   useEffect(() => {
     fetchHolidays(displayedYear, displayedMonth + 1);
-    fetchLeaves(displayedYear, displayedMonth + 1); // month is 1-based
+    fetchLeaves(displayedYear, displayedMonth + 1);
   }, [displayedMonth, displayedYear]);
 
-  // Fetch holidays
   const fetchHolidays = async (year, month) => {
     try {
       const res = await axios.post("/calendar/get", { year, month });
@@ -60,7 +58,6 @@ export default function AdminCalendarManager() {
     }
   };
 
-  // Fetch leave requests
   const fetchLeaves = async (year, month) => {
     try {
       const response = await axios.post("/calendar/get/leave", { year, month });
@@ -74,18 +71,13 @@ export default function AdminCalendarManager() {
         category: item.category,
         status: item.status || "Pending",
       }));
-
       setLeaves(leavesArray);
     } catch (error) {
       console.error("Failed to load leaves", error);
     }
   };
 
-  const monthStartDayIndex = new Date(
-    displayedYear,
-    displayedMonth,
-    1
-  ).getDay();
+  const monthStartDayIndex = new Date(displayedYear, displayedMonth, 1).getDay();
   const daysInMonth = new Date(displayedYear, displayedMonth + 1, 0).getDate();
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -96,7 +88,7 @@ export default function AdminCalendarManager() {
 
     const holidayItem = holidays.find((h) => h.date === formatted);
 
-    // Get approved leaves for this day
+    // Approved leaves for this day
     const approvedLeaves = leaves.filter((l) => {
       if (l.status !== "Approve") return false;
       const start = ddmmyyyyToInput(l.startDate);
@@ -151,14 +143,12 @@ export default function AdminCalendarManager() {
       try {
         const payload = { date: formatted, description, type };
         const { data } = await axios.post("/calendar/create", payload);
-        console.log(data);
         const createdHoliday = {
           id: data.id,
           date: formatInputToDDMMYYYY(data.holidayDate || dateInput),
           description: data.description || description,
           type: data.holidayName || type,
         };
-
         setHolidays((prev) =>
           [...prev, createdHoliday].sort((a, b) => (a.date > b.date ? 1 : -1))
         );
@@ -216,21 +206,16 @@ export default function AdminCalendarManager() {
         {/* Calendar */}
         <div className="md:col-span-12 bg-white rounded-xl shadow p-6">
           <div className="flex items-center justify-between mb-4 gap-3">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handlePrevMonth}
-                className="px-3 py-2 rounded-lg bg-orange-500 text-white hover:bg-orange-600 transition"
-              >
-                Prev
-              </button>
-            </div>
+            <button
+              onClick={handlePrevMonth}
+              className="px-3 py-2 rounded-lg bg-orange-500 text-white hover:bg-orange-600 transition"
+            >
+              Prev
+            </button>
             <h2 className="text-lg font-semibold text-gray-800">
               {new Date(displayedYear, displayedMonth).toLocaleString(
                 "default",
-                {
-                  month: "long",
-                  year: "numeric",
-                }
+                { month: "long", year: "numeric" }
               )}
             </h2>
             <button
@@ -247,6 +232,7 @@ export default function AdminCalendarManager() {
             ))}
           </div>
 
+          {/* Calendar Grid */}
           <div className="grid grid-cols-7 gap-2">
             {Array.from({ length: monthStartDayIndex }).map((_, i) => (
               <div key={"empty-" + i} className="h-16" />
@@ -278,13 +264,35 @@ export default function AdminCalendarManager() {
                   : "bg-orange-500 border-orange-300 text-white";
               }
 
+              // Tooltip content logic
+              let tooltipText = "";
+              if (isSunday) tooltipText = "Sunday";
+              else if (isHoliday)
+                tooltipText = `Holiday: ${d.holidayItem.description}`;
+              else if (d.approvedLeaves.length > 0)
+                tooltipText = d.approvedLeaves
+                  .map(
+                    (l) =>
+                      `${l.employee} (${l.category} - ${l.leaveType}, ${l.status})`
+                  )
+                  .join("\n");
+
               return (
                 <div
                   key={d.formatted}
                   onClick={() => onDayClick(d)}
-                  className={`relative rounded-lg h-16 flex flex-col items-center justify-center text-sm cursor-pointer border shadow-sm transition ${cellClass}`}
+                  className={`relative group rounded-lg h-16 flex flex-col items-center justify-center text-sm cursor-pointer border shadow-sm transition ${cellClass}`}
                 >
                   <div className="font-medium">{d.day}</div>
+
+                  {/* Tooltip */}
+                  {tooltipText && (
+                    <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 whitespace-pre-line bg-gray-800 text-white text-xs rounded-lg px-2 py-1 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-20 shadow-lg w-max max-w-[160px] text-center">
+                      {tooltipText}
+                    </div>
+                  )}
+
+                  {/* Preview labels */}
                   {d.holidayItem && (
                     <div className="text-[10px] px-1 text-center mt-1 w-full truncate">
                       {d.holidayItem.description}
@@ -295,18 +303,14 @@ export default function AdminCalendarManager() {
                       key={idx}
                       className="text-[10px] px-1 text-center mt-1 w-full truncate"
                     >
-                      <div className="flex flex-col">
-                        <span>{l.employee}</span>
-                        <span>
-                          ({l.category} - {l.leaveType})
-                        </span>
-                      </div>
+                      <span>{l.employee}</span>
                     </div>
                   ))}
                 </div>
               );
             })}
           </div>
+
           {/* Color Legend */}
           <div className="mt-4 flex flex-wrap gap-4 items-center text-sm">
             <div className="flex items-center gap-2">
@@ -437,25 +441,18 @@ export default function AdminCalendarManager() {
                   : "bg-green-500 hover:bg-green-600 text-white"
               }`}
             >
-              {editingId ? "Update" : "Save"}
+              {editingId ? "Update" : "Create"}
             </button>
 
-            <button
-              onClick={resetForm}
-              className="py-2 px-3 rounded-lg border border-gray-200"
-            >
-              Cancel
-            </button>
+            {editingId && (
+              <button
+                onClick={() => deleteHoliday(editingId)}
+                className="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition"
+              >
+                Delete
+              </button>
+            )}
           </div>
-
-          {editingId && type && type !== "workingDay" && (
-            <button
-              onClick={() => deleteHoliday(editingId)}
-              className="py-2 px-3 rounded-lg bg-red-500 text-white hover:bg-red-600"
-            >
-              Delete
-            </button>
-          )}
         </div>
       </div>
     </div>
