@@ -255,7 +255,9 @@ export default function Calendar() {
 
       Swal.fire({
         icon: "success",
-        title: `Leave ${currentEditingLeave ? "updated" : "created"} successfully!`,
+        title: `Leave ${
+          currentEditingLeave ? "updated" : "created"
+        } successfully!`,
         timer: 2000,
         showConfirmButton: false,
       });
@@ -310,10 +312,13 @@ export default function Calendar() {
               Prev
             </button>
             <h2 className="text-lg font-semibold text-gray-800">
-              {new Date(displayedYear, displayedMonth).toLocaleString("default", {
-                month: "long",
-                year: "numeric",
-              })}
+              {new Date(displayedYear, displayedMonth).toLocaleString(
+                "default",
+                {
+                  month: "long",
+                  year: "numeric",
+                }
+              )}
             </h2>
             <button
               onClick={handleNextMonth}
@@ -345,7 +350,7 @@ export default function Calendar() {
               const isHoliday = !!d.holidayItem;
               const hasApprovedLeave = d.approvedLeaves.length > 0;
               // FIX 2: Ensure tooltip is shown for holidays AND approved leaves
-              const showTooltip = isHoliday || hasApprovedLeave; 
+              const showTooltip = isHoliday || hasApprovedLeave || isSunday;
 
               let cellClass = "bg-white border-gray-200 hover:bg-gray-50";
               if (isSunday || isHoliday)
@@ -360,15 +365,14 @@ export default function Calendar() {
                 !isMaintenance
               ) {
                 const hasFullDay = d.approvedLeaves.some(
-                  (l) =>
-                    l.leaveType === "Full Day" || l.leaveType === "fullday"
+                  (l) => l.leaveType === "Full Day" || l.leaveType === "fullday"
                 );
                 cellClass = hasFullDay
                   ? "bg-blue-800 border-blue-500 text-white"
                   : "bg-orange-500 border-orange-300 text-white";
               }
 
-              let tooltipContent = 'd';
+              let tooltipContent = "d";
               if (d.holidayItem) {
                 // FIX 3: Updated holiday tooltip content
                 tooltipContent = (
@@ -413,19 +417,26 @@ export default function Calendar() {
                   <div className="group relative w-full h-full flex flex-col items-center justify-center">
                     <div className="font-medium">{d.day}</div>
                     {/* Display holiday or leave summary text directly on the cell */}
-                    {(d.holidayItem || (hasApprovedLeave && !isSunday && !isHoliday && !isMaintenance)) && (
-                        <div className="text-[10px] px-1 text-center mt-1 w-full truncate">
-                          {d.holidayItem 
-                            ? (d.holidayItem.description || "Holiday")
-                            : d.approvedLeaves.map((l) => l.leaveType).join(", ")}
-                        </div>
+                    {(d.holidayItem ||
+                      (hasApprovedLeave &&
+                        !isSunday &&
+                        !isHoliday &&
+                        !isMaintenance)) && (
+                      <div className="text-[10px] px-1 text-center mt-1 w-full truncate">
+                        {d.holidayItem
+                          ? d.holidayItem.description || "Holiday"
+                          : d.approvedLeaves.map((l) => l.leaveType).join(", ")}
+                      </div>
                     )}
-                    
+
                     {/* Tooltip content that appears on hover */}
                     {showTooltip && tooltipContent && (
                       <div
-                        className="opacity-0 group-hover:opacity-100 absolute z-20 transition-opacity duration-300 pointer-events-none top-full mt-1 w-64 md:left-full md:ml-2 bg-white text-gray-800 rounded-lg shadow-xl border border-gray-200 text-left"
-                        style={{ minWidth: "150px" }}
+                        className="opacity-0 group-hover:opacity-100 absolute z-20 transition-opacity duration-300 pointer-events-none bottom-full mb-2 left-1/2 -translate-x-1/2 w-56 bg-white text-gray-800 rounded-lg shadow-xl border border-gray-200 text-left p-2"
+                        style={{
+                          minWidth: "150px",
+                          whiteSpace: "normal",
+                        }}
                       >
                         {tooltipContent}
                       </div>
