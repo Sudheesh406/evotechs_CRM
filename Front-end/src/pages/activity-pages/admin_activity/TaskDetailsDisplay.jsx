@@ -37,6 +37,7 @@ const TaskDetailsDisplay = () => {
       if (response.data.success) {
         setTaskData(response.data.data);
         setCurrentStage(response.data.data.taskDetails?.[0]?.stage || 0);
+        console.log('response',response)
       }
     } catch (error) {
       console.error("Error in get task details", error);

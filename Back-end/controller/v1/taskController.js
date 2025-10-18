@@ -72,18 +72,37 @@ const getTask = async (req, res) => {
 const getTaskByStatus = async (req,res)=>{
   try {
     const user = req.user
-    const parsed = req.body.parsed
+    const parsed = req.body.parsed?.status
     console.log('req.body',req.body)
     console.log('parsed',parsed)
-//  let stage = null
+    let stage = null
+    if(parsed == 'Not Started'){
+      stage = '1'
+    }else if(parsed == 'In Progress'){
+      stage = '2'
+    }else if(parsed == 'Review'){
+      stage = '3'
+    }else if(parsed == 'Completed'){
+      stage = '4'
+    }
 
-//     if(data == 'Not Started'){
-//       stage = '1'
-//     }else if(data == 'In Progress'){
-//       stage = '2'
-//     }else if(data == 'Completed'){
-//       stage = '3'
-//     }
+     const allTask = await task.findAll({
+      where: {softDelete: false, stage },
+      order: [["createdAt", "DESC"]],
+      include: [
+        {
+          model: contacts,
+          as: "customer", // must match the alias
+          attributes: ["id", "name", "phone", "amount"],
+        },
+      ],
+    });
+
+      if (allTask.length === 0) {
+      return httpError(res, 404, "No tasks found");
+    }
+
+    return httpSuccess(res, 200, "Tasks retrieved successfully", allTask);
     
   } catch (error) {
      console.error("Error in getTask:", error);
