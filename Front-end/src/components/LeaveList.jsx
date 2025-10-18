@@ -1,7 +1,5 @@
 // src/components/LeaveList.jsx
 
-import React from "react";
-
 export default function LeaveList({ leaves, handleCreateLeave, handleEditLeave, handleDeleteLeave }) {
   return (
     <div className="mt-6 bg-white rounded-xl shadow p-6">

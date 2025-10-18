@@ -1,11 +1,7 @@
-// src/components/Calendar.jsx
-
 import React, { useState, useEffect, useCallback } from "react";
-// Import the new components
-import LeaveModal from "../../components/modals/LeaveModal"; 
+import LeaveModal from "../../components/modals/LeaveModal";
 import LeaveList from "../../components/LeaveList";
-// Assumed relative path, update as needed
-import axios from "../../instance/Axios"; 
+import axios from "../../instance/Axios";
 import Swal from "sweetalert2";
 
 /* Helpers to convert between YYYY-MM-DD (input) and DD/MM/YYYY (display/storage) */
@@ -31,7 +27,6 @@ const ddmmyyyyToInput = (ddmmyyyy) => {
   return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
 };
 
-// Define a default/initial state for the form data
 const initialFormData = {
   leaveType: "Full Day",
   category: "",
@@ -45,17 +40,13 @@ export default function Calendar() {
   const now = new Date();
   const [displayedMonth, setDisplayedMonth] = useState(now.getMonth());
   const [displayedYear, setDisplayedYear] = useState(now.getFullYear());
-
   const [holidays, setHolidays] = useState([]);
   const [leaves, setLeaves] = useState([]);
 
-  // Modal states
   const [showModal, setShowModal] = useState(false);
   const [editingLeave, setEditingLeave] = useState(null);
   const [formData, setFormData] = useState(initialFormData);
 
-
-  // Set the default dates for the modal on initial load
   useEffect(() => {
     const todayInput = ddmmyyyyToInput(formatDateObjToDDMMYYYY(now));
     setFormData((prev) => ({
@@ -65,7 +56,6 @@ export default function Calendar() {
     }));
   }, []);
 
-  // API Call functions wrapped in useCallback for dependency array stability
   const fetchHolidays = useCallback(async (year, month) => {
     try {
       const res = await axios.post("/calendar/get", { year, month });
@@ -102,13 +92,10 @@ export default function Calendar() {
     }
   }, []);
 
-  // Effect to re-fetch data when month/year changes
   useEffect(() => {
     fetchHolidays(displayedYear, displayedMonth + 1);
     fetchLeaves(displayedYear, displayedMonth + 1);
   }, [displayedMonth, displayedYear, fetchHolidays, fetchLeaves]);
-
-  // --- Calendar Navigation Handlers ---
 
   const handlePrevMonth = () => {
     if (displayedMonth === 0) {
@@ -124,10 +111,9 @@ export default function Calendar() {
     } else setDisplayedMonth((m) => m + 1);
   };
 
-  // --- Leave Management Handlers ---
-
-  // Function to handle opening the modal for creating a leave from the calendar day click
   const onDayClick = (day) => {
+    if (day.holidayItem) return;
+
     setEditingLeave(null);
     setFormData({
       ...initialFormData,
@@ -137,7 +123,6 @@ export default function Calendar() {
     setShowModal(true);
   };
 
-  // Function to handle opening the modal for creating a leave from the main "Create Leave" button
   const handleCreateLeave = () => {
     setEditingLeave(null);
     const firstDayFormatted = formatDateObjToDDMMYYYY(
@@ -165,8 +150,8 @@ export default function Calendar() {
     setFormData({
       leaveType: leave.leaveType,
       category: leave.category,
-      startDate: ddmmyyyyToInput(leave.startDate), // Convert DD/MM/YYYY to YYYY-MM-DD
-      endDate: ddmmyyyyToInput(leave.endDate),     // Convert DD/MM/YYYY to YYYY-MM-DD
+      startDate: ddmmyyyyToInput(leave.startDate),
+      endDate: ddmmyyyyToInput(leave.endDate),
       reason: leave.reason,
       status: leave.status,
     });
@@ -179,7 +164,7 @@ export default function Calendar() {
         icon: "warning",
         title: "Cannot Delete",
         text: "Approved leaves cannot be deleted.",
-      } as any); // Use as any to suppress Swal TS error if not configured
+      });
       return;
     }
 
@@ -191,7 +176,7 @@ export default function Calendar() {
       confirmButtonColor: "#d33",
       cancelButtonColor: "#3085d6",
       confirmButtonText: "Yes, delete it!",
-    } as any);
+    });
 
     if (result.isConfirmed) {
       try {
@@ -204,14 +189,14 @@ export default function Calendar() {
           text: "Leave deleted successfully!",
           timer: 2000,
           showConfirmButton: false,
-        } as any);
+        });
       } catch (err) {
         console.error("Failed to delete leave", err);
         Swal.fire({
           icon: "error",
           title: "Failed",
           text: "Failed to delete leave",
-        } as any);
+        });
       }
     }
   };
@@ -221,8 +206,8 @@ export default function Calendar() {
       const payload = {
         leaveType: formDataToSubmit.leaveType,
         category: formDataToSubmit.category,
-        leaveDate: formDataToSubmit.startDate, // YYYY-MM-DD format for API
-        endDate: formDataToSubmit.endDate, // YYYY-MM-DD format for API
+        leaveDate: formDataToSubmit.startDate,
+        endDate: formDataToSubmit.endDate,
         description: formDataToSubmit.reason,
         status: formDataToSubmit.status,
       };
@@ -240,11 +225,12 @@ export default function Calendar() {
       const newOrUpdatedLeave = {
         id: res.data.id || currentEditingLeave?.id,
         leaveType: res.data.leaveType || formDataToSubmit.leaveType,
-        // API response might return YYYY-MM-DD, so format it back for state
         startDate: formatInputToDDMMYYYY(
           res.data.leaveDate || formDataToSubmit.startDate
         ),
-        endDate: formatInputToDDMMYYYY(res.data.endDate || formDataToSubmit.endDate),
+        endDate: formatInputToDDMMYYYY(
+          res.data.endDate || formDataToSubmit.endDate
+        ),
         reason: res.data.description || formDataToSubmit.reason,
         category: res.data.category || formDataToSubmit.category,
         status: res.data.status || formDataToSubmit.status,
@@ -262,35 +248,32 @@ export default function Calendar() {
 
       setShowModal(false);
       setEditingLeave(null);
-      setFormData(initialFormData); // Reset form data
-      
+      setFormData(initialFormData);
+
       Swal.fire({
         icon: "success",
         title: `Leave ${currentEditingLeave ? "updated" : "created"} successfully!`,
         timer: 2000,
         showConfirmButton: false,
-      } as any);
-    } catch (err: any) {
-      // Check for specific error status (like 406 for date validation)
+      });
+    } catch (err) {
       const status = err.response?.status;
       if (status === 406) {
         Swal.fire({
           icon: "error",
           title: "Failed",
           text: "End date cannot be before start date",
-        } as any);
+        });
       } else {
         console.error("Failed to save leave", err);
         Swal.fire({
           icon: "error",
           title: "Failed",
-          text: "Server Error please check after some times",
-        } as any);
+          text: "Server Error please check after some time",
+        });
       }
     }
   };
-
-  // --- Calendar Day Generation Logic ---
 
   const daysInMonth = new Date(displayedYear, displayedMonth + 1, 0).getDate();
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -299,7 +282,6 @@ export default function Calendar() {
     const dayNum = i + 1;
     const dateObj = new Date(displayedYear, displayedMonth, dayNum);
     const formatted = formatDateObjToDDMMYYYY(dateObj);
-
     const holidayItem = holidays.find((h) => h.date === formatted);
 
     const approvedLeaves = leaves.filter((l) => {
@@ -316,7 +298,6 @@ export default function Calendar() {
   return (
     <div className="p-6 bg-gray-50 min-h-[600px]">
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-6">
-        {/* Calendar Grid */}
         <div className="md:col-span-12 bg-white rounded-xl shadow p-6">
           <div className="flex items-center justify-between mb-4 gap-3">
             <button
@@ -326,13 +307,10 @@ export default function Calendar() {
               Prev
             </button>
             <h2 className="text-lg font-semibold text-gray-800">
-              {new Date(displayedYear, displayedMonth).toLocaleString(
-                "default",
-                {
-                  month: "long",
-                  year: "numeric",
-                }
-              )}
+              {new Date(displayedYear, displayedMonth).toLocaleString("default", {
+                month: "long",
+                year: "numeric",
+              })}
             </h2>
             <button
               onClick={handleNextMonth}
@@ -342,16 +320,15 @@ export default function Calendar() {
             </button>
           </div>
 
-          {/* Weekday Headers */}
+          {/* Weekdays */}
           <div className="grid grid-cols-7 text-center text-xs font-semibold text-gray-500 uppercase mb-3">
             {weekDays.map((wd) => (
               <div key={wd}>{wd}</div>
             ))}
           </div>
 
-          {/* Days Grid */}
+          {/* Days */}
           <div className="grid grid-cols-7 gap-2">
-            {/* Filler for start of month */}
             {Array.from({
               length: new Date(displayedYear, displayedMonth, 1).getDay(),
             }).map((_, i) => (
@@ -363,6 +340,8 @@ export default function Calendar() {
               const isMaintenance =
                 d.holidayItem && d.holidayItem.type === "maintenance";
               const isHoliday = !!d.holidayItem;
+              const hasApprovedLeave = d.approvedLeaves.length > 0;
+              const showTooltip = isHoliday || hasApprovedLeave;
 
               let cellClass = "bg-white border-gray-200 hover:bg-gray-50";
               if (isSunday || isHoliday)
@@ -371,17 +350,50 @@ export default function Calendar() {
                 cellClass = "bg-purple-500 border-purple-300 text-white";
 
               if (
-                d.approvedLeaves.length > 0 &&
+                hasApprovedLeave &&
                 !isSunday &&
                 !isHoliday &&
                 !isMaintenance
               ) {
                 const hasFullDay = d.approvedLeaves.some(
-                  (l) => l.leaveType === "fullday"
+                  (l) =>
+                    l.leaveType === "Full Day" || l.leaveType === "fullday"
                 );
                 cellClass = hasFullDay
                   ? "bg-blue-800 border-blue-500 text-white"
                   : "bg-orange-500 border-orange-300 text-white";
+              }
+
+              let tooltipContent;
+              if (d.holidayItem) {
+                tooltipContent = (
+                  <div className="p-2">
+                    <div className="font-bold text-red-500 uppercase">
+                      {d.holidayItem.type === "maintenance"
+                        ? "Maintenance Day"
+                        : "Public Holiday"}
+                    </div>
+                    <div className="text-xs">{d.holidayItem.description}</div>
+                  </div>
+                );
+              } else if (hasApprovedLeave) {
+                tooltipContent = (
+                  <div className="p-2 space-y-1">
+                    <div className="font-bold text-blue-500">
+                      Approved Leave(s)
+                    </div>
+                    {d.approvedLeaves.map((l, index) => (
+                      <div
+                        key={index}
+                        className="text-xs border-t pt-1 first:border-t-0 first:pt-0"
+                      >
+                        <span className="font-medium">
+                          {l.leaveType} ({l.category})
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                );
               }
 
               return (
@@ -390,30 +402,57 @@ export default function Calendar() {
                   onClick={() => onDayClick(d)}
                   className={`relative rounded-lg h-16 flex flex-col items-center justify-center text-sm cursor-pointer border shadow-sm transition ${cellClass}`}
                 >
-                  <div className="font-medium">{d.day}</div>
-
-                  {/* holiday label */}
-                  {d.holidayItem && (
-                    <div className="text-[10px] px-1 text-center mt-1 w-full truncate">
-                      {d.holidayItem.description}
-                    </div>
-                  )}
-
-                  {/* leave type label */}
-                  {d.approvedLeaves.length > 0 &&
-                    !isSunday &&
-                    !isHoliday &&
-                    !isMaintenance && (
-                      <div className="text-[10px] px-1 text-center mt-1 w-full truncate">
-                        {d.approvedLeaves.map((l) => l.leaveType).join(", ")}
+                  {showTooltip ? (
+                    <div className="group relative w-full h-full flex flex-col items-center justify-center">
+                      <div className="font-medium">{d.day}</div>
+                      {d.holidayItem && (
+                        <div className="text-[10px] px-1 text-center mt-1 w-full truncate">
+                          {d.holidayItem.description}
+                        </div>
+                      )}
+                      {hasApprovedLeave &&
+                        !isSunday &&
+                        !isHoliday &&
+                        !isMaintenance && (
+                          <div className="text-[10px] px-1 text-center mt-1 w-full truncate">
+                            {d.approvedLeaves
+                              .map((l) => l.leaveType)
+                              .join(", ")}
+                          </div>
+                        )}
+                      <div
+                        className="opacity-0 group-hover:opacity-100 absolute z-20 transition-opacity duration-300 pointer-events-none top-full mt-1 w-64 md:left-full md:ml-2 bg-white text-gray-800 rounded-lg shadow-xl border border-gray-200 text-left"
+                        style={{ minWidth: "150px" }}
+                      >
+                        {tooltipContent}
                       </div>
-                    )}
+                    </div>
+                  ) : (
+                    <>
+                      <div className="font-medium">{d.day}</div>
+                      {d.holidayItem && (
+                        <div className="text-[10px] px-1 text-center mt-1 w-full truncate">
+                          {d.holidayItem.description}
+                        </div>
+                      )}
+                      {d.approvedLeaves.length > 0 &&
+                        !isSunday &&
+                        !isHoliday &&
+                        !isMaintenance && (
+                          <div className="text-[10px] px-1 text-center mt-1 w-full truncate">
+                            {d.approvedLeaves
+                              .map((l) => l.leaveType)
+                              .join(", ")}
+                          </div>
+                        )}
+                    </>
+                  )}
                 </div>
               );
             })}
           </div>
 
-          {/* Color Legend */}
+          {/* Legend */}
           <div className="mt-4 flex flex-wrap gap-4 items-center text-sm">
             <div className="flex items-center gap-2">
               <span className="w-4 h-4 bg-red-500 rounded-sm border"></span>
@@ -435,7 +474,6 @@ export default function Calendar() {
         </div>
       </div>
 
-      {/* Leave List Component */}
       <LeaveList
         leaves={leaves}
         handleCreateLeave={handleCreateLeave}
@@ -443,7 +481,6 @@ export default function Calendar() {
         handleDeleteLeave={handleDeleteLeave}
       />
 
-      {/* Leave Modal Component */}
       <LeaveModal
         showModal={showModal}
         setShowModal={setShowModal}
