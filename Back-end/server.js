@@ -120,6 +120,7 @@ io.on("connection", (socket) => {
   });
 });
 
+module.exports.io = io;
 
 // Start server
 const startServer = async () => {
