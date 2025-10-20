@@ -57,7 +57,7 @@ app.use("/api/message", messageRoute);
 app.use("/api/trash", trashRoute);
 app.use("/api/sub-task", subTaskRoute);
 
-const initIO = require("./utils/v1/socket.js"); 
+const {initIO} = require("./utils/v1/socket.js"); 
 
 const server = http.createServer(app);
 
