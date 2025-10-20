@@ -183,8 +183,11 @@ const getRole = async (req, res) => {
     if (!userDetails) {
       return httpError(res, 404, "User not found");
     }
+    const id = user.id
+    const role = userDetails.role
+
     return httpSuccess(res, 200, "Role fetched successfully", {
-      role: userDetails.role,
+      id,role,
     });
   } catch (error) {
     console.log("error found  in role getting", error);

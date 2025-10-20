@@ -46,6 +46,7 @@ const createTask = async (req, res) => {
   }
 };
 
+
 const getTask = async (req, res) => {
   const user = req.user;
   try {
@@ -147,6 +148,7 @@ const getTaskByStage = async (req, res) => {
     return httpError(res, 500, "Server error", error.message || error);
   }
 };
+
 
 const editTask = async (req, res) => {
   try {
@@ -677,6 +679,7 @@ const newUpdate = async (req, res) => {
   }
 };
 
+
 const getTaskForAdmin = async (req, res) => {
   try {
     // Assuming req.user has the logged-in user info
@@ -721,6 +724,52 @@ const getTaskForAdmin = async (req, res) => {
   }
 };
 
+
+const getAdminTask = async (req, res) => {
+  try {
+    // Assuming req.user has the logged-in user info
+    const user = req.user;
+
+    const access = await roleChecker(user.id);
+    if (!access) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Admins only.",
+      });
+    }
+
+    // Fetch all tasks with associated contact and staff details
+    const tasks = await task.findAll({
+      where: { softDelete: false },
+      include: [
+        {
+          model: contacts, // replace with your contact model
+          as: "customer", // make sure your association alias matches
+          attributes: ["name", "phone", "email", "amount"],
+        },
+        {
+          model: signup, // replace with your staff model
+          as: "staff", // make sure your association alias matches
+          attributes: ["name", "email"],
+        },
+      ],
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: tasks,
+    });
+  } catch (error) {
+    console.error("Error in getting task:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message || error,
+    });
+  }
+};
+
+
 module.exports = {
   createTask,
   getTask,
@@ -738,5 +787,6 @@ module.exports = {
   reworkUpdate,
   newUpdate,
   getTaskForAdmin,
-  getTaskByStatus
+  getTaskByStatus,
+  getAdminTask
 };

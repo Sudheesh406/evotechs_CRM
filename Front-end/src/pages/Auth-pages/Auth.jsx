@@ -88,6 +88,7 @@ const Auth = () => {
           {/* Branding */}
           <div className="text-center mb-2">
             <img src={logo} alt="Logo" className="mx-auto h-12" />
+            <p>Evo pvt ltd</p>
             <h1 className="text-xl font-semibold text-gray-800 mt-2">
               CRM Portal
             </h1>

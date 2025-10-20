@@ -29,7 +29,11 @@ const Messages = () => {
           setStaffList(data.data.existing || []);
           // normalize to number if possible
           const excludedId = data.data.excludedId;
-          setUser(excludedId !== undefined && excludedId !== null ? Number(excludedId) : null);
+          setUser(
+            excludedId !== undefined && excludedId !== null
+              ? Number(excludedId)
+              : null
+          );
         }
       } catch (err) {
         console.log(err);
@@ -57,7 +61,8 @@ const Messages = () => {
         // ensure sorted by date/time (stable)
         formatted.sort(
           (a, b) =>
-            new Date(`${a.sendingDate}T${a.sendingTime}`) - new Date(`${b.sendingDate}T${b.sendingTime}`) ||
+            new Date(`${a.sendingDate}T${a.sendingTime}`) -
+              new Date(`${b.sendingDate}T${b.sendingTime}`) ||
             (a.id || 0) - (b.id || 0)
         );
 
@@ -90,9 +95,11 @@ const Messages = () => {
         text:
           incomingMessage.text ??
           incomingMessage.message ??
-          (typeof incomingMessage === "string" ? incomingMessage : "") ,
-        sendingDate: incomingMessage.sendingDate ?? incomingMessage.sending_date ?? null,
-        sendingTime: incomingMessage.sendingTime ?? incomingMessage.sending_time ?? null,
+          (typeof incomingMessage === "string" ? incomingMessage : ""),
+        sendingDate:
+          incomingMessage.sendingDate ?? incomingMessage.sending_date ?? null,
+        sendingTime:
+          incomingMessage.sendingTime ?? incomingMessage.sending_time ?? null,
         isMine: false, // force false because senderId !== current user
         id: incomingMessage.id ?? `srv-${Date.now()}`, // fallback id
       };
@@ -105,7 +112,8 @@ const Messages = () => {
 
         updated.sort(
           (a, b) =>
-            new Date(`${a.sendingDate}T${a.sendingTime}`) - new Date(`${b.sendingDate}T${b.sendingTime}`) ||
+            new Date(`${a.sendingDate}T${a.sendingTime}`) -
+              new Date(`${b.sendingDate}T${b.sendingTime}`) ||
             (a.id || 0).toString().localeCompare((b.id || 0).toString())
         );
 
@@ -159,19 +167,6 @@ const Messages = () => {
       },
     });
 
-    // Optionally you can POST to backend to persist if needed (commented out)
-    // try {
-    //   await axios.post("/message/send", {
-    //     senderId: user,
-    //     receiverId: selectedStaff.id,
-    //     message: newMsg.text,
-    //     sendingDate: newMsg.sendingDate,
-    //     sendingTime: newMsg.sendingTime,
-    //   });
-    // } catch (err) {
-    //   console.error("Failed to persist message:", err);
-    // }
-
     setMessage("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
   };
@@ -194,8 +189,12 @@ const Messages = () => {
               key={staff.id}
               onClick={() => setSelectedStaff(staff)}
               className={`p-5 cursor-pointer transition-colors duration-150 ${
-                selectedStaff?.id === staff.id ? "bg-blue-200" : "hover:bg-neutral-100"
-              } ${staff.role === "admin" ? "border-l-4 border-yellow-400" : ""}`}
+                selectedStaff?.id === staff.id
+                  ? "bg-blue-200"
+                  : "hover:bg-neutral-100"
+              } ${
+                staff.role === "admin" ? "border-l-4 border-yellow-400" : ""
+              }`}
             >
               <div className="font-medium text-gray-900 flex items-center justify-between">
                 <span>
@@ -224,7 +223,9 @@ const Messages = () => {
             <div className="p-5 bg-white border-b border-gray-200 flex items-center shadow-sm">
               <div className="font-semibold text-lg text-gray-900">
                 {selectedStaff.name}{" "}
-                <span className="text-sm text-gray-500">({selectedStaff.email})</span>
+                <span className="text-sm text-gray-500">
+                  ({selectedStaff.email})
+                </span>
               </div>
             </div>
 
@@ -233,7 +234,9 @@ const Messages = () => {
               {(chats[selectedStaff.id] || []).map((msg) => (
                 <div
                   key={msg.id ?? `${selectedStaff.id}-${Math.random()}`}
-                  className={`flex mb-4 ${msg.isMine ? "justify-end" : "justify-start"}`}
+                  className={`flex mb-4 ${
+                    msg.isMine ? "justify-end" : "justify-start"
+                  }`}
                 >
                   <div
                     className={`max-w-xs px-4 py-3 rounded-2xl text-sm shadow-sm ${
@@ -245,12 +248,13 @@ const Messages = () => {
                     <div className="leading-snug">{msg.text}</div>
                     <div className="text-[10px] text-gray-500 text-right mt-1">
                       {msg.sendingDate && msg.sendingTime
-                        ? new Date(`${msg.sendingDate}T${msg.sendingTime}`).toLocaleTimeString([], {
+                        ? new Date(
+                            `${msg.sendingDate}T${msg.sendingTime}`
+                          ).toLocaleTimeString([], {
                             hour: "2-digit",
                             minute: "2-digit",
                           })
-                        : ""}
-                      {" "}
+                        : ""}{" "}
                       ({msg.sendingDate ?? ""})
                     </div>
                   </div>
@@ -272,11 +276,21 @@ const Messages = () => {
                   e.target.style.height = "auto";
                   e.target.style.height = e.target.scrollHeight + "px";
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault(); // Prevents new line
+                    handleSend(); // Send message
+                  }
+                  // else Shift+Enter will naturally insert a new line
+                }}
               />
+
               <button
                 onClick={handleSend}
                 className={`ml-3 p-3 bg-gradient-to-br from-purple-400 via-violet-500 to-fuchsia-500 text-white rounded-full hover:bg-blue-600 transition-transform duration-200 flex items-center justify-center ${
-                  sending ? "scale-125 -translate-y-1 translate-x-1 rotate-12" : ""
+                  sending
+                    ? "scale-125 -translate-y-1 translate-x-1 rotate-12"
+                    : ""
                 }`}
               >
                 <svg
@@ -287,7 +301,11 @@ const Messages = () => {
                   stroke="currentColor"
                   strokeWidth={2}
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2 12l19-7-7 19-3-8-9-4z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M2 12l19-7-7 19-3-8-9-4z"
+                  />
                 </svg>
               </button>
             </div>
@@ -295,8 +313,12 @@ const Messages = () => {
         ) : (
           <div className="flex-1 flex items-center justify-center bg-neutral-50">
             <div className="text-gray-500 text-center">
-              <div className="text-xl font-semibold">Staff Notice / Announcement</div>
-              <div className="text-sm mt-2 text-gray-400">Choose someone from the left panel</div>
+              <div className="text-xl font-semibold">
+                Staff Notice / Announcement
+              </div>
+              <div className="text-sm mt-2 text-gray-400">
+                Choose someone from the left panel
+              </div>
             </div>
           </div>
         )}

@@ -2,8 +2,12 @@ const Contacts = require("../../models/v1/Customer/contacts");
 const leads = require("../../models/v1/Customer/leads");
 const trash = require("../../models/v1/Trash/trash");
 const task = require('../../models/v1/Project/task')
+const { signup } = require("../../models/v1");
 const { httpSuccess, httpError } = require("../../utils/v1/httpResponse");
 const { Op } = require("sequelize");
+const roleChecker = require("../../utils/v1/roleChecker");
+
+
 
 //leads
 const createLeads = async (req, res) => {
@@ -118,6 +122,14 @@ const updateLeads = async (req, res) => {
 
     const contactDetails = await Contacts.findAll({where:{phone : data.phone, staffId: user.id}})
     let client = data.priority;
+
+    if (client == 'No Updates'){
+      client = 'NoUpdates'
+    }else if(client == 'Waiting Period'){
+      client = 'WaitingPeriod'
+    }else if (client == 'Not a Client'){
+            client = 'NotAnClient'
+    }
     
     if(!contactDetails || contactDetails.length == 0){
      if(client === 'Client'){
@@ -140,6 +152,7 @@ const updateLeads = async (req, res) => {
         409,
         "Another lead already exists with this phone number"
       );
+      data.priority = client
 
     const updated = await customer.update(data);
     return httpSuccess(res, 200, "Lead updated successfully", updated);
@@ -517,6 +530,241 @@ const getRejectLeads = async (req, res) => {
 };
 
 
+//Global - Lead Acess //
+const getGlobalLeads = async (req, res) => {
+  try {
+    const user = req.user;
+    const access = await roleChecker(user.id);
+    if (!access) {
+      return httpError(res, 403, "Access denied. Admins only.");
+    }
+
+    const { page = 1, limit = 10, search = "" } = req.query;
+    const offset = (page - 1) * limit;
+
+    // Build dynamic where condition
+    const whereCondition = {
+      softDelete: false,
+    };
+
+    if (search.trim()) {
+      whereCondition[Op.or] = [
+        { name: { [Op.like]: `%${search}%` } },
+        { phone: { [Op.like]: `%${search}%` } },
+      ];
+    }
+
+    // ✅ Include staff model to get staffName
+    const { count, rows } = await leads.findAndCountAll({
+      where: whereCondition,
+      order: [["id", "DESC"]],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      include: [
+        {
+          model: signup,
+          as: "assignedStaff", // ✅ use the same alias defined in association
+          attributes: ["id","name","role"], // only fetch the staff name
+        },
+      ],
+    });
+
+    // ✅ Map leads to include staffName directly for clarity
+    const leadsWithStaff = rows.map((lead) => ({
+      ...lead.toJSON(),
+      staffName: lead.staff ? lead.staff.name : null,
+    }));
+
+    return httpSuccess(res, 200, "Leads fetched successfully", {
+      total: count,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      leads: leadsWithStaff,
+    });
+  } catch (error) {
+    console.error("Error in getting Leads", error);
+    return httpError(res, 500, "Internal Server Error");
+  }
+};
+
+
+const getGlobalPendingLeads = async (req, res) => {
+  try {
+    const user = req.user;
+
+     const access = await roleChecker(user.id);
+    if (!access) {
+      return httpError(res, 403, "Access denied. Admins only.");
+    }
+
+    const { page = 1, limit = 10, search = "" } = req.query;
+
+    const offset = (page - 1) * limit;
+
+    // 🔍 Build dynamic where condition
+    const whereCondition = {
+      softDelete: false,
+      priority: {
+        [Op.in]: ["NoUpdates", "WaitingPeriod"],
+      },
+    };
+
+    if (search.trim()) {
+      whereCondition[Op.or] = [
+        { name: { [Op.like]: `%${search}%` } },
+        { phone: { [Op.like]: `%${search}%` } },
+      ];
+    }
+
+     const { count, rows } = await leads.findAndCountAll({
+      where: whereCondition,
+      order: [["id", "DESC"]],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      include: [
+        {
+          model: signup,
+          as: "assignedStaff", // ✅ use the same alias defined in association
+          attributes: ["id","name","role"], // only fetch the staff name
+        },
+      ],
+    });
+
+    // ✅ Map leads to include staffName directly for clarity
+    const leadsWithStaff = rows.map((lead) => ({
+      ...lead.toJSON(),
+      staffName: lead.staff ? lead.staff.name : null,
+    }));
+
+    return httpSuccess(res, 200, "Leads fetched successfully", {
+      total: count,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      leads: leadsWithStaff,
+    });
+  } catch (error) {
+    console.error("Error in getting Leads", error);
+    return httpError(res, 500, "Internal Server Error");
+  }
+};
+
+
+const getGlobalRejectLeads = async (req, res) => {
+  try {
+    const user = req.user;
+
+    const access = await roleChecker(user.id);
+    if (!access) {
+      return httpError(res, 403, "Access denied. Admins only.");
+    }
+
+    const { page = 1, limit = 10, search = "" } = req.query;
+
+    const offset = (page - 1) * limit;
+
+    // 🔍 Build dynamic where condition
+    const whereCondition = {
+      softDelete: false,
+      priority: 'NotAnClient',
+    };
+
+    if (search.trim()) {
+      whereCondition[Op.or] = [
+        { name: { [Op.like]: `%${search}%` } },
+        { phone: { [Op.like]: `%${search}%` } },
+      ];
+    }
+
+    const { count, rows } = await leads.findAndCountAll({
+      where: whereCondition,
+      order: [["id", "DESC"]],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      include: [
+        {
+          model: signup,
+          as: "assignedStaff", // ✅ use the same alias defined in association
+          attributes: ["id","name","role"], // only fetch the staff name
+        },
+      ],
+    });
+
+    // ✅ Map leads to include staffName directly for clarity
+    const leadsWithStaff = rows.map((lead) => ({
+      ...lead.toJSON(),
+      staffName: lead.staff ? lead.staff.name : null,
+    }));
+
+    return httpSuccess(res, 200, "Leads fetched successfully", {
+      total: count,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      leads: leadsWithStaff,
+    });
+  } catch (error) {
+    console.error("Error in getting Leads", error);
+    return httpError(res, 500, "Internal Server Error");
+  }
+};
+
+
+const getGlobalContact = async (req, res) => {
+  try {
+    const user = req.user;
+      const access = await roleChecker(user.id);
+    if (!access) {
+      return httpError(res, 403, "Access denied. Admins only.");
+    }
+
+    const { page = 1, limit = 10, search = "" } = req.query;
+
+    const offset = (page - 1) * limit;
+
+    // 🔍 Build dynamic where condition
+    const whereCondition = {
+      softDelete: false, // ✅ only fetch non-deleted leads
+    };
+
+    if (search.trim()) {
+      whereCondition[Op.or] = [
+        { name: { [Op.like]: `%${search}%` } },
+        { phone: { [Op.like]: `%${search}%` } },
+      ];
+    }
+
+      const { count, rows } = await Contacts.findAndCountAll({
+      where: whereCondition,
+      order: [["id", "DESC"]],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      include: [
+        {
+          model: signup,
+          as: "assignedStaff", // ✅ use the same alias defined in association
+          attributes: ["id","name","role"], // only fetch the staff name
+        },
+      ],
+    });
+
+    // ✅ Map leads to include staffName directly for clarity
+    const cotactWithStaff = rows.map((cnt) => ({
+      ...cnt.toJSON(),
+      staffName: cnt.staff ? cnt.staff.name : null,
+    }));
+
+    return httpSuccess(res, 200, "Contact fetched successfully", {
+      total: count,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      contacts: cotactWithStaff,
+    });
+  } catch (error) {
+    console.error("Error in getting Contact", error);
+    return httpError(res, 500, "Internal Server Error");
+  }
+};
+
+
 module.exports = {
   createLeads,
   getLeads,
@@ -528,5 +776,9 @@ module.exports = {
   getContact,
   createContact,
   getPendingLeads,
-  getRejectLeads
+  getRejectLeads,
+  getGlobalLeads,
+  getGlobalPendingLeads,
+  getGlobalRejectLeads,
+  getGlobalContact
 };

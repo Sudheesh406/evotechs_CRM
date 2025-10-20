@@ -7,6 +7,7 @@ import {
 import { Menu } from "lucide-react";
 import { useState } from "react";
 
+
 import AdminDashboard from "./pages/dashboard/AdminDashboard";
 import StaffPendingTask from "./pages/operation-pages/admin_operation_side/StaffPendingTask";
 import CreateTeam from "./pages/Team-work/admin_team_work_side/CreateTeam";
@@ -57,6 +58,14 @@ import LeadPending from "./pages/sales-pages/LeadPending";
 import LeadRejected from "./pages/sales-pages/LeadReject";
 import RemovedSubTask from "./pages/activity-pages/RemovedSubTask";
 import TaskDetailsDisplay from "./pages/activity-pages/admin_activity/TaskDetailsDisplay";
+import GlobalLeads from "./pages/global-leads/GlobalLeads";
+import GlobalCompletedLeads from "./pages/global-leads/GlobalCompletedLeads"
+import GlobalPendingLeads from "./pages/global-leads/GlobalPendingLeads";
+import GlobalRejectedLeads from "./pages/global-leads/GlobalRejectedLeads";
+import GlobalContacts from "./pages/global-leads/GlobalContacts";
+import MyTask from './pages/activity-pages/admin_activity/MyTask';
+
+
 
 import ProtectedRoute from "./components/Routes/ProtectedRoute";
 import Sidebar from "./components/SideBar";
@@ -251,15 +260,70 @@ function Layout() {
           <Route
             path="/operations/leads"
             element={
-              <ProtectedRoute allowedRoles={["staff"]}>
+              <ProtectedRoute allowedRoles={["staff", 'admin']}>
                 <Leads />
               </ProtectedRoute>
             }
           />
+
+
+
+          <Route
+            path="/global/leads"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <GlobalLeads />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/global/completed/leads"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <GlobalCompletedLeads />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/global/pending/leads"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <GlobalPendingLeads />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/global/rejected/leads"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <GlobalRejectedLeads />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/global/contacts"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <GlobalContacts />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/activities/task/self"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <MyTask />
+              </ProtectedRoute>
+            }
+          />
+          
+
+
+
           <Route
             path="/operations/contacts"
             element={
-              <ProtectedRoute allowedRoles={["staff"]}>
+              <ProtectedRoute allowedRoles={["staff", "admin"]}>
                 <Contacts />
               </ProtectedRoute>
             }
@@ -291,7 +355,7 @@ function Layout() {
           <Route
             path="/sales/pendings"
             element={
-              <ProtectedRoute allowedRoles={["staff"]}>
+              <ProtectedRoute allowedRoles={["staff", "admin"]}>
                 <LeadPending />
               </ProtectedRoute>
             }
@@ -299,20 +363,17 @@ function Layout() {
           <Route
             path="/sales/rejected"
             element={
-              <ProtectedRoute allowedRoles={["staff"]}>
+              <ProtectedRoute allowedRoles={["staff", "admin"]}>
                 <LeadRejected />
               </ProtectedRoute>
             }
           />
-       
-
-
 
 
           <Route
             path="/sales/completed"
             element={
-              <ProtectedRoute allowedRoles={["staff"]}>
+              <ProtectedRoute allowedRoles={["staff","admin"]}>
                 <Completed />
               </ProtectedRoute>
             }

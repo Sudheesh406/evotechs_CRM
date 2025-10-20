@@ -67,17 +67,20 @@ const io = new Server(server, {
   },
 });
 
-// Socket.IO
+// =====================
+// ✅ Socket.IO Section
+// =====================
 io.on("connection", (socket) => {
   // console.log("User connected:", socket.id);
 
-  // Join a room
+  // =====================
+  // 💬 MESSAGE SYSTEM (your existing code)
+  // =====================
   socket.on("joinRoom", (room) => {
     socket.join(room);
     // console.log(`Socket ${socket.id} joined room ${room}`);
   });
 
-  // Listen for sending messages
   socket.on("send_message", async (data) => {
     try {
       const { room, message, senderId, receiverId } = data;
@@ -92,10 +95,31 @@ io.on("connection", (socket) => {
     }
   });
 
+  // =====================
+  // 🔔 NOTIFICATION SYSTEM (new)
+  // =====================
+
+  // When user logs in, frontend emits: socket.emit("registerUser", userId)
+  socket.on("registerUser", (userId) => {
+    socket.join(userId); // Each user gets their own private room
+    console.log(`User ${userId} joined personal room`);
+  });
+
+  // When backend or another user sends notification
+  socket.on("send_notification", (data) => {
+    const { receiverId, notification } = data;
+    // Emit notification to the specific user’s room
+    io.to(receiverId).emit("receiveNotification", notification);
+  });
+
+  // =====================
+  // 🔌 Disconnect
+  // =====================
   socket.on("disconnect", () => {
     // console.log("User disconnected:", socket.id);
   });
 });
+
 
 // Start server
 const startServer = async () => {

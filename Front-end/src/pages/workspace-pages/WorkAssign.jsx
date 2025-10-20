@@ -14,7 +14,9 @@ export default function WorkAssign() {
   const [tasks, setTasks] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editTask, setEditTask] = useState(null);
-  const [allUsers, setAllUsers] = useState([{ id: null, name: "Admin", email: "" }]);
+  const [allUsers, setAllUsers] = useState([
+    { id: null, name: "Admin", email: "" },
+  ]);
   const [teams, setTeams] = useState([]);
   const [formTask, setFormTask] = useState({
     title: "",
@@ -80,7 +82,9 @@ export default function WorkAssign() {
           };
         }
 
-        const assignedTeam = item.team ? { id: item.teamId, teamName: item.team.teamName } : null;
+        const assignedTeam = item.team
+          ? { id: item.teamId, teamName: item.team.teamName }
+          : null;
 
         return {
           id: item.id,
@@ -88,7 +92,9 @@ export default function WorkAssign() {
           description: item.description,
           assignedTo: assignedStaff,
           dueDate: item.date?.split("T")[0] || "",
-          priority: item.priority?.charAt(0).toUpperCase() + item.priority?.slice(1) || "Medium",
+          priority:
+            item.priority?.charAt(0).toUpperCase() + item.priority?.slice(1) ||
+            "Medium",
           status: item.workUpdate || "Pending",
           team: assignedTeam,
         };
@@ -143,8 +149,10 @@ export default function WorkAssign() {
   const validateForm = () => {
     let tempErrors = {};
     if (!formTask.title.trim()) tempErrors.title = "Title is required";
-    if (!formTask.description.trim()) tempErrors.description = "Description is required";
-    if (!formTask.assignedTo?.name) tempErrors.assignedTo = "Assigned user is required";
+    if (!formTask.description.trim())
+      tempErrors.description = "Description is required";
+    if (!formTask.assignedTo?.name)
+      tempErrors.assignedTo = "Assigned user is required";
     if (!formTask.dueDate) tempErrors.dueDate = "Due date is required";
     if (!formTask.priority) tempErrors.priority = "Priority is required";
     setErrors(tempErrors);
@@ -174,7 +182,10 @@ export default function WorkAssign() {
       ...formTask,
       assignedName: formTask.assignedTo.name,
       assignedEmail: formTask.assignedTo.email,
-      teamId: formTask.assignedTo?.name === "Admin" ? null : formTask.team?.id || null,
+      teamId:
+        formTask.assignedTo?.name === "Admin"
+          ? null
+          : formTask.team?.id || null,
     };
 
     try {
@@ -185,15 +196,23 @@ export default function WorkAssign() {
       });
 
       if (editTask) {
-        await axios.put("/work/assign/update", { params: { id: editTask.id, ...payload } });
+        await axios.put("/work/assign/update", {
+          params: { id: editTask.id, ...payload },
+        });
+
         setTasks(
-          tasks.map((t) => (t.id === editTask.id ? { ...formTask, id: editTask.id } : t))
+          tasks.map((t) =>
+            t.id === editTask.id
+              ? { ...formTask, id: editTask.id } // Keep the same id
+              : t
+          )
         );
+
         Swal.close();
         Swal.fire("Updated!", "Task has been updated.", "success");
       } else {
         await axios.post("/work/assign/create", { params: payload });
-        const newTask = { ...formTask, id: Date.now().toString() };
+        const newTask = { ...formTask, id: Date.now().toString() }; // Only for new tasks
         setTasks([...tasks, newTask]);
         Swal.close();
         Swal.fire("Created!", "Task has been created.", "success");
@@ -222,7 +241,10 @@ export default function WorkAssign() {
       {/* Board */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {statusStages.map((stage) => (
-          <div key={stage} className="bg-white rounded-xl p-4 shadow-md min-h-[300px]">
+          <div
+            key={stage}
+            className="bg-white rounded-xl p-4 shadow-md min-h-[300px]"
+          >
             <h2 className="text-xl font-semibold mb-4">{stage}</h2>
             {tasks
               .filter((t) => t.status === stage)
@@ -245,11 +267,13 @@ export default function WorkAssign() {
                           Team: {task.team.teamName}
                         </span>
                       )}
-                      {task.assignedTo?.name && task.assignedTo?.name !== "Admin" && (
-                        <span className="bg-red-200 text-red-800 px-2 py-1 rounded text-sm font-semibold">
-                          Assigned to: {task.assignedTo.name} ({task.assignedTo.email})
-                        </span>
-                      )}
+                      {task.assignedTo?.name &&
+                        task.assignedTo?.name !== "Admin" && (
+                          <span className="bg-red-200 text-red-800 px-2 py-1 rounded text-sm font-semibold">
+                            Assigned to: {task.assignedTo.name} (
+                            {task.assignedTo.email})
+                          </span>
+                        )}
                     </div>
 
                     <div className="flex flex-wrap gap-2 mt-2">
@@ -260,13 +284,16 @@ export default function WorkAssign() {
                       >
                         {task.priority}
                       </span>
-                      <span className="text-sm text-gray-500">Due: {task.dueDate}</span>
+                      <span className="text-sm text-gray-500">
+                        Due: {task.dueDate}
+                      </span>
                     </div>
 
                     <div className="flex justify-between items-start">
-                      <h3 className="font-semibold text-gray-700">{task.title}</h3>
-                      <div className="flex gap-2">
-                      </div>
+                      <h3 className="font-semibold text-gray-700">
+                        {task.title}
+                      </h3>
+                      <div className="flex gap-2"></div>
                     </div>
 
                     {/* Description with Read More */}
@@ -280,7 +307,10 @@ export default function WorkAssign() {
                     {task.description.length > 100 && (
                       <button
                         onClick={() =>
-                          setShowMoreMap({ ...showMoreMap, [task.id]: !isExpanded })
+                          setShowMoreMap({
+                            ...showMoreMap,
+                            [task.id]: !isExpanded,
+                          })
                         }
                         className="text-blue-500 text-sm mt-1 font-semibold hover:underline"
                       >
@@ -300,8 +330,13 @@ export default function WorkAssign() {
           <div className="bg-white rounded-lg w-full max-w-lg shadow-xl overflow-hidden">
             {/* Header */}
             <div className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-6 py-4 flex justify-between items-center">
-              <h2 className="text-lg font-semibold">{editTask ? "Edit Task" : "New Task"}</h2>
-              <X className="cursor-pointer w-5 h-5 hover:text-gray-200" onClick={() => setModalOpen(false)} />
+              <h2 className="text-lg font-semibold">
+                {editTask ? "Edit Task" : "New Task"}
+              </h2>
+              <X
+                className="cursor-pointer w-5 h-5 hover:text-gray-200"
+                onClick={() => setModalOpen(false)}
+              />
             </div>
 
             {/* Scrollable Body */}
@@ -317,7 +352,9 @@ export default function WorkAssign() {
                     setErrors({ ...errors, title: "" });
                   }}
                 />
-                {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
+                {errors.title && (
+                  <p className="text-red-500 text-sm mt-1">{errors.title}</p>
+                )}
               </div>
 
               {/* Description */}
@@ -332,7 +369,11 @@ export default function WorkAssign() {
                   }}
                   rows={4}
                 />
-                {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
+                {errors.description && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.description}
+                  </p>
+                )}
               </div>
 
               {/* Assigned User */}
@@ -341,7 +382,9 @@ export default function WorkAssign() {
                   className="border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
                   value={formTask.assignedTo?.name || ""}
                   onChange={(e) => {
-                    const user = allUsers.find((u) => u.name === e.target.value);
+                    const user = allUsers.find(
+                      (u) => u.name === e.target.value
+                    );
                     setFormTask({ ...formTask, assignedTo: user });
                     setErrors({ ...errors, assignedTo: "" });
                   }}
@@ -352,7 +395,11 @@ export default function WorkAssign() {
                     </option>
                   ))}
                 </select>
-                {errors.assignedTo && <p className="text-red-500 text-sm mt-1">{errors.assignedTo}</p>}
+                {errors.assignedTo && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.assignedTo}
+                  </p>
+                )}
               </div>
 
               {/* Team */}
@@ -361,7 +408,9 @@ export default function WorkAssign() {
                   className="border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
                   value={formTask.team?.id || ""}
                   onChange={(e) => {
-                    const selectedTeam = teams.find((t) => t.id === parseInt(e.target.value));
+                    const selectedTeam = teams.find(
+                      (t) => t.id === parseInt(e.target.value)
+                    );
                     setFormTask({ ...formTask, team: selectedTeam });
                   }}
                 >
@@ -386,7 +435,9 @@ export default function WorkAssign() {
                     setErrors({ ...errors, dueDate: "" });
                   }}
                 />
-                {errors.dueDate && <p className="text-red-500 text-sm mt-1">{errors.dueDate}</p>}
+                {errors.dueDate && (
+                  <p className="text-red-500 text-sm mt-1">{errors.dueDate}</p>
+                )}
               </div>
 
               {/* Status */}
@@ -394,7 +445,9 @@ export default function WorkAssign() {
                 <select
                   className="border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
                   value={formTask.status}
-                  onChange={(e) => setFormTask({ ...formTask, status: e.target.value })}
+                  onChange={(e) =>
+                    setFormTask({ ...formTask, status: e.target.value })
+                  }
                 >
                   <option value="Pending">Pending</option>
                   <option value="Progress">In Progress</option>
@@ -417,10 +470,14 @@ export default function WorkAssign() {
                   <option value="Medium">Medium</option>
                   <option value="Low">Low</option>
                 </select>
-                {errors.priority && <p className="text-red-500 text-sm mt-1">{errors.priority}</p>}
+                {errors.priority && (
+                  <p className="text-red-500 text-sm mt-1">{errors.priority}</p>
+                )}
               </div>
 
-              {noChangeMessage && <p className="text-yellow-600 text-sm">{noChangeMessage}</p>}
+              {noChangeMessage && (
+                <p className="text-yellow-600 text-sm">{noChangeMessage}</p>
+              )}
 
               {/* Submit Button */}
               <button
