@@ -2,9 +2,8 @@ const { httpSuccess, httpError } = require("../../utils/v1/httpResponse");
 const team = require("../../models/v1/Team_work/team");
 const signup = require("../../models/v1/Authentication/authModel");
 const workAssign = require("../../models/v1/Work_space/workAssign");
-const trash = require("../../models/v1/Trash/trash");
+const trash = require('../../models/v1/Trash/trash')
 const roleChecker = require("../../utils/v1/roleChecker");
-const { getIO } = require("../../utils/v1/socket");
 
 const { Op, Sequelize } = require("sequelize");
 
@@ -66,14 +65,6 @@ const createTodo = async (req, res) => {
       }
 
       taskData.staffId = staffDetails.id;
-      const io = getIO();
-
-
-      io.to(staffDetails.id).emit("receiveNotification", {
-        title: "New Task Assigned",
-        message: "You have a new task from admin",
-        time: new Date(),
-      });
 
       const newTask = await workAssign.create(taskData);
       return httpSuccess(res, 201, "Work assigned successfully", newTask);
@@ -395,15 +386,15 @@ const stageUpdate = async (req, res) => {
   }
 };
 
+
+
 const adminDashboard = async (req, res) => {
   const user = req.user;
 
   // Check admin access
   const access = await roleChecker(user.id);
   if (!access) {
-    return res
-      .status(403)
-      .json({ success: false, message: "Access denied. Admins only." });
+    return res.status(403).json({ success: false, message: "Access denied. Admins only." });
   }
 
   try {
@@ -412,15 +403,16 @@ const adminDashboard = async (req, res) => {
       where: {
         admin: true,
         workUpdate: {
-          [Op.or]: ["Progress", "Pending"],
-        },
-      },
+          [Op.or]: ['Progress', 'Pending']
+        }
+      }
     });
 
     // Return the results
     return res.status(200).json({ success: true, data: existing });
+
   } catch (error) {
-    console.error("Error found in admin dashboard:", error);
+    console.error('Error found in admin dashboard:', error);
     return res.status(500).json({ success: false, message: "Server Error" });
   }
 };
@@ -433,5 +425,5 @@ module.exports = {
   deleteTodo,
   getAssignedWork,
   stageUpdate,
-  adminDashboard,
+  adminDashboard
 };

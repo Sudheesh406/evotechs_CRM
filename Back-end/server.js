@@ -57,35 +57,44 @@ app.use("/api/message", messageRoute);
 app.use("/api/trash", trashRoute);
 app.use("/api/sub-task", subTaskRoute);
 
-const {initIO} = require("./utils/v1/socket.js"); 
-
 const server = http.createServer(app);
 
-const io = initIO(server);
+const io = new Server(server, {
+  cors: {
+    origin: process.env.FRONTEND_URL,
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
 
-// =====================
 // Socket.IO
-// =====================
 io.on("connection", (socket) => {
-  // Message system (your existing code, unchanged)
-  socket.on("joinRoom", (room) => socket.join(room));
+  // console.log("User connected:", socket.id);
+
+  // Join a room
+  socket.on("joinRoom", (room) => {
+    socket.join(room);
+    // console.log(`Socket ${socket.id} joined room ${room}`);
+  });
+
+  // Listen for sending messages
   socket.on("send_message", async (data) => {
-    await createMessages(data);
-    io.to(data.room).emit("receiveMessage", { senderId: data.senderId, message: data.message });
+    try {
+      const { room, message, senderId, receiverId } = data;
+
+      // Save message in DB
+      await createMessages(data);
+
+      // Emit to all clients in room including sender
+      io.to(room).emit("receiveMessage", { senderId, message });
+    } catch (err) {
+      console.error("Error sending message:", err);
+    }
   });
 
-  // 🔔 Notifications
-  socket.on("registerUser", (userId) => {
-    socket.join(userId.toString()); // personal room
-    console.log(`User ${userId} joined personal room`);
+  socket.on("disconnect", () => {
+    // console.log("User disconnected:", socket.id);
   });
-
-  socket.on("send_notification", (data) => {
-    const { receiverId, notification } = data;
-    io.to(receiverId.toString()).emit("receiveNotification", notification);
-  });
-
-  socket.on("disconnect", () => {});
 });
 
 // Start server

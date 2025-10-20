@@ -2,8 +2,6 @@
 import { Navigate, useLocation , useNavigate} from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "../../instance/Axios"; // adjust path if needed
-import socket from "../../components/utils/SocketIO";
-
 
 export default function ProtectedRoute({ allowedRoles, children }) {
   const navigate = useNavigate()
@@ -15,19 +13,7 @@ export default function ProtectedRoute({ allowedRoles, children }) {
     const getRole = async () => {
       try {
         const { data } = await axios.get("/auth/get/role");
-        const userId = data?.data?.id
         setRole(data?.data?.role);
-
-         if (userId) {
-      socket.emit("registerUser", userId);
-
-      socket.on("receiveNotification", (data) => {
-        console.log("🔔 New Notification:", data);
-        // show toast or badge here
-      });
-    }
-
-
       } catch (err) {
 
         console.error("Error fetching role:", err);
