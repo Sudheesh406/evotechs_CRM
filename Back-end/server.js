@@ -56,11 +56,12 @@ app.use("/api/deals", dealRoute);
 app.use("/api/message", messageRoute);
 app.use("/api/trash", trashRoute);
 app.use("/api/sub-task", subTaskRoute);
-const socketModule = require("./utils/v1/socket.js"); 
+
+const initIO = require("./utils/v1/socket.js"); 
 
 const server = http.createServer(app);
 
-const io = socketModule.init(server);
+const io = initIO(server);
 
 // =====================
 // Socket.IO

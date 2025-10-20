@@ -1,8 +1,8 @@
-// socket.js
-let io = null;
+// utils/v1/socket.js
+let io;
 
-module.exports = {
-  init: (server) => {
+function initIO(server) {
+  if (!io) {
     const { Server } = require("socket.io");
     io = new Server(server, {
       cors: {
@@ -11,12 +11,15 @@ module.exports = {
         credentials: true,
       },
     });
-    return io;
-  },
-  getIO: () => {
-    if (!io) {
-      throw new Error("Socket.io not initialized!");
-    }
-    return io;
-  },
-};
+  }
+  return io;
+}
+
+function getIO() {
+  if (!io) {
+    throw new Error("Socket.io not initialized!");
+  }
+  return io;
+}
+
+module.exports = { initIO, getIO };
