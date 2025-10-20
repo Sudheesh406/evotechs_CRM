@@ -4,8 +4,8 @@ const signup = require("../../models/v1/Authentication/authModel");
 const workAssign = require("../../models/v1/Work_space/workAssign");
 const trash = require("../../models/v1/Trash/trash");
 const roleChecker = require("../../utils/v1/roleChecker");
-const { io } = require("../../server"); // wherever your io is exported
-
+const socket = require("../../utils/v1/socket"); // adjust path
+const io = socket.getIO();
 
 const { Op, Sequelize } = require("sequelize");
 
@@ -68,7 +68,7 @@ const createTodo = async (req, res) => {
 
       taskData.staffId = staffDetails.id;
 
-      io.to(staffDetails.id).emit("receiveNotification", {
+      io.to(staffDetails.id.toString()).emit("receiveNotification", {
         title: "New Task Assigned",
         message: "You have a new task from admin",
         time: new Date(),

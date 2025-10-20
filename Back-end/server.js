@@ -56,71 +56,36 @@ app.use("/api/deals", dealRoute);
 app.use("/api/message", messageRoute);
 app.use("/api/trash", trashRoute);
 app.use("/api/sub-task", subTaskRoute);
+const socketModule = require("./utils/v1/socket.js"); 
 
 const server = http.createServer(app);
 
-const io = new Server(server, {
-  cors: {
-    origin: process.env.FRONTEND_URL,
-    methods: ["GET", "POST"],
-    credentials: true,
-  },
-});
+const io = socketModule.init(server);
 
 // =====================
-// ✅ Socket.IO Section
+// Socket.IO
 // =====================
 io.on("connection", (socket) => {
-  // console.log("User connected:", socket.id);
-
-  // =====================
-  // 💬 MESSAGE SYSTEM (your existing code)
-  // =====================
-  socket.on("joinRoom", (room) => {
-    socket.join(room);
-    // console.log(`Socket ${socket.id} joined room ${room}`);
-  });
-
+  // Message system (your existing code, unchanged)
+  socket.on("joinRoom", (room) => socket.join(room));
   socket.on("send_message", async (data) => {
-    try {
-      const { room, message, senderId, receiverId } = data;
-
-      // Save message in DB
-      await createMessages(data);
-
-      // Emit to all clients in room including sender
-      io.to(room).emit("receiveMessage", { senderId, message });
-    } catch (err) {
-      console.error("Error sending message:", err);
-    }
+    await createMessages(data);
+    io.to(data.room).emit("receiveMessage", { senderId: data.senderId, message: data.message });
   });
 
-  // =====================
-  // 🔔 NOTIFICATION SYSTEM (new)
-  // =====================
-
-  // When user logs in, frontend emits: socket.emit("registerUser", userId)
+  // 🔔 Notifications
   socket.on("registerUser", (userId) => {
-    socket.join(userId); // Each user gets their own private room
+    socket.join(userId.toString()); // personal room
     console.log(`User ${userId} joined personal room`);
   });
 
-  // When backend or another user sends notification
   socket.on("send_notification", (data) => {
     const { receiverId, notification } = data;
-    // Emit notification to the specific user’s room
-    io.to(receiverId).emit("receiveNotification", notification);
+    io.to(receiverId.toString()).emit("receiveNotification", notification);
   });
 
-  // =====================
-  // 🔌 Disconnect
-  // =====================
-  socket.on("disconnect", () => {
-    // console.log("User disconnected:", socket.id);
-  });
+  socket.on("disconnect", () => {});
 });
-
-module.exports.io = io;
 
 // Start server
 const startServer = async () => {
