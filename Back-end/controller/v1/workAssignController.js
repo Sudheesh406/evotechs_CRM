@@ -5,7 +5,6 @@ const workAssign = require("../../models/v1/Work_space/workAssign");
 const trash = require("../../models/v1/Trash/trash");
 const roleChecker = require("../../utils/v1/roleChecker");
 const { getIO } = require("../../utils/v1/socket");
-const io = getIO();
 
 const { Op, Sequelize } = require("sequelize");
 
@@ -67,6 +66,8 @@ const createTodo = async (req, res) => {
       }
 
       taskData.staffId = staffDetails.id;
+      const io = getIO();
+
 
       io.to(staffDetails.id).emit("receiveNotification", {
         title: "New Task Assigned",
