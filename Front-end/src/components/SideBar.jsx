@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "../instance/Axios";
 import { NavLink, useNavigate } from "react-router-dom";
-
 import {
   Home,
   ClipboardList,
@@ -24,14 +23,21 @@ import {
   Settings,
   LogOut,
   Trash,
-  Globe 
+  Globe,
+  ChevronRight,
+  Loader, // For a cleaner loading icon
 } from "lucide-react";
-import { div, s } from "framer-motion/client";
-import { use } from "react";
+
+// --- Define the new color theme variables ---
+const PRIMARY_BLUE = "#0077D8"; // A vibrant, professional blue
+const LIGHT_BG = "#F9FAFB"; // Very light grey/off-white background
+const DARK_TEXT = "#1F2937"; // Dark grey for main text
+const ACCENT_BG = "#E0F2FF"; // Light blue for hover/submenu active background
 
 const Sidebar = ({ closeSidebar }) => {
   const [openMenus, setOpenMenus] = useState({});
   const [menuItems, setMenuItems] = useState();
+  const [company, setCompany] = useState('company');
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -44,9 +50,9 @@ const Sidebar = ({ closeSidebar }) => {
 
   const id = 0;
 
+  // --- Menu Data (Unchanged from previous version, just ensuring it's available) ---
   const staffItems = [
     { title: "Home", icon: Home, path: "/" },
-
     {
       title: "Sales",
       icon: Briefcase,
@@ -58,7 +64,6 @@ const Sidebar = ({ closeSidebar }) => {
         { title: "Rejected", path: "/sales/rejected", icon: Trash },
       ],
     },
-
     {
       title: "Operations",
       icon: ClipboardList,
@@ -67,14 +72,13 @@ const Sidebar = ({ closeSidebar }) => {
         { title: "Personalize", path: "/operations/personalize", icon: Shield },
         { title: "Pending", path: "/operations/pendings", icon: Hourglass },
         { title: "Rework", path: "/operations/reworks", icon: RotateCcw },
-         {
+        {
           title: "Completed",
-          path: "/operations/review/completed",
+          path: "/operations/staff/completed/task",
           icon: CheckSquare,
         },
       ],
     },
-
     {
       title: "Activities",
       icon: Calendar,
@@ -89,7 +93,6 @@ const Sidebar = ({ closeSidebar }) => {
         },
       ],
     },
-
     {
       title: "Team",
       icon: Boxes,
@@ -100,7 +103,6 @@ const Sidebar = ({ closeSidebar }) => {
         { title: "Contacts", path: "/team/contacts", icon: Phone },
       ],
     },
-
     {
       title: "Workspace",
       icon: Building,
@@ -119,11 +121,8 @@ const Sidebar = ({ closeSidebar }) => {
         },
       ],
     },
-
     { title: "Trash", icon: Trash2, path: "/trash" },
   ];
-
-  //------------------------ Admin Items -------------------------//
 
   const adminItems = [
     { title: "Home", icon: Home, path: "/admin" },
@@ -132,17 +131,14 @@ const Sidebar = ({ closeSidebar }) => {
       icon: Globe,
       subMenu: [
         { title: "Leads", path: "/global/leads", icon: UserPlus },
-        
         {
           title: "Completed",
           path: "/global/completed/leads",
           icon: CheckSquare,
         },
-        
         { title: "Pending", path: "/global/pending/leads", icon: Hourglass },
         { title: "Rejected", path: "/global/rejected/leads", icon: Trash },
-       { title: "Contacts", path: "/global/contacts", icon: Users },
-       
+        { title: "Contacts", path: "/global/contacts", icon: Users },
       ],
     },
     {
@@ -160,7 +156,6 @@ const Sidebar = ({ closeSidebar }) => {
         { title: "Contacts", path: "/operations/contacts", icon: Users },
       ],
     },
-
     {
       title: "Operations",
       icon: ClipboardList,
@@ -176,20 +171,18 @@ const Sidebar = ({ closeSidebar }) => {
         { title: "Rework", path: "/operations/rework/port", icon: RotateCcw },
       ],
     },
-
     {
       title: "Activities",
       icon: Calendar,
       subMenu: [
         { title: "Tasks", path: "/activities/task/port", icon: ClipboardList },
-          {
+        {
           title: "My Task",
           path: "/activities/task/self",
           icon: CheckSquare,
         },
       ],
     },
-
     {
       title: "Team",
       icon: Boxes,
@@ -198,7 +191,6 @@ const Sidebar = ({ closeSidebar }) => {
         { title: "Projects", path: `/team/work/${id}`, icon: FolderKanban },
       ],
     },
-
     {
       title: "Workspace",
       icon: Building,
@@ -227,16 +219,18 @@ const Sidebar = ({ closeSidebar }) => {
         },
       ],
     },
-
     { title: "Trash", icon: Trash2, path: "/trash" },
-      { title: "Settings", path: "/profile/customise", icon: Settings },
+    { title: "Settings", path: "/settings", icon: Settings },
   ];
+  // --- End of Menu Data ---
 
   useEffect(() => {
     async function initRole() {
       try {
         let acess = null;
         const { data } = await axios.get("/auth/role");
+
+        setCompany(data?.data?.company)
         if (data?.data?.role) {
           acess = data?.data?.role;
         }
@@ -268,23 +262,42 @@ const Sidebar = ({ closeSidebar }) => {
   };
 
   if (loading) {
-    return <div className="text-white p-4"></div>;
+    // Elegant loading state with new color
+    return (
+      <div className="flex items-center justify-center h-screen w-64" style={{ backgroundColor: LIGHT_BG }}>
+        <Loader className="animate-spin h-6 w-6" style={{ color: PRIMARY_BLUE }} />
+      </div>
+    );
   }
 
+  // --- Start of Main Component Rendering with Blue Theme ---
+
   return (
-    <div className="flex flex-col justify-between h-screen bg-[#1F2A40] text-white w-64 shadow-lg">
+    <div 
+      className="flex flex-col justify-between h-screen w-64 shadow-2xl transition-all duration-300" 
+      style={{ backgroundColor: LIGHT_BG, color: DARK_TEXT }}
+    >
       {/* Top + Menu Scrollable */}
-      <div className="flex flex-col overflow-y-auto flex-1">
+      <div className="flex flex-col overflow-y-auto flex-1 custom-scrollbar">
         {/* Logo */}
-        <h1 className="text-[#E50914] text-2xl font-extrabold  p-6 tracking-wide">
-          CRM Panel
-        </h1>
+        <div className="p-6 border-b border-gray-200">
+          <h1 className="text-3xl font-black tracking-widest leading-none" style={{ color: PRIMARY_BLUE }}>
+            {company?.companyName || 'Company Name'}
+          </h1>
+          <p className="text-xs text-gray-500 mt-1">Client Relationship Management</p>
+        </div>
 
         {/* Menu */}
-        <nav className="space-y-2 px-2">
+        <nav className="space-y-1.5 p-4">
           {menuItems?.map((item, i) => {
             const Icon = item.icon;
             const hasSubMenu = !!item.subMenu;
+
+            const baseClass = `flex items-center gap-3 px-4 py-3 rounded-lg font-medium tracking-wide transition-all duration-300`;
+            const activeClass = ` text-white shadow-lg shadow-blue-500/50`;
+            const inactiveHoverClass = ` hover:bg-gray-100 hover:text-gray-800`;
+            const subMenuActiveClass = ` font-semibold`;
+            const subMenuInactiveHoverClass = ` hover:bg-gray-100`;
 
             if (!hasSubMenu) {
               return (
@@ -293,46 +306,46 @@ const Sidebar = ({ closeSidebar }) => {
                   to={item.path}
                   onClick={closeSidebar}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200
-                     ${
-                       isActive
-                         ? "bg-[#E50914]/20 text-[#E50914]"
-                         : "hover:bg-[#2A3A5F] hover:text-[#E50914]"
-                     }`
+                    `${baseClass} ${isActive ? activeClass : inactiveHoverClass}`
                   }
+                  style={({ isActive }) => ({
+                    backgroundColor: isActive ? PRIMARY_BLUE : 'transparent',
+                    color: isActive ? 'white' : DARK_TEXT,
+                  })}
                 >
-                  <Icon className="w-5 h-5" />
-                  <span className="font-medium">{item.title}</span>
+                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  <span>{item.title}</span>
                 </NavLink>
               );
             }
 
+            // Menu with Sub-menu
             return (
               <div key={i}>
                 <div
                   onClick={() => toggleMenu(i)}
-                  className={`flex items-center justify-between gap-3 px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer
-                    ${
-                      openMenus[i]
-                        ? "bg-[#2A3A5F] text-[#E50914]"
-                        : "hover:bg-[#2A3A5F] hover:text-[#E50914]"
-                    }`}
+                  className={`${baseClass} cursor-pointer 
+                    ${openMenus[i] ? 'bg-gray-100' : inactiveHoverClass}`
+                  }
+                  style={{ 
+                      color: openMenus[i] ? PRIMARY_BLUE : DARK_TEXT,
+                  }}
                 >
                   <div className="flex items-center gap-3">
-                    <Icon className="w-5 h-5" />
-                    <span className="font-medium">{item.title}</span>
+                    <Icon className="w-5 h-5 flex-shrink-0" />
+                    <span>{item.title}</span>
                   </div>
-                  <span
-                    className={`transform transition-transform duration-200 ${
-                      openMenus[i] ? "rotate-90" : ""
+                  <ChevronRight
+                    className={`w-4 h-4 transform transition-transform duration-300 flex-shrink-0 ${
+                      openMenus[i] ? "rotate-90" : "text-gray-400"
                     }`}
-                  >
-                    ▸
-                  </span>
+                    style={{ color: openMenus[i] ? PRIMARY_BLUE : 'currentColor' }}
+                  />
                 </div>
 
+                {/* Sub Menu Container */}
                 {openMenus[i] && (
-                  <div className="ml-6 mt-1 space-y-1">
+                  <div className="ml-5 mt-1 space-y-0.5 border-l-2 border-gray-300/50 pl-3 transition-all duration-300 ease-out">
                     {item.subMenu.map((sub, idx) => {
                       const SubIcon = sub.icon;
                       return (
@@ -341,15 +354,15 @@ const Sidebar = ({ closeSidebar }) => {
                           to={sub.path}
                           onClick={closeSidebar}
                           className={({ isActive }) =>
-                            `flex items-center gap-3 px-3 py-1.5 rounded-lg text-sm transition-all duration-200
-                             ${
-                               isActive
-                                 ? "bg-[#E50914]/20 text-[#E50914]"
-                                 : "hover:bg-[#2A3A5F] hover:text-[#E50914]"
-                             }`
+                            `flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-300
+                              ${isActive ? subMenuActiveClass : subMenuInactiveHoverClass}`
                           }
+                          style={({ isActive }) => ({
+                            backgroundColor: isActive ? ACCENT_BG : 'transparent',
+                            color: isActive ? PRIMARY_BLUE : DARK_TEXT,
+                          })}
                         >
-                          <SubIcon className="w-4 h-4" />
+                          <SubIcon className="w-3.5 h-3.5 flex-shrink-0" />
                           {sub.title}
                         </NavLink>
                       );
@@ -360,22 +373,17 @@ const Sidebar = ({ closeSidebar }) => {
             );
           })}
         </nav>
-
+      </div>
+      
+      {/* --- Logout Button --- */}
+      <div className="space-y-2 p-4 border-t border-gray-200">
         <div
-          className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-[#2A3A5F] hover:text-[#E50914] cursor-pointer transition-all duration-200"
+          className="flex items-center gap-3 px-4 py-3 rounded-lg bg-red-500/10 text-red-600 hover:bg-red-500/20 cursor-pointer transition-all duration-300 font-medium"
           onClick={() => handleLogout()}
         >
           <LogOut className="w-5 h-5" />
-          <span className="font-medium">Logout</span>
+          <span>Logout</span>
         </div>
-      </div>
-
-      {/* Bottom Settings / Logout */}
-      <div className="space-y-2 p-2">
-        {/* <div className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-[#2A3A5F] hover:text-[#E50914] cursor-pointer transition-all duration-200">
-          <Settings className="w-5 h-5" />
-          <span className="font-medium">Settings</span>
-        </div> */}
       </div>
     </div>
   );

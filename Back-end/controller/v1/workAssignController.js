@@ -2,8 +2,9 @@ const { httpSuccess, httpError } = require("../../utils/v1/httpResponse");
 const team = require("../../models/v1/Team_work/team");
 const signup = require("../../models/v1/Authentication/authModel");
 const workAssign = require("../../models/v1/Work_space/workAssign");
-const trash = require('../../models/v1/Trash/trash')
+const trash = require("../../models/v1/Trash/trash");
 const roleChecker = require("../../utils/v1/roleChecker");
+const { io } = require("../../server");
 
 const { Op, Sequelize } = require("sequelize");
 
@@ -65,8 +66,18 @@ const createTodo = async (req, res) => {
       }
 
       taskData.staffId = staffDetails.id;
+      const idOfStaff = staffDetails.id;
 
       const newTask = await workAssign.create(taskData);
+
+         io.to(`notify_${idOfStaff}`).emit("receive_notification", {
+      title: "New Work Assigned",
+      message: `You have been assigned new work: ${title}`,
+      type: "work",
+      timestamp: new Date(),
+    });
+
+
       return httpSuccess(res, 201, "Work assigned successfully", newTask);
     }
   } catch (error) {
@@ -310,7 +321,7 @@ const deleteTodo = async (req, res) => {
 
 const getAssignedWork = async (req, res) => {
   try {
-    const staff = req.user; // logged-in staff
+    const staff = req.user;
     const staffId = staff.id;
 
     // Fetch all teams to find which teams this staff belongs to
@@ -319,31 +330,43 @@ const getAssignedWork = async (req, res) => {
       .filter((team) => team.staffIds.includes(staffId))
       .map((team) => team.id);
 
-    // Fetch work assignments with team name included
+    // Build the OR condition dynamically
+    const orConditions = [
+      { staffId: staffId } // directly assigned
+    ];
+
+    if (staffTeamIds.length) {
+      orConditions.push({ teamId: staffTeamIds }); // assigned to staff's teams
+    }
+
+    // Optional: include unassigned work (if needed)
+    // orConditions.push({ staffId: null, teamId: null });
+
     const workAssigns = await workAssign.findAll({
       where: {
         softDelete: false,
-        [Sequelize.Op.or]: [
-          { staffId: staffId },
-          { teamId: staffTeamIds.length ? staffTeamIds : null },
-        ],
+        [Sequelize.Op.or]: orConditions,
       },
       include: [
         {
           model: team,
-          as: "team", // Make sure your association uses this alias
-          attributes: ["id", "teamName"], // Only select id and name
+          as: "team",
+          attributes: ["id", "teamName"],
         },
       ],
       order: [["id", "DESC"]],
     });
 
-    return res.status(200).json({ success: true, data: workAssigns });
+    const userDetails = await signup.findOne({ where: { id: staff.id } });
+    const userName = userDetails.name;
+
+    return res.status(200).json({ success: true, data: { workAssigns, userName } });
   } catch (error) {
     console.error("Error fetching work assignments:", error);
     return res.status(500).json({ success: false, message: "Server Error" });
   }
 };
+
 
 const stageUpdate = async (req, res) => {
   try {
@@ -386,16 +409,18 @@ const stageUpdate = async (req, res) => {
   }
 };
 
-
-
 const adminDashboard = async (req, res) => {
   const user = req.user;
 
   // Check admin access
   const access = await roleChecker(user.id);
   if (!access) {
-    return res.status(403).json({ success: false, message: "Access denied. Admins only." });
+    return res
+      .status(403)
+      .json({ success: false, message: "Access denied. Admins only." });
   }
+
+  const userDetails = await signup.findOne({ where: { id: user.id } });
 
   try {
     // Find work assignments with workUpdate 'Progress' or 'Pending' for admin
@@ -403,16 +428,18 @@ const adminDashboard = async (req, res) => {
       where: {
         admin: true,
         workUpdate: {
-          [Op.or]: ['Progress', 'Pending']
-        }
-      }
+          [Op.or]: ["Progress", "Pending"],
+        },
+      },
     });
 
-    // Return the results
-    return res.status(200).json({ success: true, data: existing });
+    const userName = userDetails.name;
+    const data = { existing, userName };
 
+    // Return the results
+    return res.status(200).json({ success: true, data });
   } catch (error) {
-    console.error('Error found in admin dashboard:', error);
+    console.error("Error found in admin dashboard:", error);
     return res.status(500).json({ success: false, message: "Server Error" });
   }
 };
@@ -425,5 +452,5 @@ module.exports = {
   deleteTodo,
   getAssignedWork,
   stageUpdate,
-  adminDashboard
+  adminDashboard,
 };

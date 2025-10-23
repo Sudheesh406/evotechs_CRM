@@ -7,6 +7,7 @@ const calls = require("../../models/v1/Customer/calls");
 const team = require("../../models/v1/Team_work/team");
 const signup = require("../../models/v1/Authentication/authModel");
 const trash = require('../../models/v1/Trash/trash')
+const document = require('../../models/v1/Project/documents')
 
 const { Op, Sequelize } = require("sequelize");
 
@@ -74,8 +75,7 @@ const getTaskByStatus = async (req,res)=>{
   try {
     const user = req.user
     const parsed = req.body.parsed?.status
-    console.log('req.body',req.body)
-    console.log('parsed',parsed)
+  
     let stage = null
     if(parsed == 'Not Started'){
       stage = '1'
@@ -96,14 +96,20 @@ const getTaskByStatus = async (req,res)=>{
           as: "customer", // must match the alias
           attributes: ["id", "name", "phone", "amount"],
         },
+        {
+          model: signup,
+          as: "staff", // must match the alias
+          attributes: ["id", "name", "email"],
+        },
       ],
+   
     });
 
       if (allTask.length === 0) {
       return httpError(res, 404, "No tasks found");
     }
 
-    return httpSuccess(res, 200, "Tasks retrieved successfully", allTask);
+    return httpSuccess(res, 200, "Tasks getted successfully", allTask);
     
   } catch (error) {
      console.error("Error in getTask:", error);
@@ -243,6 +249,8 @@ const getTaskDetails = async (req, res) => {
     const { taskId, contactId } = parsed.data;
     const user = req.user;
 
+    console.log(taskId,)
+
     if (!contactId) {
       return httpError(res, 400, "Missing contactId ");
     }
@@ -256,7 +264,7 @@ const getTaskDetails = async (req, res) => {
     }
 
     // Fetch related data
-    const [meetingDetails, callDetails, taskDetails] = await Promise.all([
+    const [meetingDetails, callDetails, taskDetails, documents] = await Promise.all([
       meetings.findAll({
         where: { contactId, staffId: user.id },
       }),
@@ -265,6 +273,9 @@ const getTaskDetails = async (req, res) => {
       }),
       task.findAll({
         where: { contactId, staffId: user.id },
+      }),
+      document.findAll({
+        where: { taskId : taskId, staffId: user.id },
       }),
     ]);
 
@@ -279,6 +290,7 @@ const getTaskDetails = async (req, res) => {
       meetingDetails,
       callDetails,
       taskDetails: filteredTaskDetails,
+      documents
     });
   } catch (error) {
     console.error("Error in getTaskDetails:", error);
@@ -350,7 +362,7 @@ const getTeamTaskDetails = async (req, res) => {
     }
 
     // Fetch related data
-    const [meetingDetails, callDetails, taskDetails] = await Promise.all([
+    const [meetingDetails, callDetails, taskDetails, documents] = await Promise.all([
       meetings.findAll({
         where: { contactId },
       }),
@@ -359,6 +371,9 @@ const getTeamTaskDetails = async (req, res) => {
       }),
       task.findAll({
         where: { contactId },
+      }),
+      document.findAll({
+        where: { taskId :parsed.taskId},
       }),
     ]);
 
@@ -373,6 +388,7 @@ const getTeamTaskDetails = async (req, res) => {
       meetingDetails,
       callDetails,
       taskDetails: filteredTaskDetails,
+      documents
     });
   } catch (error) {
     console.error("Error in get team task details:", error);
@@ -513,7 +529,7 @@ const getTaskDetailForAdmin = async (req, res) => {
     }
 
     // Fetch related data
-    const [meetingDetails, callDetails, taskDetails] = await Promise.all([
+    const [meetingDetails, callDetails, taskDetails, documents] = await Promise.all([
       meetings.findAll({
         where: { contactId, staffId },
       }),
@@ -522,6 +538,9 @@ const getTaskDetailForAdmin = async (req, res) => {
       }),
       task.findAll({
         where: { contactId, staffId },
+      }),
+        document.findAll({
+        where: { taskId :taskId},
       }),
     ]);
 
@@ -536,6 +555,7 @@ const getTaskDetailForAdmin = async (req, res) => {
       meetingDetails,
       callDetails,
       taskDetails: filteredTaskDetails,
+      documents
     });
   } catch (error) {
     console.error("Error in getting task details for admin:", error);
@@ -770,6 +790,7 @@ const getAdminTask = async (req, res) => {
 };
 
 
+
 module.exports = {
   createTask,
   getTask,
@@ -788,5 +809,5 @@ module.exports = {
   newUpdate,
   getTaskForAdmin,
   getTaskByStatus,
-  getAdminTask
+  getAdminTask,
 };

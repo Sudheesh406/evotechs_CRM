@@ -381,7 +381,9 @@ const handleSave = async () => {
     <div className="flex flex-col bg-gray-50 font-sans text-gray-800 relative">
       <header className="p-4 bg-white shadow-md flex justify-between items-center relative">
         <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold">Performance</h1>
+             <h1 className="text-xl font-extrabold text-gray-900 tracking-tight">
+            <span className="text-indigo-600">Work</span> Log
+          </h1>
           <span className="text-sm font-semibold">
             {new Date(currentYear, currentMonth).toLocaleString("default", {
               month: "long",

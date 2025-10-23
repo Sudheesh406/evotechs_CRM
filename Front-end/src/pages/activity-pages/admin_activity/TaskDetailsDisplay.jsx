@@ -1,28 +1,231 @@
-import { useParams } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import axios from '../../../instance/Axios'
+import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import axios from "../../../instance/Axios";
+import {
+  FileText,
+  Phone,
+  User,
+  CheckSquare,
+  ArrowLeft,
+  Eye,
+  Clock,
+  DollarSign,
+  Tag,
+  Calendar,
+  Mail,
+  Zap, // New: for Priority indicator
+} from "lucide-react";
 
-const TaskDetailsDisplay = () => {
-  // Data for the card (you can pass this as props in a real app)
+// --- Helper Functions ---
 
-  const [setTaskData, taskData] = useState()
-  const [setCurrentStage, currentStage] = useState()
-  const [setLoading, loading] = useState(true)
+const formatDate = (dateString) => {
+  if (!dateString) return "N/A";
+  try {
+    // Basic date formatting (e.g., "Oct 21, 2025")
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  } catch (e) {
+    return dateString; // Return original if parsing fails
+  }
+};
 
-  const {data} = useParams()
+// Helper function to map stage number to a professional status label and color
+const getStageInfo = (stage) => {
+  switch (stage) {
+    case "1":
+      return {
+        text: "Not Started",
+        color: "bg-gray-100 text-gray-700",
+        icon: <Clock className="w-3 h-3" />,
+      };
+    case "2":
+      return {
+        text: "In Progress",
+        color: "bg-blue-50 text-blue-700",
+        icon: <Clock className="w-3 h-3" />,
+      };
+    case "3":
+      return {
+        text: "Completed",
+        color: "bg-green-50 text-green-700",
+        icon: <CheckSquare className="w-3 h-3" />,
+      };
+    default:
+      return {
+        text: "Unknown",
+        color: "bg-gray-50 text-gray-500",
+        icon: <Clock className="w-3 h-3" />,
+      };
+  }
+};
 
-  const caseData = {
-    customerName: 'greeshma',
-    title: 'salary slip has a delay.',
-    stage: 1,
-    finishBy: '2025-10-21',
-    amount: '2000.00',
-    phone: '7895641235',
-    priority: 'Normal',
-    description: 'customer name greeshma. home loan. pathanamthitta',
+// Helper function to map priority to standard CRM colors
+const getPriorityClasses = (priority) => {
+  switch (priority) {
+    case "High":
+      return "text-red-700 bg-red-50 border-red-200";
+    case "Medium":
+      return "text-yellow-700 bg-yellow-50 border-yellow-200";
+    case "Low":
+    default:
+      return "text-gray-700 bg-gray-50 border-gray-200";
+  }
+};
+
+// --- Reusable Detail Component (Revised for better structure) ---
+const DetailItem = ({ icon, label, value }) => (
+  <div className="flex justify-between items-start text-sm py-1">
+    <dt className="flex items-center text-gray-500 font-medium flex-shrink-0 mr-3">
+      <div className="mr-2 flex-shrink-0 text-gray-400">{icon}</div>
+      {label}:
+    </dt>
+    <dd className="text-gray-900 font-semibold text-right whitespace-normal break-words">
+      {value}
+    </dd>
+  </div>
+);
+
+// --- Task Card Component (For cleaner main render) ---
+const TaskCard = ({ task, role, navigate }) => {
+  const stageInfo = getStageInfo(task.stage);
+  const priorityClasses = getPriorityClasses(task.priority);
+  const finishDate = formatDate(task.finishBy);
+
+  const handleViewDetails = () => {
+    const payload = {
+      taskId: task.id,
+      contactId: task.contactId,
+      role,
+    };
+    const dataToSend = encodeURIComponent(JSON.stringify(payload));
+    navigate(`/activities/tasks/team/${dataToSend}`);
   };
 
-    let parsed = null;
+  return (
+    <div
+      key={task.id}
+      className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden flex flex-col hover:shadow-2xl transition duration-300"
+    >
+      {/* Header Section */}
+      <div className="p-5 border-b border-gray-100 flex flex-col space-y-3">
+        {/* Status and Priority Badges */}
+        <div className="flex justify-between items-center pb-2">
+          <span
+            className={`flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full ${priorityClasses} border`}
+          >
+            <Zap className="w-3 h-3" />
+            {task.priority || "N/A"} Priority
+          </span>
+          <span
+            className={`flex items-center gap-1 px-3 py-1 text-xs font-medium rounded-full ${stageInfo.color} border border-transparent`}
+          >
+            {stageInfo.icon}
+            {stageInfo.text}
+          </span>
+        </div>
+
+        {/* Customer Info and Title */}
+        <div className="flex items-start">
+          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-600 text-white text-xl font-bold mr-4 flex-shrink-0 shadow-md">
+            {task.customer?.name ? task.customer.name[0].toUpperCase() : "C"}
+          </div>
+          <div>
+            <div className="text-lg text-gray-900 font-bold leading-snug capitalize">
+              {task.customer?.name || "Unknown Customer"}
+            </div>
+            <div className="text-sm text-gray-600 font-medium mt-0.5">
+              {task.requirement || "No Task Title"}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Details Section */}
+      <dl className="p-5 flex-grow space-y-2 border-b border-gray-100">
+        {/* Detail Item: Finish By */}
+        <DetailItem
+          icon={<Calendar className="w-4 h-4" />}
+          label="Finish By"
+          value={finishDate}
+        />
+
+        {/* Detail Item: Phone (Made clickable/linkable if it were real data) */}
+        <DetailItem
+          icon={<Phone className="w-4 h-4 text-blue-500" />}
+          label="Phone"
+          value={
+            <a
+              href={`tel:${task.customer?.phone || task.phone}`}
+              className="hover:text-blue-600 transition"
+            >
+              {task.customer?.phone || task.phone || "N/A"}
+            </a>
+          }
+        />
+
+        {/* Detail Item: Amount (Formatted as currency) */}
+        <DetailItem
+          icon={<DollarSign className="w-4 h-4 text-green-600" />}
+          label="Amount"
+          value={
+            task.customer?.amount
+              ? `₹ ${parseFloat(task.customer.amount)
+                  .toFixed(2)
+                  .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`
+              : "N/A"
+          }
+        />
+        <DetailItem
+          icon={<User className="w-4 h-4 text-blue-500" />}
+          label="Assigned Staff"
+          value={task.staff?.name || "N/A"}
+        />
+
+        <DetailItem
+          icon={<Mail className="w-4 h-4 text-blue-500" />}
+          label="Email"
+          value={task.staff?.email || "N/A"}
+        />
+      </dl>
+
+      {/* Description Section */}
+      <div className="p-5">
+        <div className="flex items-center text-gray-700 mb-2 font-semibold text-sm">
+          <FileText className="w-4 h-4 mr-2 text-gray-400" />
+          Description:
+        </div>
+        <p className="text-gray-600 text-sm bg-gray-50 p-3 rounded-lg max-h-20 overflow-y-auto whitespace-pre-line border border-gray-200 shadow-inner">
+          {task.description || "No description provided."}
+        </p>
+      </div>
+
+      {/* Footer / Action Button */}
+      <div className="p-5 pt-0">
+        <button
+          className="w-full flex items-center justify-center gap-1 px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-md"
+          onClick={handleViewDetails}
+        >
+          <Eye className="w-4 h-4" />
+          View Full Details
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// --- Main Component ---
+
+const TaskDetailsDisplay = () => {
+  const [taskData, setTaskData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const { data } = useParams();
+
+  // Decode URL data from route params
+  let parsed = null;
   if (data) {
     try {
       parsed = JSON.parse(decodeURIComponent(data));
@@ -31,149 +234,119 @@ const TaskDetailsDisplay = () => {
     }
   }
 
-   const getTaskDetails = async () => {
-    if (!parsed) return;
+  const getTaskDetails = async () => {
+    if (!parsed) {
+      setLoading(false);
+      return;
+    }
     try {
+      // NOTE: Using the parsed data directly as the body of a POST request might be unusual
+      // for 'get' data, but I'm keeping the original logic for function integrity.
       const response = await axios.post("task/status/get", { parsed });
-      if (response.data.success) {
+      if (response.data.success && Array.isArray(response.data.data)) {
         setTaskData(response.data.data);
-        setCurrentStage(response.data.data.taskDetails?.[0]?.stage || 0);
-        console.log('response',response)
+      } else {
+        setTaskData([]);
       }
     } catch (error) {
-      console.error("Error in get task details", error);
+      console.error("Error fetching task details", error);
+      setTaskData([]);
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    getTaskDetails();
+  }, []);
 
-  useEffect(()=>{
-    getTaskDetails()
-  },[])
+  const role = true; // Placeholder for role check
 
-  return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-8">
-      {/* Header with Back Button */}
-      <div className="flex justify-end mb-4">
-        <button className="flex items-center text-blue-600 hover:text-blue-800 transition-colors">
-          {/* Using a simple arrow for the back icon */}
-          <svg
-            className="w-5 h-5 mr-1"
-            fill="none"
+  // --- Loading and Empty States (Improved Styling) ---
+
+  if (loading) {
+    return (
+      <div className="flex flex-col justify-center items-center min-h-screen bg-gray-50 p-8">
+        <svg
+          className="animate-spin h-10 w-10 text-blue-600"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
             stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M10 19l-7-7m0 0l7-7m-7 7h18"
-            />
-          </svg>
-          Back
+            strokeWidth="4"
+          ></circle>
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          ></path>
+        </svg>
+        <p className="mt-4 text-xl font-medium text-gray-700">
+          Fetching task details...
+        </p>
+      </div>
+    );
+  }
+
+  if (taskData.length === 0) {
+    return (
+      <div className="flex flex-col justify-center items-center min-h-screen bg-white shadow-xl rounded-xl m-8 p-12 border border-gray-200">
+        <FileText className="w-16 h-16 text-red-500 mb-4" />
+        <h2 className="text-3xl font-bold text-gray-900">
+          Task Data Unavailable
+        </h2>
+        <p className="text-gray-600 mt-3 text-lg text-center">
+          We couldn't find any tasks matching the criteria. Please check your
+          source.
+        </p>
+        <button
+          onClick={() => navigate(-1)}
+          className="mt-8 flex items-center gap-2 text-base text-white bg-blue-600 px-6 py-3 rounded-xl hover:bg-blue-700 transition shadow-lg font-semibold"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          Return to Previous Page
         </button>
       </div>
+    );
+  }
 
-      {/* Main Content Area */}
-      <div className="flex">
-        {/* Card Component - Exact Design Match */}
-        <div className="max-w-sm w-full bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
-          {/* Card Title/Status */}
-          <div className="px-4 py-3 border-b border-gray-100">
-            <h2 className="text-xl font-semibold text-gray-800">
-              Not Started
-            </h2>
-          </div>
+  // --- Main Display ---
 
-          {/* Main Card Content */}
-          <div className="p-4">
-            {/* Customer Header Section */}
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex items-center">
-                {/* Initial/Avatar */}
-                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-green-500 text-white text-lg font-medium mr-3">
-                  G
-                </div>
-                <div>
-                  <div className="text-gray-900 font-semibold leading-none capitalize">
-                    {caseData.customerName}
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    {caseData.title}
-                  </div>
-                </div>
-              </div>
-              {/* Three Dots Menu */}
-              <button className="text-gray-400 hover:text-gray-600 p-1">
-                <svg
-                  className="w-5 h-5"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path d="M10 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4z" />
-                </svg>
-              </button>
-            </div>
-            
-            {/* Horizontal Separator */}
-            <div className="border-t border-gray-100 mb-4"></div>
-            
-            {/* Details Section (Stage, Finish By, Amount, Phone, Priority) */}
-            <div className="space-y-3 text-sm">
-              
-              {/* Stage */}
-              <div className="flex justify-between">
-                <span className="text-gray-600">Stage</span>
-                <span className="font-medium text-gray-900">{caseData.stage}</span>
-              </div>
+  return (
+    <div className="min-h-screen bg-gray-100 p-4 sm:p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header and Back Button */}
+        <header className="flex justify-between items-center mb-8 pb-4 border-b-2 border-gray-200">
+          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+            <span className="text-indigo-600">Task</span> Overview(
+            {taskData.length})
+          </h1>
+          <h1 className="text-3xl font-bold text-gray-900"> </h1>
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-sm text-gray-700 bg-white border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50 transition shadow-md font-medium"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            Back to Tasks
+          </button>
+        </header>
 
-              {/* Finish By */}
-              <div className="flex justify-between">
-                <span className="text-gray-600">Finish By</span>
-                <span className="font-medium text-gray-900">
-                  {caseData.finishBy}
-                </span>
-              </div>
-
-              {/* Amount */}
-              <div className="flex justify-between">
-                <span className="text-gray-600">Amount</span>
-                <span className="font-medium text-gray-900">
-                {caseData.amount}
-                </span>
-              </div>
-
-              {/* Phone */}
-              <div className="flex justify-between">
-                <span className="text-gray-600">Phone</span>
-                <span className="font-medium text-green-600">
-                  {caseData.phone}
-                </span>
-              </div>
-
-              {/* Priority */}
-              <div className="flex justify-between">
-                <span className="text-gray-600">Priority</span>
-                <span className="px-2 py-0.5 text-xs font-semibold text-green-800 bg-green-100 rounded-full">
-                  {caseData.priority}
-                </span>
-              </div>
-            </div>
-
-            {/* Horizontal Separator */}
-            <div className="border-t border-gray-100 my-4"></div>
-
-            {/* Description Section */}
-            <div>
-              <div className="text-gray-600 mb-1 text-sm">Description:</div>
-              <p className="text-gray-800 text-sm whitespace-pre-line">
-                {caseData.description}
-              </p>
-            </div>
-          </div>
+        {/* Task Cards Container (Responsive Grid) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          {taskData.map((task) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              role={role}
+              navigate={navigate}
+            />
+          ))}
         </div>
       </div>
     </div>

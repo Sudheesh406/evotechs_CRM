@@ -153,5 +153,38 @@ const getStaffRework = async (req, res) => {
   }
 };
 
+const getCompletedTaskForStaff = async(req,res)=>{
+try {
+    const user = req.user; // make sure req.user is available
+    const access = roleChecker(user.id);
 
-module.exports = {getCompletedTask, getResolvedTask, getRework, getStaffRework}
+    if (!access) {
+      return httpError(res, 403, "Access denied. Admins only.");
+    }
+
+    const completedTasks = await task.findAll({
+      where: { stage: "4", softDelete: false , staffId : user.id},
+      order: [["updatedAt", "DESC"]],
+         include: [
+        {
+          model: contacts, // contacts model
+          as: "customer",
+          attributes: ["id", "name", "email", "phone", "amount", "source"],
+        },
+      ], // optional: latest completed first
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: completedTasks,
+    });
+
+} catch (error) {
+   console.error("Error in getting completed task details for admin:", error);
+  return httpError(res, 500, "Server error", error.message || error);
+}
+}
+
+
+
+module.exports = {getCompletedTask, getResolvedTask, getRework, getStaffRework, getCompletedTaskForStaff}

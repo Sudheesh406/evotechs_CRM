@@ -110,8 +110,8 @@ const StaffWorklog = () => {
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-            Work Log
+           <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+            <span className="text-indigo-600">Work</span> Log
           </h1>
           <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-gray-500">
             Viewing work logs for {year},{" "}

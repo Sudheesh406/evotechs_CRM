@@ -2,15 +2,17 @@ import React, { useState, useEffect } from "react";
 import axios from "../../instance/Axios";
 import Swal from "sweetalert2";
 
+// --- TYPE COLORS ---
 const typeColors = {
   leads: "bg-blue-500",
   contacts: "bg-green-600",
   meetings: "bg-yellow-500",
   calls: "bg-purple-500",
   task: "bg-red-500",
-  project: "bg-teal-500",
-  workassign: "bg-pink-500",
+  projects: "bg-teal-500",
+  assignment: "bg-pink-500",
   teams: "bg-orange-500",
+  activity: "bg-gray-500",
 };
 
 function Trash() {
@@ -28,9 +30,10 @@ function Trash() {
     "Projects",
     "Assignment",
     "Teams",
+    "Activity",
   ];
 
-  // Fetch trash data
+  // --- Fetch Trash Data ---
   const getTrash = async (type = "All", date = "All") => {
     try {
       Swal.fire({
@@ -41,7 +44,6 @@ function Trash() {
 
       const response = await axios.post("/trash/get", { type, date });
       setData(response.data?.data || []);
-
       Swal.close();
     } catch (error) {
       Swal.close();
@@ -57,15 +59,15 @@ function Trash() {
     return () => clearTimeout(timer);
   }, [filterType, filterDate]);
 
-  // Restore item
-  const handleRestore = async (id, data) => {
+  // --- Restore Item ---
+  const handleRestore = async (id, dataType) => {
     Swal.fire({
       title: "Restoring...",
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading(),
     });
     try {
-      await axios.post("/trash/restore", { id, data });
+      await axios.post("/trash/restore", { id, data: dataType });
       setData((prev) => prev.filter((item) => item.id !== id));
       Swal.fire("Success", "Item restored successfully!", "success");
     } catch (error) {
@@ -74,8 +76,8 @@ function Trash() {
     }
   };
 
-  // Permanent delete
-  const handlePermanentDelete = async (id, data) => {
+  // --- Permanent Delete ---
+  const handlePermanentDelete = async (id, dataType) => {
     const result = await Swal.fire({
       title: "Are you sure?",
       text: "This item will be deleted permanently!",
@@ -95,7 +97,7 @@ function Trash() {
     });
 
     try {
-      await axios.post("/trash/delete", { id, data });
+      await axios.post("/trash/delete", { id, data: dataType });
       setData((prev) => prev.filter((item) => item.id !== id));
       Swal.fire("Deleted!", "Item has been deleted permanently.", "success");
     } catch (error) {
@@ -104,9 +106,10 @@ function Trash() {
     }
   };
 
+  // --- Get Display Name ---
   const getItemName = (item) => {
-    console.log(item)
     if (!item.details) return "-";
+
     switch (item.data.toLowerCase()) {
       case "projects":
         return item.details.project || "-";
@@ -114,8 +117,10 @@ function Trash() {
         return item.details.requirement || "-";
       case "teams":
         return item.details.teamName || "-";
-      case "Assignment":
+      case "assignment":
         return item.details.title || "-";
+      case "activity":
+        return item.details.taskName || "-";
       default:
         return item.details.name || item.details.title || "-";
     }
@@ -123,7 +128,9 @@ function Trash() {
 
   return (
     <div className="p-6">
-      <h1 className="text-xl font-semibold mb-6 text-gray-800">Trash</h1>
+      <h2 className="text-2xl font-bold text-gray-800">
+        <span className="text-indigo-600">Trash</span>
+      </h2>
 
       {/* FILTERS */}
       <div className="flex items-center gap-6 mb-4 flex-wrap">

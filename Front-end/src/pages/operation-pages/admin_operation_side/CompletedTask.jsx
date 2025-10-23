@@ -23,7 +23,7 @@ function CompletedTask() {
 
   const getCompletedWork = async () => {
     try {
-      const response = await axios.get("/completed/get");
+      const response = await axios.get("/Completed/get");
       console.log("raw response", response);
 
       const mapped = response.data.data.map((item) => ({

@@ -9,6 +9,7 @@ const task = require("../../models/v1/Project/task");
 const team = require("../../models/v1/Team_work/team");
 const workAssign = require("../../models/v1/Work_space/workAssign");
 const subTask = require("../../models/v1/Project/subTask");
+const Activity = require('../../models/v1/Project/adminTask')
 
 const { Op } = require("sequelize");
 
@@ -107,6 +108,9 @@ const getTrash = async (req, res) => {
           case "Assignment":
             details = await workAssign.findByPk(entry.dataId);
             break;
+          case "Activity":
+            details = await Activity.findByPk(entry.dataId);
+            break;
           default:
             details = null;
         }
@@ -134,6 +138,7 @@ const modelMap = {
   task,
   teams: team,
   Assignment: workAssign,
+  Activity
 };
 
 const restore = async (req, res) => {

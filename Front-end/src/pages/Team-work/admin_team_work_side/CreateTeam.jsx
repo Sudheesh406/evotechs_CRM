@@ -284,7 +284,8 @@ const handleDeleteTeam = async (id) => {
       {/* Teams */}
       <div className="space-y-4">
         <div className="flex justify-between items-center mb-2">
-          <h2 className="text-2xl font-bold text-gray-800">Teams</h2>
+          <h2 className="text-2xl font-bold text-gray-800"><span className="text-indigo-600">Teams</span></h2>
+          
           <button
             onClick={() => setIsModalOpen(true)}
             className="md:hidden bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-2 rounded-lg shadow hover:from-blue-600 hover:to-indigo-700 transition"

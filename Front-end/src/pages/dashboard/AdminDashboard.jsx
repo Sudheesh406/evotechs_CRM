@@ -74,14 +74,16 @@ const KanbanColumn = ({ title, status, color, tasks }) => {
 // Main AdminDashboard Component
 const AdminDashboard = () => {
   const [tasks, setTasks] = useState([]);
+  const [name, setName] = useState()
 
   const fetchTasks = async () => {
     try {
       const response = await axios.get("/work/admin/dashboard");
       // Filter only Pending and Progress tasks
-      const filteredTasks = response.data.data.filter(
+      const filteredTasks = response.data?.data?.existing.filter(
         (task) => task.workUpdate === "Pending" || task.workUpdate === "Progress"
       );
+      setName(response.data?.data?.userName)
       setTasks(filteredTasks);
     } catch (error) {
       if (error.response && error.response.data && error.response.data.errorCode) {
@@ -102,9 +104,9 @@ const AdminDashboard = () => {
       <header className="bg-white shadow">
         <div className="py-8 px-6 lg:px-8">
           <h1 className="text-3xl font-bold text-gray-800">
-            Welcome back to your{" "}
+            Hello <span> </span>
             <span className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-              Dashboard
+              {name} 
             </span>
             !
           </h1>

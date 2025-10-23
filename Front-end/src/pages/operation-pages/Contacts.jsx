@@ -126,17 +126,18 @@ const handleChange = (e) => {
 const handleSubmit = async (e) => {
   e.preventDefault();
 
-  // ✅ Validation
-  const newErrors = {};
-  Object.keys(formData).forEach((key) => {
-    if (!formData[key].trim()) {
-      newErrors[key] = "This field is required";
-    }
-  });
-  if (Object.keys(newErrors).length > 0) {
-    setErrors(newErrors);
-    return;
+// ✅ Validation
+const newErrors = {};
+Object.keys(formData).forEach((key) => {
+  if (key !== "email" && !formData[key].trim()) { // skip email
+    newErrors[key] = "This field is required";
   }
+});
+if (Object.keys(newErrors).length > 0) {
+  setErrors(newErrors);
+  return;
+}
+
 
   // 🔍 No changes check when editing
   if (editingId && JSON.stringify(formData) === JSON.stringify(originalData)) {

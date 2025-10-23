@@ -1,13 +1,14 @@
+import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import axios from "../../../instance/Axios";
-import { MoreVertical, Plus, X } from "lucide-react";
+import { MoreVertical, X } from "lucide-react";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 
+// --- SweetAlert Instance ---
 const MySwal = withReactContent(Swal);
 
-// --- TASK CARD COMPONENT ---
+// --- TaskCard Component ---
 const TaskCard = ({ task, onEdit, onDelete }) => {
   const { id, taskName, amount, phone, priority, description, status } = task;
   const [showDropdown, setShowDropdown] = useState(false);
@@ -38,6 +39,7 @@ const TaskCard = ({ task, onEdit, onDelete }) => {
     { label: "Amount", value: formattedAmount, className: "font-mono text-sm" },
     { label: "Phone", value: phone || "-" },
     { label: "Priority", value: priority, className: getPriorityClass(priority) },
+    { label: "Status", value: status },
   ];
 
   return (
@@ -66,7 +68,7 @@ const TaskCard = ({ task, onEdit, onDelete }) => {
               </button>
               <button
                 onClick={() => {
-                  onDelete(task.id);
+                  onDelete(id);
                   setShowDropdown(false);
                 }}
                 className="flex items-center w-full px-3 py-2 text-left hover:bg-gray-100 text-sm text-red-600"
@@ -81,9 +83,14 @@ const TaskCard = ({ task, onEdit, onDelete }) => {
       {/* Details */}
       <div className="space-y-1 text-sm text-gray-700">
         {fields.map((field, index) => (
-          <div key={index} className="flex justify-between border-b border-gray-50/50 pb-1">
+          <div
+            key={index}
+            className="flex justify-between border-b border-gray-50/50 pb-1"
+          >
             <span className="text-gray-500 text-xs font-medium">{field.label}</span>
-            <span className={`text-right text-xs ${field.className || ""}`}>{field.value}</span>
+            <span className={`text-right text-xs ${field.className || ""}`}>
+              {field.value}
+            </span>
           </div>
         ))}
       </div>
@@ -97,90 +104,54 @@ const TaskCard = ({ task, onEdit, onDelete }) => {
   );
 };
 
-// --- TASK COLUMN COMPONENT ---
-const TaskColumn = ({ title, color, tasks, onEdit, onDelete }) => {
-  const navigate = useNavigate();
-
-  const handleViewClick = () => {
-    navigate(`/tasks/${encodeURIComponent(title)}`);
-  };
-
-  return (
-    <div className="flex-1 min-w-[280px] max-w-full md:max-w-[340px] p-2">
-      <div className={`flex justify-between items-center mb-4 p-3 rounded-xl shadow-sm border ${color.bg} ${color.text}`}>
-        <h2 className="text-lg font-semibold">{title}</h2>
-        <div className="flex items-center gap-2">
-          <span className="text-sm opacity-80">Total: {tasks.length}</span>
-          <button
-            onClick={handleViewClick}
-            className="text-white bg-blue-600 hover:bg-blue-700 text-xs font-semibold py-1 px-3 rounded-lg"
-          >
-            View
-          </button>
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        {tasks.length > 0 ? (
-          tasks.map((task) => (
-            <TaskCard key={task.id} task={task} onEdit={onEdit} onDelete={onDelete} />
-          ))
-        ) : (
-          <div className="text-center p-8 text-gray-400 text-sm bg-gray-50 rounded-xl border border-gray-100">
-            No tasks found.
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// --- MAIN COMPONENT ---
-const AdminTask = () => {
+// --- DetailMyTask Component ---
+const DetailMyTask = () => {
+  const { status } = useParams();
   const [tasks, setTasks] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [currentTask, setCurrentTask] = useState(null);
-
   const [newTask, setNewTask] = useState({
     taskName: "",
     amount: "",
     phone: "",
     priority: "Medium",
-    status: "Not Started",
+    status: status || "Not Started",
     description: "",
   });
 
   // --- Fetch tasks ---
-  const getTasks = async () => {
-    try {
-      const response = await axios.get("/adminTask/get");
-      if (response.data.success) setTasks(response.data.result);
-    } catch (error) {
-      console.log("Error fetching tasks:", error);
-      MySwal.fire("Error", "Failed to fetch tasks.", "error");
-    }
-  };
-
   useEffect(() => {
-    getTasks();
-  }, []);
+    const fetchTasks = async () => {
+      try {
+        const response = await axios.get(`/adminTask/get/status/${status}`);
+        if (response.data.success) setTasks(response.data.result);
+      } catch (error) {
+        console.error("Error fetching tasks by status:", error);
+      }
+    };
+    fetchTasks();
+  }, [status]);
 
-  // --- Handle Add/Edit ---
+  // --- Handle Add/Edit submit ---
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const taskData = { ...newTask, amount: newTask.amount ? parseFloat(newTask.amount) : null };
+    const taskData = {
+      ...newTask,
+      amount: newTask.amount ? parseFloat(newTask.amount) : null,
+    };
 
     try {
       if (currentTask) {
+        // Edit
         const response = await axios.put(`/adminTask/edit/${currentTask.id}`, taskData);
         setTasks(tasks.map((t) => (t.id === currentTask.id ? response.data.result : t)));
-        MySwal.fire("Updated!", "Task has been updated successfully.", "success");
+        MySwal.fire("Success", "Task updated successfully!", "success");
       } else {
+        // Add
         const response = await axios.post("/adminTask/create", taskData);
         setTasks([...tasks, response.data.result]);
-        MySwal.fire("Created!", "New task has been added successfully.", "success");
+        MySwal.fire("Success", "Task created successfully!", "success");
       }
-
       setShowForm(false);
       setCurrentTask(null);
       setNewTask({
@@ -188,12 +159,12 @@ const AdminTask = () => {
         amount: "",
         phone: "",
         priority: "Medium",
-        status: "Not Started",
+        status: status || "Not Started",
         description: "",
       });
     } catch (error) {
       console.error("Error saving task:", error);
-      MySwal.fire("Error!", "Failed to save task.", "error");
+      MySwal.fire("Error", "Failed to save task", "error");
     }
   };
 
@@ -216,7 +187,7 @@ const AdminTask = () => {
         MySwal.fire("Deleted!", "Task has been moved to trash.", "success");
       } catch (error) {
         console.error("Delete failed:", error);
-        MySwal.fire("Error!", "Failed to delete task.", "error");
+        MySwal.fire("Error", "Failed to delete task", "error");
       }
     }
   };
@@ -229,46 +200,32 @@ const AdminTask = () => {
       amount: task.amount || "",
       phone: task.phone || "",
       priority: task.priority || "Medium",
-      status: task.status || "Not Started",
+      status: task.status || status || "Not Started",
       description: task.description || "",
     });
     setShowForm(true);
   };
 
-  // --- Group tasks ---
-  const notStartedTasks = tasks.filter((t) => t.status === "Not Started");
-  const inProgressTasks = tasks.filter((t) => t.status === "In Progress");
-  const finalStageTasks = tasks.filter((t) => t.status === "Final Stage");
-  const completedTasks = tasks.filter((t) => t.status === "Completed");
-
   return (
-    <div className="bg-gray-50 p-4 md:p-8 font-sans">
-      {/* Header */}
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
-            <span className="text-indigo-600">Activity</span> Tasks
+    <div className="p-4 sm:p-8 min-h-screen bg-gray-50">
+        <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight mb-8">
+            <span className="text-indigo-600">{status}</span> Tasks
           </h1>
-        <button
-          onClick={() => {
-            setCurrentTask(null);
-            setNewTask({ taskName: "", amount: "", phone: "", priority: "Medium", status: "Not Started", description: "" });
-            setShowForm(true);
-          }}
-          className="flex items-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg transition duration-300"
-        >
-          <Plus size={18} className="mr-2" /> Create New Task
-        </button>
-      </header>
 
-      {/* Kanban Board */}
-      <div className="flex flex-col lg:flex-row lg:justify-between gap-2 overflow-x-auto pb-4">
-        <TaskColumn title="Not Started" color={{ bg: "bg-green-100", text: "text-green-800" }} tasks={notStartedTasks} onEdit={handleEditClick} onDelete={handleDelete} />
-        <TaskColumn title="In Progress" color={{ bg: "bg-amber-100", text: "text-amber-800" }} tasks={inProgressTasks} onEdit={handleEditClick} onDelete={handleDelete} />
-        <TaskColumn title="Final Stage" color={{ bg: "bg-purple-100", text: "text-purple-800" }} tasks={finalStageTasks} onEdit={handleEditClick} onDelete={handleDelete} />
-        <TaskColumn title="Completed" color={{ bg: "bg-blue-100", text: "text-blue-800" }} tasks={completedTasks} onEdit={handleEditClick} onDelete={handleDelete} />
-      </div>
+      {tasks.length > 0 ? (
+        <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {tasks.map((task) => (
+            <TaskCard key={task.id} task={task} onEdit={handleEditClick} onDelete={handleDelete} />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12 text-gray-500 bg-white rounded-lg shadow-sm border border-gray-200">
+          <p className="text-lg font-medium">✨ No tasks found for the status: <span className="font-bold capitalize">{status}</span></p>
+          <p className="text-sm mt-2">Check back later or try a different status.</p>
+        </div>
+      )}
 
-      {/* --- ADD/EDIT TASK MODAL --- */}
+      {/* --- Add/Edit Task Modal --- */}
       {showForm && (
         <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-md flex justify-center items-center z-50 p-4">
           <div className="bg-white p-8 rounded-xl shadow-3xl w-full max-w-lg relative transform transition-all duration-500 scale-100 opacity-100 ease-out">
@@ -286,7 +243,7 @@ const AdminTask = () => {
             <form onSubmit={handleSubmit} className="space-y-5">
               <input
                 type="text"
-                placeholder="Task Name (e.g., Finish Q3 Report)"
+                placeholder="Task Name"
                 value={newTask.taskName}
                 onChange={(e) => setNewTask({ ...newTask, taskName: e.target.value })}
                 required
@@ -296,14 +253,14 @@ const AdminTask = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <input
                   type="number"
-                  placeholder="Amount (optional)"
+                  placeholder="Amount"
                   value={newTask.amount}
                   onChange={(e) => setNewTask({ ...newTask, amount: e.target.value })}
                   className="w-full border border-gray-300 bg-gray-50 rounded-lg p-3 text-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500 transition duration-150"
                 />
                 <input
                   type="text"
-                  placeholder="Phone (optional)"
+                  placeholder="Phone"
                   value={newTask.phone}
                   onChange={(e) => setNewTask({ ...newTask, phone: e.target.value })}
                   className="w-full border border-gray-300 bg-gray-50 rounded-lg p-3 text-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500 transition duration-150"
@@ -355,4 +312,4 @@ const AdminTask = () => {
   );
 };
 
-export default AdminTask;
+export default DetailMyTask;

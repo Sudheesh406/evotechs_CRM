@@ -1,85 +1,119 @@
 import React, { useEffect, useState, useCallback } from "react";
 import Swal from "sweetalert2";
-import { Edit2, Trash2, X, Clock, Users, Zap } from "lucide-react";
+import {
+  Edit2,
+  Trash2,
+  X,
+  Clock,
+  Users,
+  Zap,
+  Tag,
+  Calendar,
+} from "lucide-react";
 import axios from "../../../instance/Axios";
 
-// --- Constants (No changes needed here) ---
+// --- Constants (Updated for Premium/Standard Look) ---
 const statusStages = ["Pending", "Progress", "Completed"];
+// Subtle priority classes
 const priorities = {
-  High: "bg-red-100 text-red-700 border-red-300",
-  Medium: "bg-yellow-100 text-yellow-700 border-yellow-300",
-  Low: "bg-green-100 text-green-700 border-green-300",
+  High: "bg-red-50 text-red-700 border-red-200", // Soft red
+  Medium: "bg-amber-50 text-amber-700 border-amber-200", // Soft amber
+  Low: "bg-green-50 text-green-700 border-green-200", // Soft green
 };
 
-// --- Helper Components for Cleanliness ---
+// Map status to a professional color
+const statusColors = {
+  Pending: "border-l-4 border-gray-400",
+  Progress: "border-l-4 border-blue-500",
+  Completed: "border-l-4 border-green-500",
+};
 
-const TaskCard = ({ task, openModal, handleDeleteTask, showMoreMap, setShowMoreMap }) => {
+// --- Helper Components for Cleanliness (TaskCard Refactored) ---
+
+const TaskCard = ({
+  task,
+  openModal,
+  handleDeleteTask,
+  showMoreMap,
+  setShowMoreMap,
+}) => {
   const isExpanded = showMoreMap[task.id] || false;
-  const descriptionLimit = 120; // Increased limit for better readability before cutting
+  const descriptionLimit = 90; // Slightly reduced for more compact cards
 
-  // Function to toggle the 'Read More' state
   const toggleDescription = () => {
-    setShowMoreMap(prev => ({ ...prev, [task.id]: !isExpanded }));
+    setShowMoreMap((prev) => ({ ...prev, [task.id]: !isExpanded }));
   };
+
+  const formattedDate = new Date(task.dueDate).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
 
   return (
     <div
       key={task.id}
-      className="bg-white rounded-xl p-4 mb-4 shadow-md border-t-4 border-blue-500 hover:shadow-lg transition duration-200 ease-in-out flex flex-col space-y-3"
+      // Use status color for left border accent, soft shadow for premium look
+      className={`bg-white rounded-lg p-4 mb-3 shadow-sm hover:shadow-md transition duration-200 ease-in-out flex flex-col space-y-2 ${
+        statusColors[task.status]
+      }`}
     >
       <div className="flex justify-between items-start">
-        <h3 className="text-lg font-semibold text-gray-800 break-words pr-2">{task.title}</h3>
+        <h3 className="text-base font-semibold text-gray-900 break-words pr-2 leading-snug">
+          {task.title}
+        </h3>
         <div className="flex gap-2 shrink-0">
           <Edit2
-            className="w-5 h-5 cursor-pointer text-blue-500 hover:text-blue-600 transition"
+            className="w-4 h-4 cursor-pointer text-gray-500 hover:text-blue-600 transition"
             onClick={() => openModal(task)}
           />
           <Trash2
-            className="w-5 h-5 cursor-pointer text-red-500 hover:text-red-600 transition"
+            className="w-4 h-4 cursor-pointer text-gray-500 hover:text-red-600 transition"
             onClick={() => handleDeleteTask(task.id)}
           />
         </div>
       </div>
 
-      {/* Tags Section */}
-      <div className="flex flex-wrap gap-2 text-sm">
+      {/* Tags Section - More Subtle */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
         {/* Priority Tag */}
         <span
-          className={`px-3 py-1 rounded-full font-medium border ${
+          className={`px-2 py-0.5 rounded-full font-semibold border ${
             priorities[task.priority]
           }`}
         >
-          <Zap className="inline w-3.5 h-3.5 mr-1" />
+          <Zap className="inline w-3 h-3 mr-1" />
           {task.priority}
         </span>
-        
+
         {/* Due Date Tag */}
-        <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full font-medium border border-gray-300">
-          <Clock className="inline w-3.5 h-3.5 mr-1" />
-          {task.dueDate}
+        <span className="text-gray-600 flex items-center">
+          <Calendar className="w-3 h-3 mr-1 text-indigo-500" />
+          <span className="font-medium">{formattedDate}</span>
         </span>
       </div>
 
       {/* Assignment Details */}
-      <div className="text-sm text-gray-600 space-y-1">
+      <div className="text-xs text-gray-500 space-y-0.5">
         <div className="flex items-center">
-          <Users className="w-4 h-4 mr-2 text-indigo-500" />
-          <span className="font-medium">Assigned To: </span>
-          <span className="ml-1">
-            {task.assignedTo?.name === "Admin" ? "Admin" : `${task.assignedTo.name} (${task.assignedTo.email})`}
+          <Users className="w-3 h-3 mr-1 text-gray-500" />
+          <span className="font-medium text-gray-700">
+            {task.assignedTo?.name === "Admin"
+              ? "Admin"
+              : task.assignedTo.name}
           </span>
         </div>
         {task.team && (
           <div className="flex items-center">
-            <span className="w-4 h-4 mr-2"></span> {/* Placeholder for alignment */}
-            <span className="font-medium">Team: </span>
-            <span className="ml-1">{task.team.teamName}</span>
+            <Tag className="w-3 h-3 mr-1 text-gray-500" />
+            <span className="font-medium text-gray-700">
+              {task.team.teamName}
+            </span>
           </div>
         )}
       </div>
 
-      {/* Description with Read More */}
-      <div className="text-sm text-gray-700 mt-1">
+      {/* Description with Read More - Compacted */}
+      <div className="text-xs text-gray-600 mt-1">
         <p>
           {task.description.length <= descriptionLimit
             ? task.description
@@ -90,7 +124,7 @@ const TaskCard = ({ task, openModal, handleDeleteTask, showMoreMap, setShowMoreM
         {task.description.length > descriptionLimit && (
           <button
             onClick={toggleDescription}
-            className="text-blue-600 text-sm mt-1 font-semibold hover:text-blue-800 transition focus:outline-none"
+            className="text-blue-600 text-xs mt-0.5 font-semibold hover:text-blue-800 transition focus:outline-none"
           >
             {isExpanded ? "Show Less" : "Read More"}
           </button>
@@ -100,13 +134,14 @@ const TaskCard = ({ task, openModal, handleDeleteTask, showMoreMap, setShowMoreM
   );
 };
 
-
 // --- Main Component ---
 export default function AdvancedTodoCRM() {
   const [tasks, setTasks] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editTask, setEditTask] = useState(null);
-  const [allUsers, setAllUsers] = useState([{ id: null, name: "Admin", email: "" }]);
+  const [allUsers, setAllUsers] = useState([
+    { id: null, name: "Admin", email: "" },
+  ]);
   const [teams, setTeams] = useState([]);
   const [formTask, setFormTask] = useState({
     title: "",
@@ -121,7 +156,7 @@ export default function AdvancedTodoCRM() {
   const [noChangeMessage, setNoChangeMessage] = useState("");
   const [showMoreMap, setShowMoreMap] = useState({});
 
-  // Helper function to show loading state
+  // Helper functions (omitted for brevity, assume they are the same)
   const showLoadingSwal = (title) => {
     Swal.fire({
       title,
@@ -130,7 +165,6 @@ export default function AdvancedTodoCRM() {
     });
   };
 
-  // Fetch staff and teams
   const fetchUserDetails = useCallback(async () => {
     try {
       showLoadingSwal("Loading details...");
@@ -152,8 +186,6 @@ export default function AdvancedTodoCRM() {
     }
   }, []);
 
-  
-  // Fetch tasks
   const fetchWorkDetails = useCallback(async () => {
     try {
       showLoadingSwal("Loading tasks...");
@@ -171,7 +203,9 @@ export default function AdvancedTodoCRM() {
           };
         }
 
-        const assignedTeam = item.team ? { id: item.teamId, teamName: item.team.teamName } : null;
+        const assignedTeam = item.team
+          ? { id: item.teamId, teamName: item.team.teamName }
+          : null;
 
         return {
           id: item.id,
@@ -179,7 +213,9 @@ export default function AdvancedTodoCRM() {
           description: item.description,
           assignedTo: assignedStaff,
           dueDate: item.date?.split("T")[0] || "",
-          priority: item.priority?.charAt(0).toUpperCase() + item.priority?.slice(1) || "Medium",
+          priority:
+            item.priority?.charAt(0).toUpperCase() +
+              item.priority?.slice(1) || "Medium",
           status: item.workUpdate || "Pending",
           team: assignedTeam,
         };
@@ -234,8 +270,10 @@ export default function AdvancedTodoCRM() {
   const validateForm = () => {
     let tempErrors = {};
     if (!formTask.title.trim()) tempErrors.title = "Title is required";
-    if (!formTask.description.trim()) tempErrors.description = "Description is required";
-    if (!formTask.assignedTo?.name) tempErrors.assignedTo = "Assigned user is required";
+    if (!formTask.description.trim())
+      tempErrors.description = "Description is required";
+    if (!formTask.assignedTo?.name)
+      tempErrors.assignedTo = "Assigned user is required";
     if (!formTask.dueDate) tempErrors.dueDate = "Due date is required";
     if (!formTask.priority) tempErrors.priority = "Priority is required";
     setErrors(tempErrors);
@@ -265,31 +303,31 @@ export default function AdvancedTodoCRM() {
       ...formTask,
       assignedName: formTask.assignedTo.name,
       assignedEmail: formTask.assignedTo.email,
-      // Logic for teamId is slightly complex based on your original code's interpretation.
-      // Assuming if a user is 'Admin' they may be assigning to a team, but if it's a specific user, team is secondary/not needed in payload.
-      // Retaining your original logic: If assignedTo is Admin, send teamId. Otherwise, your API might handle the assignment via assignedEmail/Name.
-      teamId: formTask.assignedTo?.name === "Admin" ? formTask.team?.id || null : null,
+      teamId:
+        formTask.assignedTo?.name === "Admin" ? formTask.team?.id || null : null,
     };
 
     try {
       showLoadingSwal(editTask ? "Updating..." : "Creating...");
 
       if (editTask) {
-        await axios.put("/work/assign/update", { params: { id: editTask.id, ...payload } });
+        await axios.put("/work/assign/update", {
+          params: { id: editTask.id, ...payload },
+        });
         setTasks(
-          tasks.map((t) => (t.id === editTask.id ? { ...formTask, id: editTask.id } : t))
+          tasks.map((t) =>
+            t.id === editTask.id ? { ...formTask, id: editTask.id } : t
+          )
         );
         Swal.close();
         Swal.fire("Updated! 🎉", "Task has been updated.", "success");
       } else {
-        // NOTE: The ID here is temporary. In a real-world scenario, you'd get the actual ID from the API response.
-        const response = await axios.post("/work/assign/create", { params: payload });
-        // The API response should ideally contain the full, newly created task object.
-        // For demonstration, we'll construct a mock new task until the actual response structure is known.
-        const newTask = { 
-            ...formTask, 
-            id: response.data?.newId || Date.now().toString(), // Use actual ID if available
-            // Recalculate assignedTo and team for state consistency based on formTask
+        const response = await axios.post("/work/assign/create", {
+          params: payload,
+        });
+        const newTask = {
+          ...formTask,
+          id: response.data?.newId || Date.now().toString(),
         };
         setTasks((prev) => [...prev, newTask]);
         Swal.close();
@@ -317,9 +355,7 @@ export default function AdvancedTodoCRM() {
       if (result.isConfirmed) {
         try {
           showLoadingSwal("Deleting...");
-
-          // Using a simple template literal for the DELETE endpoint as per standard REST conventions
-          await axios.delete(`/work/assign/delete/${id}`); 
+          await axios.delete(`/work/assign/delete/${id}`);
           setTasks((prev) => prev.filter((t) => t.id !== id));
           Swal.close();
           Swal.fire("Deleted! 🗑️", "Task has been deleted.", "success");
@@ -332,52 +368,54 @@ export default function AdvancedTodoCRM() {
     });
   };
 
-  // Function to determine the column header color
+  // Function to determine the column header color - Changed to Darker Blue for Premium Look
   const getStageHeaderClasses = (stage) => {
     switch (stage) {
       case "Pending":
-        return "bg-gray-700";
+        return "bg-gray-700"; // Dark Gray
       case "Progress":
-        return "bg-blue-700";
+        return "bg-indigo-700"; // Dark Blue/Indigo
       case "Completed":
-        return "bg-green-700";
+        return "bg-green-700"; // Dark Green
       default:
         return "bg-gray-700";
     }
   };
 
   return (
-    <div className="p-4 md:p-8 bg-gray-100">
-      {/* Header */}
-      <header className="flex justify-between items-center mb-8 bg-white p-4 rounded-xl shadow-lg">
-        <h3 className="text-2xl font-semibold text-gray-900">Task Assignment</h3>
+    <div className="p-4 md:p-8 bg-gray-50">
+      {/* Header - Cleaner Look */}
+      <header className="flex justify-between items-center mb-6 bg-white p-4 rounded-lg shadow-md border-b-2 border-indigo-500">
+         <h1 className="text-xl font-extrabold text-gray-900 tracking-tight">
+            <span className="text-indigo-600">Task</span> Management
+          </h1>
         <button
           onClick={() => openModal()}
-          className="flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-semibold shadow-lg transition duration-200 ease-in-out transform hover:scale-[1.02]"
+          className="flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 text-sm rounded-md font-semibold shadow-md transition duration-200 ease-in-out"
         >
           + New Task
         </button>
       </header>
-      {/* --- */}
 
-      {/* Kanban Board */}
+      {/* Kanban Board - Subtle Design */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {statusStages.map((stage) => (
-          <div key={stage} className="bg-gray-50 rounded-xl shadow-xl flex flex-col">
+          <div key={stage} className="bg-white rounded-xl shadow-lg flex flex-col">
             {/* Stage Header */}
-            <div className={`p-4 rounded-t-xl ${getStageHeaderClasses(stage)}`}>
-              <h2 className="text-xl font-bold text-white uppercase tracking-wider">{stage}</h2>
-              <span className="text-sm text-gray-200">
+            <div className={`p-3 rounded-t-xl ${getStageHeaderClasses(stage)}`}>
+              <h2 className="text-base font-semibold text-white uppercase tracking-wide">
+                {stage}
+              </h2>
+              <span className="text-xs text-gray-200">
                 ({tasks.filter((t) => t.status === stage).length} tasks)
               </span>
             </div>
-            
-            {/* Task List */}
-            <div className="p-4 space-y-4 flex-grow min-h-[100px] overflow-y-auto">
+
+            {/* Task List - subtle white background */}
+            <div className="p-3 space-y-3 flex-grow min-h-[100px] overflow-y-auto">
               {tasks
                 .filter((t) => t.status === stage)
                 .sort((a, b) => {
-                  // Optional: Sort by Priority (High > Medium > Low) or Due Date
                   const priorityOrder = { High: 3, Medium: 2, Low: 1 };
                   return priorityOrder[b.priority] - priorityOrder[a.priority];
                 })
@@ -391,36 +429,44 @@ export default function AdvancedTodoCRM() {
                     setShowMoreMap={setShowMoreMap}
                   />
                 ))}
-              
+
               {/* Placeholder if column is empty */}
               {tasks.filter((t) => t.status === stage).length === 0 && (
-                  <div className="text-center p-8 text-gray-500 italic bg-white rounded-lg border-2 border-dashed border-gray-300">
-                      No tasks in this stage.
-                  </div>
+                <div className="text-center p-6 text-gray-400 italic bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                  No tasks here.
+                </div>
               )}
             </div>
           </div>
         ))}
       </div>
-      {/* --- */}
 
-      {/* Modal (Improved Styling) */}
+      {/* Modal (Compacted Form & Standard Design) */}
       {modalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-xl w-full max-w-xl shadow-2xl transform transition-all overflow-hidden max-h-[90vh] flex flex-col">
-            {/* Header */}
-            <div className="bg-indigo-600 text-white px-6 py-4 flex justify-between items-center shrink-0">
-              <h2 className="text-xl font-bold">{editTask ? "Edit Task" : "Create New Task"}</h2>
-              <X className="cursor-pointer w-6 h-6 hover:text-indigo-200" onClick={() => setModalOpen(false)} />
+          <div className="bg-white rounded-xl w-full max-w-lg shadow-2xl transform transition-all overflow-hidden max-h-[90vh] flex flex-col">
+            {/* Header - Dark and Clean */}
+            <div className="bg-gray-800 text-white px-5 py-3 flex justify-between items-center shrink-0">
+              <h2 className="text-lg font-semibold">
+                {editTask ? "Edit Task" : "Create New Task"}
+              </h2>
+              <X
+                className="cursor-pointer w-5 h-5 hover:text-gray-300"
+                onClick={() => setModalOpen(false)}
+              />
             </div>
 
-            {/* Scrollable Body (Form) */}
-            <div className="p-6 space-y-5 overflow-y-auto flex-grow">
+            {/* Scrollable Body (Form) - Compacted Padding/Spacing */}
+            <div className="p-5 space-y-4 overflow-y-auto flex-grow">
               {/* Title */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Title
+                </label>
                 <input
-                  className={`border ${errors.title ? 'border-red-500' : 'border-gray-300'} p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-150`}
+                  className={`border ${
+                    errors.title ? "border-red-500" : "border-gray-300"
+                  } p-2 rounded-md w-full text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 transition duration-150`}
                   placeholder="Task Title"
                   value={formTask.title}
                   onChange={(e) => {
@@ -428,125 +474,173 @@ export default function AdvancedTodoCRM() {
                     setErrors({ ...errors, title: "" });
                   }}
                 />
-                {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
+                {errors.title && (
+                  <p className="text-red-500 text-xs mt-1">{errors.title}</p>
+                )}
               </div>
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
                 <textarea
-                  className={`border ${errors.description ? 'border-red-500' : 'border-gray-300'} p-3 h-[100px] rounded-lg w-full resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-150`}
+                  className={`border ${
+                    errors.description ? "border-red-500" : "border-gray-300"
+                  } p-2 h-[80px] rounded-md w-full text-sm resize-none focus:outline-none focus:ring-1 focus:ring-indigo-500 transition duration-150`}
                   placeholder="Task Description"
                   value={formTask.description}
                   onChange={(e) => {
                     setFormTask({ ...formTask, description: e.target.value });
                     setErrors({ ...errors, description: "" });
                   }}
-                  rows={4}
+                  rows={3}
                 />
-                {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
+                {errors.description && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.description}
+                  </p>
+                )}
               </div>
 
-              {/* Grid for smaller fields (Assigned To, Due Date, Priority, Status, Team) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* 2x2 Grid for smaller fields - Tighter Spacing */}
+              <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                 {/* Assigned User */}
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
-                    <select
-                        className={`border ${errors.assignedTo ? 'border-red-500' : 'border-gray-300'} p-3 rounded-lg w-full bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-150`}
-                        value={formTask.assignedTo?.name || ""}
-                        onChange={(e) => {
-                            const user = allUsers.find((u) => u.name === e.target.value);
-                            setFormTask({ ...formTask, assignedTo: user });
-                            setErrors({ ...errors, assignedTo: "" });
-                        }}
-                    >
-                        {allUsers.map((user) => (
-                            <option key={user.name} value={user.name}>
-                                {user.name} {user.email ? `(${user.email})` : ''}
-                            </option>
-                        ))}
-                    </select>
-                    {errors.assignedTo && <p className="text-red-500 text-sm mt-1">{errors.assignedTo}</p>}
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Assigned To
+                  </label>
+                  <select
+                    className={`border ${
+                      errors.assignedTo ? "border-red-500" : "border-gray-300"
+                    } p-2 rounded-md w-full bg-white text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 transition duration-150`}
+                    value={formTask.assignedTo?.name || ""}
+                    onChange={(e) => {
+                      const user = allUsers.find(
+                        (u) => u.name === e.target.value
+                      );
+                      setFormTask({ ...formTask, assignedTo: user });
+                      setErrors({ ...errors, assignedTo: "" });
+                    }}
+                  >
+                    {allUsers.map((user) => (
+                      <option key={user.name} value={user.name}>
+                        {user.name} {user.email ? `(${user.email})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.assignedTo && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors.assignedTo}
+                    </p>
+                  )}
                 </div>
-                
+
                 {/* Due Date */}
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
-                    <input
-                        type="date"
-                        className={`border ${errors.dueDate ? 'border-red-500' : 'border-gray-300'} p-3 rounded-lg w-full bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-150`}
-                        value={formTask.dueDate}
-                        min={new Date().toISOString().split("T")[0]}
-                        onChange={(e) => {
-                            setFormTask({ ...formTask, dueDate: e.target.value });
-                            setErrors({ ...errors, dueDate: "" });
-                        }}
-                    />
-                    {errors.dueDate && <p className="text-red-500 text-sm mt-1">{errors.dueDate}</p>}
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Due Date
+                  </label>
+                  <input
+                    type="date"
+                    className={`border ${
+                      errors.dueDate ? "border-red-500" : "border-gray-300"
+                    } p-2 rounded-md w-full bg-white text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 transition duration-150`}
+                    value={formTask.dueDate}
+                    min={new Date().toISOString().split("T")[0]}
+                    onChange={(e) => {
+                      setFormTask({ ...formTask, dueDate: e.target.value });
+                      setErrors({ ...errors, dueDate: "" });
+                    }}
+                  />
+                  {errors.dueDate && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors.dueDate}
+                    </p>
+                  )}
                 </div>
 
                 {/* Priority */}
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-                    <select
-                        className={`border ${errors.priority ? 'border-red-500' : 'border-gray-300'} p-3 rounded-lg w-full bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-150`}
-                        value={formTask.priority}
-                        onChange={(e) => {
-                            setFormTask({ ...formTask, priority: e.target.value });
-                            setErrors({ ...errors, priority: "" });
-                        }}
-                    >
-                        <option value="">Select Priority</option>
-                        <option value="High">High</option>
-                        <option value="Medium">Medium</option>
-                        <option value="Low">Low</option>
-                    </select>
-                    {errors.priority && <p className="text-red-500 text-sm mt-1">{errors.priority}</p>}
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Priority
+                  </label>
+                  <select
+                    className={`border ${
+                      errors.priority ? "border-red-500" : "border-gray-300"
+                    } p-2 rounded-md w-full bg-white text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 transition duration-150`}
+                    value={formTask.priority}
+                    onChange={(e) => {
+                      setFormTask({ ...formTask, priority: e.target.value });
+                      setErrors({ ...errors, priority: "" });
+                    }}
+                  >
+                    <option value="">Select Priority</option>
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                  </select>
+                  {errors.priority && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors.priority}
+                    </p>
+                  )}
                 </div>
-                
+
                 {/* Status */}
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    <select
-                        className="border border-gray-300 p-3 rounded-lg w-full bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-150"
-                        value={formTask.status}
-                        onChange={(e) => setFormTask({ ...formTask, status: e.target.value })}
-                    >
-                        <option value="Pending">Pending</option>
-                        <option value="Progress">In Progress</option>
-                        <option value="Completed">Completed</option>
-                    </select>
-                </div>
-                
-                {/* Team (Full width) */}
-                <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Team (Optional)</label>
-                    <select
-                        className="border border-gray-300 p-3 rounded-lg w-full bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-150"
-                        value={formTask.team?.id || ""}
-                        onChange={(e) => {
-                            const selectedTeam = teams.find((t) => t.id === parseInt(e.target.value));
-                            setFormTask({ ...formTask, team: selectedTeam });
-                        }}
-                    >
-                        <option value="">Select Team</option>
-                        {teams.map((t) => (
-                            <option key={t.id} value={t.id}>
-                                {t.teamName}
-                            </option>
-                        ))}
-                    </select>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Status
+                  </label>
+                  <select
+                    className="border border-gray-300 p-2 rounded-md w-full bg-white text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 transition duration-150"
+                    value={formTask.status}
+                    onChange={(e) =>
+                      setFormTask({ ...formTask, status: e.target.value })
+                    }
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                  </select>
                 </div>
               </div>
 
-              {noChangeMessage && <p className="text-amber-600 text-sm p-2 bg-amber-50 rounded-lg border border-amber-300">{noChangeMessage}</p>}
+              {/* Team (Full width) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Team (Optional)
+                </label>
+                <select
+                  className="border border-gray-300 p-2 rounded-md w-full bg-white text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 transition duration-150"
+                  value={formTask.team?.id || ""}
+                  onChange={(e) => {
+                    const selectedTeam = teams.find(
+                      (t) => t.id === parseInt(e.target.value)
+                    );
+                    setFormTask({ ...formTask, team: selectedTeam });
+                  }}
+                >
+                  <option value="">Select Team</option>
+                  {teams.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.teamName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {noChangeMessage && (
+                <p className="text-amber-700 text-sm p-2 bg-amber-50 rounded-md border border-amber-300">
+                  {noChangeMessage}
+                </p>
+              )}
 
               {/* Submit Button */}
               <div className="pt-2">
                 <button
                   onClick={handleSaveTask}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-lg py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50"
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-base py-2.5 rounded-md shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50"
                 >
                   {editTask ? "Update Task" : "Create Task"}
                 </button>

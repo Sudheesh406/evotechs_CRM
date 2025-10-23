@@ -1,30 +1,29 @@
 const Contacts = require("../../models/v1/Customer/contacts");
 const leads = require("../../models/v1/Customer/leads");
 const trash = require("../../models/v1/Trash/trash");
-const task = require('../../models/v1/Project/task')
+const task = require("../../models/v1/Project/task");
 const { signup } = require("../../models/v1");
 const { httpSuccess, httpError } = require("../../utils/v1/httpResponse");
 const { Op } = require("sequelize");
 const roleChecker = require("../../utils/v1/roleChecker");
 
-
-
 //leads
 const createLeads = async (req, res) => {
   try {
     const user = req.user;
-    const { name, description, location, phone, source, priority, amount, email } =
-      req.body;
+    const {
+      name,
+      description,
+      location,
+      phone,
+      source,
+      priority,
+      amount,
+      email,
+    } = req.body;
 
     // Validate required fields
-    if (
-      !name ||
-      !description ||
-      !phone ||
-      !source ||
-      !location ||
-      !amount
-    ) {
+    if (!name || !description || !phone || !source || !location || !amount) {
       return httpError(res, 400, "All fields are required");
     }
 
@@ -33,7 +32,7 @@ const createLeads = async (req, res) => {
     if (existingLead) {
       return httpError(res, 409, "A lead with this email already exists");
     }
-    const Priority = null
+    const Priority = null;
     // Create the lead
     const result = await leads.create({
       name,
@@ -42,7 +41,7 @@ const createLeads = async (req, res) => {
       phone,
       location,
       source,
-      Priority ,
+      Priority,
       amount,
       staffId: user?.id,
     });
@@ -53,7 +52,6 @@ const createLeads = async (req, res) => {
     return httpError(res, 500, "Server error", err.message);
   }
 };
-
 
 const getLeads = async (req, res) => {
   try {
@@ -94,7 +92,6 @@ const getLeads = async (req, res) => {
   }
 };
 
-
 const updateLeads = async (req, res) => {
   try {
     const user = req.user;
@@ -112,7 +109,7 @@ const updateLeads = async (req, res) => {
       where: { email: data.email, id: { [Op.ne]: id } },
     });
 
-    if (existEmail){
+    if (existEmail) {
       return httpError(res, 409, "Another lead already exists with this email");
     }
 
@@ -120,30 +117,32 @@ const updateLeads = async (req, res) => {
       where: { phone: data.phone, id: { [Op.ne]: id } },
     });
 
-    const contactDetails = await Contacts.findAll({where:{phone : data.phone, staffId: user.id}})
+    const contactDetails = await Contacts.findAll({
+      where: { phone: data.phone, staffId: user.id },
+    });
     let client = data.priority;
 
-    if (client == 'No Updates'){
-      client = 'NoUpdates'
-    }else if(client == 'Waiting Period'){
-      client = 'WaitingPeriod'
-    }else if (client == 'Not a Client'){
-            client = 'NotAnClient'
+    if (client == "No Updates") {
+      client = "NoUpdates";
+    } else if (client == "Waiting Period") {
+      client = "WaitingPeriod";
+    } else if (client == "Not a Client") {
+      client = "NotAnClient";
     }
-    
-    if(!contactDetails || contactDetails.length == 0){
-     if(client === 'Client'){
-       Contacts.create({
-         staffId : user.id,
-         amount : data.amount,
-         location : data.location,
-         source : data.source,
-         phone : data.phone,
-         email : data.email,
-         description : data.description,
-         name : data.name,
-       })
-     }
+
+    if (!contactDetails || contactDetails.length == 0) {
+      if (client === "Client") {
+        Contacts.create({
+          staffId: user.id,
+          amount: data.amount,
+          location: data.location,
+          source: data.source,
+          phone: data.phone,
+          email: data.email,
+          description: data.description,
+          name: data.name,
+        });
+      }
     }
 
     if (existPhone)
@@ -152,7 +151,7 @@ const updateLeads = async (req, res) => {
         409,
         "Another lead already exists with this phone number"
       );
-      data.priority = client
+    data.priority = client;
 
     const updated = await customer.update(data);
     return httpSuccess(res, 200, "Lead updated successfully", updated);
@@ -161,7 +160,6 @@ const updateLeads = async (req, res) => {
     return httpError(res, 500, "Internal Server Error");
   }
 };
-
 
 const deleteLeads = async (req, res) => {
   try {
@@ -179,8 +177,6 @@ const deleteLeads = async (req, res) => {
     if (customer.staffId !== user.id) {
       return httpError(res, 403, "Access denied");
     }
-
-    
 
     const moment = require("moment-timezone");
 
@@ -208,7 +204,6 @@ const deleteLeads = async (req, res) => {
     return httpError(res, 500, "Internal Server Error");
   }
 };
-
 
 const approveLeads = async (req, res) => {
   try {
@@ -265,24 +260,23 @@ const approveLeads = async (req, res) => {
   }
 };
 
-
 //contacts
 const createContact = async (req, res) => {
   try {
     const user = req.user;
 
-    const { name, description, email, phone, source, priority, amount } =
+    const { name, description, email, phone, source, priority, amount, location } =
       req.body;
 
     // Validate required fields
     if (
       !name ||
       !description ||
-      !email ||
       !phone ||
       !source ||
       !priority ||
-      !amount
+      !amount ||
+      !location
     ) {
       return httpError(res, 400, "All fields are required");
     }
@@ -298,6 +292,7 @@ const createContact = async (req, res) => {
       name,
       description,
       email,
+      location,
       phone,
       source,
       priority,
@@ -368,26 +363,28 @@ const updateContact = async (req, res) => {
 
     // Check duplicates separately
     const existEmail = await Contacts.findOne({
-      where: { email: data.email, id: { [Op.ne]: id } },
+      where: { email: data.email, staffId: user.id },
     });
 
-    if (existEmail)
+    const existPhone = await Contacts.findOne({
+      where: { phone: data.phone, staffId: user.id },
+    });
+
+    if (existEmail && existEmail.id != id) {
       return httpError(
         res,
         409,
         "Another contact already exists with this email"
       );
+    }
 
-    const existPhone = await Contacts.findOne({
-      where: { phone: data.phone, id: { [Op.ne]: id } },
-    });
-
-    if (existPhone)
+    if (existPhone && existPhone.id != id) {
       return httpError(
         res,
         409,
-        "Another contact already exists with this phone number"
+        "Another contact already exists with this phone"
       );
+    }
 
     const updated = await customer.update(data);
     return httpSuccess(res, 200, "contact updated successfully", updated);
@@ -396,7 +393,6 @@ const updateContact = async (req, res) => {
     return httpError(res, 500, "Internal Server Error");
   }
 };
-
 
 const deleteContact = async (req, res) => {
   try {
@@ -416,7 +412,9 @@ const deleteContact = async (req, res) => {
     }
 
     // Check if any task is linked with this contact's phone
-    const taskDetails = await task.findOne({ where: { phone: customer.phone } });
+    const taskDetails = await task.findOne({
+      where: { phone: customer.phone },
+    });
     if (taskDetails) {
       return httpError(res, 406, "A Task is associated with this contact");
     }
@@ -444,7 +442,6 @@ const deleteContact = async (req, res) => {
     return httpError(res, 500, "Internal Server Error");
   }
 };
-
 
 const getPendingLeads = async (req, res) => {
   try {
@@ -488,7 +485,6 @@ const getPendingLeads = async (req, res) => {
   }
 };
 
-
 const getRejectLeads = async (req, res) => {
   try {
     const user = req.user;
@@ -500,7 +496,7 @@ const getRejectLeads = async (req, res) => {
     const whereCondition = {
       staffId: user.id,
       softDelete: false,
-      priority: 'NotAnClient',
+      priority: "NotAnClient",
     };
 
     if (search.trim()) {
@@ -528,7 +524,6 @@ const getRejectLeads = async (req, res) => {
     return httpError(res, 500, "Internal Server Error");
   }
 };
-
 
 //Global - Lead Acess //
 const getGlobalLeads = async (req, res) => {
@@ -564,7 +559,7 @@ const getGlobalLeads = async (req, res) => {
         {
           model: signup,
           as: "assignedStaff", // ✅ use the same alias defined in association
-          attributes: ["id","name","role"], // only fetch the staff name
+          attributes: ["id", "name", "role"], // only fetch the staff name
         },
       ],
     });
@@ -587,12 +582,11 @@ const getGlobalLeads = async (req, res) => {
   }
 };
 
-
 const getGlobalPendingLeads = async (req, res) => {
   try {
     const user = req.user;
 
-     const access = await roleChecker(user.id);
+    const access = await roleChecker(user.id);
     if (!access) {
       return httpError(res, 403, "Access denied. Admins only.");
     }
@@ -616,7 +610,7 @@ const getGlobalPendingLeads = async (req, res) => {
       ];
     }
 
-     const { count, rows } = await leads.findAndCountAll({
+    const { count, rows } = await leads.findAndCountAll({
       where: whereCondition,
       order: [["id", "DESC"]],
       limit: parseInt(limit),
@@ -625,7 +619,7 @@ const getGlobalPendingLeads = async (req, res) => {
         {
           model: signup,
           as: "assignedStaff", // ✅ use the same alias defined in association
-          attributes: ["id","name","role"], // only fetch the staff name
+          attributes: ["id", "name", "role"], // only fetch the staff name
         },
       ],
     });
@@ -648,7 +642,6 @@ const getGlobalPendingLeads = async (req, res) => {
   }
 };
 
-
 const getGlobalRejectLeads = async (req, res) => {
   try {
     const user = req.user;
@@ -665,7 +658,7 @@ const getGlobalRejectLeads = async (req, res) => {
     // 🔍 Build dynamic where condition
     const whereCondition = {
       softDelete: false,
-      priority: 'NotAnClient',
+      priority: "NotAnClient",
     };
 
     if (search.trim()) {
@@ -684,7 +677,7 @@ const getGlobalRejectLeads = async (req, res) => {
         {
           model: signup,
           as: "assignedStaff", // ✅ use the same alias defined in association
-          attributes: ["id","name","role"], // only fetch the staff name
+          attributes: ["id", "name", "role"], // only fetch the staff name
         },
       ],
     });
@@ -707,11 +700,10 @@ const getGlobalRejectLeads = async (req, res) => {
   }
 };
 
-
 const getGlobalContact = async (req, res) => {
   try {
     const user = req.user;
-      const access = await roleChecker(user.id);
+    const access = await roleChecker(user.id);
     if (!access) {
       return httpError(res, 403, "Access denied. Admins only.");
     }
@@ -732,7 +724,7 @@ const getGlobalContact = async (req, res) => {
       ];
     }
 
-      const { count, rows } = await Contacts.findAndCountAll({
+    const { count, rows } = await Contacts.findAndCountAll({
       where: whereCondition,
       order: [["id", "DESC"]],
       limit: parseInt(limit),
@@ -741,7 +733,7 @@ const getGlobalContact = async (req, res) => {
         {
           model: signup,
           as: "assignedStaff", // ✅ use the same alias defined in association
-          attributes: ["id","name","role"], // only fetch the staff name
+          attributes: ["id", "name", "role"], // only fetch the staff name
         },
       ],
     });
@@ -764,7 +756,6 @@ const getGlobalContact = async (req, res) => {
   }
 };
 
-
 module.exports = {
   createLeads,
   getLeads,
@@ -780,5 +771,5 @@ module.exports = {
   getGlobalLeads,
   getGlobalPendingLeads,
   getGlobalRejectLeads,
-  getGlobalContact
+  getGlobalContact,
 };

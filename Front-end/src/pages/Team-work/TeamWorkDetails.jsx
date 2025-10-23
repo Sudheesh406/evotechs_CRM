@@ -54,7 +54,6 @@ export default function TeamWorkDetails() {
       }));
 
       if (response.data?.admin) {
-        console.log(response)
         setRole(true);
       }
 

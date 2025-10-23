@@ -12,6 +12,7 @@ const statusColors = {
 const StaffDashboard = () => {
   const [workDetails, setWorkDetails] = useState([]);
   const [expandedTasks, setExpandedTasks] = useState({}); // Track which tasks are expanded
+  const [userName, setUserName] = useState()
 
   const getWorkAssign = async () => {
     try {
@@ -26,7 +27,9 @@ const StaffDashboard = () => {
 
       const { data } = await axios.get("/work/get");
 
-      setWorkDetails(data.data);
+      console.log(data)
+      setWorkDetails(data?.data?.workAssigns);
+      setUserName(data?.data?.userName)
 
       // Close loading alert
       Swal.close();
@@ -90,7 +93,9 @@ const StaffDashboard = () => {
 
   return (
     <div className="bg-[#f5f5f5] min-h-[680px] text-gray-800 p-4">
-      <h1 className="text-2xl font-bold mb-4">Welcome Back</h1>
+      <h1 className="text-2xl font-bold mb-4">Hello <span className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+              {userName} !
+            </span></h1>
 
       <div className="flex gap-4 flex-wrap">
         {statuses.map((status) => {

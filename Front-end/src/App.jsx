@@ -20,7 +20,6 @@ import Leads from "./pages/sales-pages/Leads";
 import Accounts from "./pages/operation-pages/Accounts";
 import Contacts from "./pages/operation-pages/Contacts";
 import Deals from "./pages/sales-pages/Deals";
-import Documents from "./pages/operation-pages/Documents";
 import Personalize from "./pages/operation-pages/Personalize";
 import Calls from "./pages/activity-pages/Calls";
 import Task from "./pages/activity-pages/Task";
@@ -64,11 +63,16 @@ import GlobalPendingLeads from "./pages/global-leads/GlobalPendingLeads";
 import GlobalRejectedLeads from "./pages/global-leads/GlobalRejectedLeads";
 import GlobalContacts from "./pages/global-leads/GlobalContacts";
 import MyTask from './pages/activity-pages/admin_activity/MyTask';
-
+import Settings from "./pages/settings/Settings";
+import CompletedPersonalTask from './pages/operation-pages/CompletedPersonalTask';
+import DetailMyTask from './pages/activity-pages/admin_activity/DetailMyTask'
 
 
 import ProtectedRoute from "./components/Routes/ProtectedRoute";
 import Sidebar from "./components/SideBar";
+
+import { Toaster } from "react-hot-toast";
+
 
 function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -109,6 +113,7 @@ function Layout() {
           </div>
         )}
 
+         <Toaster />
         <Routes>
           {/* Unauthorized / Access Denied */}
           <Route
@@ -247,6 +252,14 @@ function Layout() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/tasks/:status"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <DetailMyTask />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Staff Routes */}
           <Route
@@ -316,9 +329,15 @@ function Layout() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Settings />
+              </ProtectedRoute>
+            }
+          />
           
-
-
 
           <Route
             path="/operations/contacts"
@@ -388,18 +407,18 @@ function Layout() {
             }
           />
           <Route
-            path="/operations/documents"
-            element={
-              <ProtectedRoute allowedRoles={["staff", "admin"]}>
-                <Documents />
-              </ProtectedRoute>
-            }
-          />
-          <Route
             path="/operations/reworks"
             element={
               <ProtectedRoute allowedRoles={["staff"]}>
                 <Rework />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/operations/staff/completed/task"
+            element={
+              <ProtectedRoute allowedRoles={["staff"]}>
+                <CompletedPersonalTask />
               </ProtectedRoute>
             }
           />

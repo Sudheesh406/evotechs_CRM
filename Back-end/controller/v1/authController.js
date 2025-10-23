@@ -5,6 +5,7 @@ const signup = require("../../models/v1/Authentication/authModel");
 const secretCode = require("../../models/v1/Authentication/secreatCode");
 const { httpSuccess, httpError } = require("../../utils/v1/httpResponse");
 const Signup = require("../../models/v1/Authentication/authModel");
+const company = require('../../models/v1/company/company')
 
 const handleSignup = async (req, res) => {
   try {
@@ -166,8 +167,11 @@ const roleChecker = async (req, res) => {
     if (!userDetails) {
       return httpError(res, 404, "User not found");
     }
+        const companyDetails = await company.findOne({})
+
     return httpSuccess(res, 200, "Role fetched successfully", {
       role: userDetails.role,
+      company: companyDetails
     });
   } catch (error) {
     console.log("error found  in role checker", error);
@@ -183,11 +187,12 @@ const getRole = async (req, res) => {
     if (!userDetails) {
       return httpError(res, 404, "User not found");
     }
+
     const id = user.id
     const role = userDetails.role
 
     return httpSuccess(res, 200, "Role fetched successfully", {
-      id,role,
+      id,role
     });
   } catch (error) {
     console.log("error found  in role getting", error);

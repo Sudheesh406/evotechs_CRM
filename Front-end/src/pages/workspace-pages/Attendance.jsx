@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { LogIn, LogOut, X } from "lucide-react";
+import { LogIn, LogOut, X, Edit, Trash2, Clock, Calendar } from "lucide-react";
 import axios from "../../instance/Axios";
 import Swal from "sweetalert2";
 
@@ -40,6 +40,43 @@ function isValidTime(value) {
   return /^(0?[1-9]|1[0-2]):[0-5][0-9]\s?(AM|PM)$/i.test(value.trim());
 }
 
+// ====================================================================================
+// TIME DROPDOWN COMPONENT (Monochromatic Styling)
+// ====================================================================================
+const TimeDropdown = ({
+  isVisible,
+  times,
+  setTime,
+  closeDropdown,
+  iconColor, // Still used for subtle hover/text coloring
+}) => {
+  if (!isVisible) return null;
+
+  const colorClass = iconColor === 'indigo'
+    ? { text: 'text-blue-700', hoverBg: 'hover:bg-blue-50' }
+    : { text: 'text-red-700', hoverBg: 'hover:bg-red-50' };
+
+  return (
+    <ul className="absolute z-30 bg-white border border-gray-300 rounded-lg shadow-lg mt-2 w-full max-h-56 overflow-y-auto text-sm opacity-100 transform translate-y-0 transition-all duration-300 ease-in-out">
+      {times.map((time) => (
+        <li
+          key={time}
+          onClick={() => {
+            setTime(time);
+            closeDropdown(false);
+          }}
+          className={`px-4 py-2 ${colorClass.hoverBg} cursor-pointer text-gray-700 transition-colors duration-150`}
+        >
+          <span className={`font-medium ${colorClass.text}`}>{time}</span>
+        </li>
+      ))}
+    </ul>
+  );
+};
+
+// ====================================================================================
+// MAIN ATTENDANCE COMPONENT (CRM Standard Styling)
+// ====================================================================================
 export default function Attendance() {
   const [attendanceList, setAttendanceList] = useState([]);
   const [entryTime, setEntryTime] = useState("");
@@ -61,16 +98,14 @@ export default function Attendance() {
   const modalEntryRef = useRef(null);
   const modalExitRef = useRef(null);
 
+  // Improved useEffect for closing dropdowns
   useEffect(() => {
     function handleClickOutside(event) {
       if (entryRef.current && !entryRef.current.contains(event.target))
         setShowEntryDropdown(false);
       if (exitRef.current && !exitRef.current.contains(event.target))
         setShowExitDropdown(false);
-      if (
-        modalEntryRef.current &&
-        !modalEntryRef.current.contains(event.target)
-      )
+      if (modalEntryRef.current && !modalEntryRef.current.contains(event.target))
         setShowModalEntryDropdown(false);
       if (modalExitRef.current && !modalExitRef.current.contains(event.target))
         setShowModalExitDropdown(false);
@@ -82,7 +117,7 @@ export default function Attendance() {
   const fetchAttendance = async () => {
     // Show loading alert
     Swal.fire({
-      title: "Getting attendance...",
+      title: "Fetching records...",
       allowOutsideClick: false,
       didOpen: () => {
         Swal.showLoading();
@@ -101,7 +136,12 @@ export default function Attendance() {
         if (record.type === "exit") grouped[date].exit = record.time;
       });
 
-      setAttendanceList(Object.values(grouped));
+      // Sort by date descending
+      const sortedList = Object.values(grouped).sort(
+        (a, b) => new Date(b.date) - new Date(a.date)
+      );
+
+      setAttendanceList(sortedList);
 
       // Close loading alert
       Swal.close();
@@ -111,8 +151,8 @@ export default function Attendance() {
       // Show error alert
       Swal.fire({
         icon: "error",
-        title: "Failed to get attendance",
-        text: "Please try again later",
+        title: "Failed to load attendance",
+        text: "Please check your connection and try again.",
       });
     }
   };
@@ -140,7 +180,7 @@ export default function Attendance() {
       // Show success message
       Swal.fire({
         icon: "success",
-        title: "Attendance saved",
+        title: "Attendance saved!",
         timer: 1500,
         showConfirmButton: false,
       });
@@ -157,14 +197,20 @@ export default function Attendance() {
       Swal.fire({
         icon: "error",
         title: "Failed to save attendance",
-        text: "Please try again later",
+        text: error.response?.data?.message || "Please try again later.",
       });
     }
   };
 
   const markEntry = () => {
-    if (!entryTime || !isValidTime(entryTime))
-      return alert("Please enter a valid entry time (hh:mm AM/PM)");
+    if (!entryTime || !isValidTime(entryTime)) {
+      Swal.fire({
+        icon: "warning",
+        title: "Invalid Entry Time",
+        text: "Please enter a valid entry time (e.g., 09:00 AM).",
+      });
+      return;
+    }
     const today = new Date().toISOString().split("T")[0];
     handleAttendance({ date: today, entryTime, shedule: "entry" });
     setEntryTime("");
@@ -172,8 +218,14 @@ export default function Attendance() {
   };
 
   const markExit = () => {
-    if (!exitTime || !isValidTime(exitTime))
-      return alert("Please enter a valid exit time (hh:mm AM/PM)");
+    if (!exitTime || !isValidTime(exitTime)) {
+      Swal.fire({
+        icon: "warning",
+        title: "Invalid Exit Time",
+        text: "Please enter a valid exit time (e.g., 05:00 PM).",
+      });
+      return;
+    }
     const today = new Date().toISOString().split("T")[0];
     handleAttendance({ date: today, exitTime, shedule: "exit" });
     setExitTime("");
@@ -188,64 +240,58 @@ export default function Attendance() {
     setIsModalOpen(true);
   };
 
-const handleAttendanceDelete = async (record) => {
-  // Show confirmation before deleting
-  const result = await Swal.fire({
-    title: 'Are you sure?',
-    text: `Do you want to delete attendance for ${record.name || 'this record'}?`,
-    icon: 'warning',
-    showCancelButton: true,
-    cancelButtonText: 'Cancel',
-    confirmButtonText: 'Yes, delete it!',
-  });
-
-  if (result.isConfirmed) {
-    try {
-    // Show loading while deleting
-    Swal.fire({
-      title: 'Deleting...',
-      allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-      },
+  const handleAttendanceDelete = async (record) => {
+    // Show confirmation before deleting
+    const result = await Swal.fire({
+      title: "Confirm Deletion",
+      text: `Are you sure you want to delete the attendance for ${record.date}?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#1d4ed8", // Tailwind blue-700
+      cancelButtonColor: "#dc2626", // Tailwind red-600
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
     });
 
-    await axios.delete(`/attendance/delete/${record.id}`);
-
-    Swal.close(); // Close the loading modal
-
-    Swal.fire({
-      icon: 'success',
-      title: 'Deleted!',
-      text: 'Attendance record has been deleted.',
-    }).then(() => {
-      // Refresh the page after user clicks OK
-      window.location.reload();
-    })
-    
-    
-    ; // Refresh attendance list
-    } catch (error) {
-      Swal.close(); // Ensure loading is closed
-      if (error.response?.status === 403) {
+    if (result.isConfirmed) {
+      try {
+        // Show loading while deleting
         Swal.fire({
-          icon: 'error',
-          title: 'Forbidden',
-          text: 'You do not have permission to delete this record.',
+          title: "Deleting...",
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          },
         });
-      } else {
+
+        await axios.delete(`/attendance/delete/${record.id}`);
+
+        Swal.close(); // Close the loading modal
+
         Swal.fire({
-          icon: 'error',
-          title: 'Failed to delete',
-          text: 'Please try again later.',
+          icon: "success",
+          title: "Deleted!",
+          text: "Attendance record has been deleted.",
+          timer: 2000,
+          showConfirmButton: false,
+        }).then(() => {
+          // Refresh attendance list
+          fetchAttendance();
         });
+      } catch (error) {
+        Swal.close(); // Ensure loading is closed
+        const errorText =
+          error.response?.data?.message || "Please try again later.";
+        const title = error.response?.status === 403 ? "Permission Denied" : "Failed to Delete";
+        Swal.fire({
+          icon: "error",
+          title: title,
+          text: errorText,
+        });
+        console.error("Error deleting attendance:", error);
       }
-      console.error("Error deleting attendance:", error);
-      setErrorMessage("Failed to delete");
     }
-  }
-};
-
+  };
 
   const handleModalSubmit = async () => {
     setErrorMessage("");
@@ -253,294 +299,340 @@ const handleAttendanceDelete = async (record) => {
     const hasExitChanged = editRecord.exit !== editExit && editExit !== "";
 
     if (!hasEntryChanged && !hasExitChanged) {
-      setErrorMessage("No changes made");
+      setErrorMessage("No changes were made.");
       return;
     }
 
     if (hasEntryChanged && !isValidTime(editEntry)) {
-      setErrorMessage("Invalid entry time");
+      setErrorMessage("Invalid new entry time format (e.g., 09:00 AM).");
       return;
     }
     if (hasExitChanged && !isValidTime(editExit)) {
-      setErrorMessage("Invalid exit time");
+      setErrorMessage("Invalid new exit time format (e.g., 05:00 PM).");
       return;
     }
 
+    // Show loading alert for update
+    Swal.fire({
+      title: "Updating attendance...",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+
     try {
       if (hasEntryChanged) {
-        await axios.put(`/attendance/edit/${editRecord.id}`, {
+        await axios.put(`/attendance/edit/${editRecord.date}`, {
           date: editRecord.date,
           entryTime: editEntry,
           shedule: "entry",
         });
       }
       if (hasExitChanged) {
-        await axios.put(`/attendance/edit/${editRecord.id}`, {
+        await axios.put(`/attendance/edit/${editRecord.date}`, {
           date: editRecord.date,
           exitTime: editExit,
           shedule: "exit",
         });
       }
+
+      Swal.close(); // Close loading
+      Swal.fire({
+        icon: "success",
+        title: "Update Successful!",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+
       setIsModalOpen(false);
       fetchAttendance();
     } catch (error) {
+      Swal.close(); // Close loading
       console.error("Error updating attendance:", error);
-      setErrorMessage("Failed to update");
+      setErrorMessage(error.response?.data?.message || "Failed to update attendance.");
     }
   };
 
   return (
-    <div className="min-h-[680px] bg-gray-50 p-6 space-y-8">
-      {/* Attendance Form Card */}
-      <div className="bg-white rounded-xl shadow-md p-6 max-w-3xl mx-auto">
-        <h2 className="text-xl font-semibold text-gray-800 mb-6">
-          Mark Attendance
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-          {/* Entry */}
-          <div className="relative" ref={entryRef}>
-            <label className="block text-sm font-medium text-gray-600 mb-1">
-              Entry Time
-            </label>
-            <div className="flex items-center border border-gray-300 rounded-lg px-3 bg-gray-50">
-              <LogIn className="text-orange-500 w-4 h-4 mr-2" />
-              <input
-                type="text"
-                placeholder="hh:mm AM/PM"
-                value={entryTime}
-                onChange={(e) => setEntryTime(e.target.value)}
-                onFocus={() => setShowEntryDropdown(true)}
-                className="w-full py-2 text-sm bg-transparent focus:outline-none"
+    // Clean, light gray background
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-8 space-y-12">
+      <h1 className="text-3xl font-bold text-gray-800 text-center mb-10 mt-4 tracking-wide border-b pb-4">
+       Attendance <span className="text-blue-600">Management</span>  
+      </h1>
+      
+      <div className="max-w-5xl mx-auto space-y-12">
+        {/* Attendance Form Card (Clean white card with subtle shadow) */}
+        <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 border border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-700 mb-6 border-b pb-3">
+            Daily Check In/Out
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+            
+            {/* Entry */}
+            <div className="relative" ref={entryRef}>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Entry Time
+              </label>
+              <div className="flex items-center border border-gray-300 rounded-lg px-4 py-2 bg-white transition duration-300 focus-within:border-blue-500">
+                <LogIn className="text-blue-600 w-5 h-5 mr-3" />
+                <input
+                  type="text"
+                  placeholder="e.g., 09:00 AM"
+                  value={entryTime}
+                  onChange={(e) => setEntryTime(e.target.value)}
+                  onFocus={() => setShowEntryDropdown(true)}
+                  className="w-full text-base bg-transparent text-gray-800 focus:outline-none placeholder-gray-500"
+                />
+              </div>
+              <TimeDropdown
+                isVisible={showEntryDropdown}
+                times={presetTimes}
+                setTime={setEntryTime}
+                closeDropdown={setShowEntryDropdown}
+                iconColor="indigo" // Uses blue for consistency
               />
+              <button
+                onClick={markEntry}
+                className="mt-4 w-full bg-blue-600 text-white font-semibold px-4 py-2.5 rounded-lg shadow-md hover:bg-blue-700 transition duration-300 flex items-center justify-center space-x-2"
+              >
+                <span>Mark Check In</span>
+                <LogIn className="w-4 h-4" />
+              </button>
             </div>
-            {showEntryDropdown && (
-              <ul className="absolute z-10 bg-white border border-gray-300 rounded shadow mt-1 w-full max-h-48 overflow-auto text-sm">
-                {presetTimes.map((time) => (
-                  <li
-                    key={time}
-                    onClick={() => {
-                      setEntryTime(time);
-                      setShowEntryDropdown(false);
-                    }}
-                    className="px-3 py-1 hover:bg-orange-100 cursor-pointer"
-                  >
-                    {time}
-                  </li>
-                ))}
-              </ul>
-            )}
-            <button
-              onClick={markEntry}
-              className="mt-3 w-full bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition"
-            >
-              Mark Entry
-            </button>
-          </div>
 
-          {/* Exit */}
-          <div className="relative" ref={exitRef}>
-            <label className="block text-sm font-medium text-gray-600 mb-1">
-              Exit Time
-            </label>
-            <div className="flex items-center border border-gray-300 rounded-lg px-3 bg-gray-50">
-              <LogOut className="text-purple-500 w-4 h-4 mr-2" />
-              <input
-                type="text"
-                placeholder="hh:mm AM/PM"
-                value={exitTime}
-                onChange={(e) => setExitTime(e.target.value)}
-                onFocus={() => setShowExitDropdown(true)}
-                className="w-full py-2 text-sm bg-transparent focus:outline-none"
+            {/* Exit */}
+            <div className="relative" ref={exitRef}>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Exit Time
+              </label>
+              <div className="flex items-center border border-gray-300 rounded-lg px-4 py-2 bg-white transition duration-300 focus-within:border-red-500">
+                <LogOut className="text-red-600 w-5 h-5 mr-3" />
+                <input
+                  type="text"
+                  placeholder="e.g., 05:30 PM"
+                  value={exitTime}
+                  onChange={(e) => setExitTime(e.target.value)}
+                  onFocus={() => setShowExitDropdown(true)}
+                  className="w-full text-base bg-transparent text-gray-800 focus:outline-none placeholder-gray-500"
+                />
+              </div>
+              <TimeDropdown
+                isVisible={showExitDropdown}
+                times={presetTimes}
+                setTime={setExitTime}
+                closeDropdown={setShowExitDropdown}
+                iconColor="red" // Uses red for exit/stop
               />
+              <button
+                onClick={markExit}
+                className="mt-4 w-full bg-red-600 text-white font-semibold px-4 py-2.5 rounded-lg shadow-md hover:bg-red-700 transition duration-300 flex items-center justify-center space-x-2"
+              >
+                <span>Mark Check Out</span>
+                <LogOut className="w-4 h-4" />
+              </button>
             </div>
-            {showExitDropdown && (
-              <ul className="absolute z-10 bg-white border border-gray-300 rounded shadow mt-1 w-full max-h-48 overflow-auto text-sm">
-                {presetTimes.map((time) => (
-                  <li
-                    key={time}
-                    onClick={() => {
-                      setExitTime(time);
-                      setShowExitDropdown(false);
-                    }}
-                    className="px-3 py-1 hover:bg-purple-100 cursor-pointer"
-                  >
-                    {time}
-                  </li>
-                ))}
-              </ul>
-            )}
-            <button
-              onClick={markExit}
-              className="mt-3 w-full bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"
-            >
-              Mark Exit
-            </button>
+          </div>
+        </div>
+        
+        {/* Attendance Records Table */}
+        <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 border border-gray-200 overflow-x-auto">
+          <h2 className="text-xl font-semibold text-gray-700 mb-6 border-b pb-3">
+            Recent Records
+          </h2>
+          <div className="overflow-x-auto border border-gray-200 rounded-lg">
+            <table className="min-w-full divide-y divide-gray-200 text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
+                    <Calendar className="inline w-4 h-4 mr-2" /> Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
+                    <LogIn className="inline w-4 h-4 mr-2 text-blue-500" /> Entry Time
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
+                    <LogOut className="inline w-4 h-4 mr-2 text-red-500" /> Exit Time
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
+                    Action
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-100">
+                {attendanceList.length > 0 ? (
+                  attendanceList.map((record, index) => {
+                    const today = new Date().toISOString().split("T")[0];
+                    const isToday = record.date === today;
+                    const rowBgClass = isToday ? "bg-blue-50/50" : index % 2 === 1 ? "bg-gray-50 hover:bg-gray-100" : "bg-white hover:bg-gray-100";
+                    
+                    return (
+                      <tr
+                        key={record.id}
+                        className={`transition-colors duration-150 ${rowBgClass}`}
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {new Date(record.date).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                            })}
+                          {isToday && (
+                            <span className="ml-2 px-2 py-0.5 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full">
+                              TODAY
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {record.entry ? (
+                            <span className="inline-flex items-center px-3 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded min-w-[100px] justify-center">
+                              {record.entry}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 italic">--</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {record.exit ? (
+                            <span className="inline-flex items-center px-3 py-1 text-xs font-medium text-red-700 bg-red-100 rounded min-w-[100px] justify-center">
+                              {record.exit}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 italic">--</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex gap-2">
+                            {/* Edit Button */}
+                            <button
+                              className={`p-2 rounded-md transition-colors duration-150 ${
+                                isToday
+                                  ? "bg-gray-200 text-gray-600 hover:bg-gray-300"
+                                  : "bg-gray-100 text-gray-400 cursor-not-allowed opacity-70"
+                              }`}
+                              disabled={!isToday}
+                              onClick={() => handleAttendanceEdit(record)}
+                              title={isToday ? "Edit Record" : "Cannot Edit"}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            {/* Delete Button */}
+                            <button
+                              className={`p-2 rounded-md transition-colors duration-150 ${
+                                isToday
+                                  ? "bg-red-50 text-red-600 hover:bg-red-100"
+                                  : "bg-gray-100 text-gray-400 cursor-not-allowed opacity-70"
+                              }`}
+                              disabled={!isToday}
+                              onClick={() => handleAttendanceDelete(record)}
+                              title={isToday ? "Delete Record" : "Cannot Delete"}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td
+                      colSpan="4"
+                      className="text-center p-10 text-sm text-gray-500 italic bg-gray-50"
+                    >
+                      <p className="font-medium">No attendance records found.</p>
+                      <p className="text-xs mt-1">Mark your entry above to start tracking.</p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
 
-      {/* Attendance Records Table */}
-      <div className="bg-white rounded-xl shadow-md p-6 max-w-4xl mx-auto">
-        <h2 className="text-xl font-semibold text-gray-800 mb-6">
-          Attendance Records
-        </h2>
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr className="bg-gray-100 text-left text-gray-700">
-              <th className="p-3 border-b">Date</th>
-              <th className="p-3 border-b">Entry Time</th>
-              <th className="p-3 border-b">Exit Time</th>
-              <th className="p-3 border-b">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {attendanceList.length > 0 ? (
-              attendanceList.map((record) => {
-                const today = new Date().toISOString().split("T")[0];
-                const isToday = record.date === today;
-                return (
-                  <tr key={record.id} className="hover:bg-gray-50 transition">
-                    <td className="p-3 border-b">{record.date}</td>
-                    <td className="p-3 border-b">
-                      {record.entry ? (
-                        <span className="px-2 py-1 rounded bg-orange-100 text-orange-700">
-                          {record.entry}
-                        </span>
-                      ) : (
-                        "-"
-                      )}
-                    </td>
-                    <td className="p-3 border-b">
-                      {record.exit ? (
-                        <span className="px-2 py-1 rounded bg-purple-100 text-purple-700">
-                          {record.exit}
-                        </span>
-                      ) : (
-                        "-"
-                      )}
-                    </td>
-                    <td className="p-3 border-b">
-                      <div className="flex gap-2 text-sm">
-                        <button
-                          className="px-2 py-1 rounded border border-gray-400 text-gray-700 hover:underline disabled:bg-gray-200 disabled:text-gray-400 disabled:border-gray-300"
-                          disabled={!isToday}
-                          onClick={() => handleAttendanceEdit(record)}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          className="px-2 py-1 rounded border border-gray-400 text-gray-700 hover:underline disabled:bg-gray-200 disabled:text-gray-400 disabled:border-gray-300"
-                          disabled={!isToday}
-                          onClick={() => handleAttendanceDelete(record)}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td
-                  colSpan="4"
-                  className="text-center p-6 text-gray-500 italic"
-                >
-                  No records yet
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Edit Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 backdrop-blur-[1px] bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-96 relative shadow-lg">
+      {/* Edit Modal (Clean, high-contrast modal) */}
+      {isModalOpen && editRecord && (
+        <div className="fixed inset-0  bg-opacity-60 flex items-center justify-center z-50 p-4 backdrop-blur-[1px]">
+          <div className="bg-white rounded-xl p-8 w-full max-w-lg relative shadow-2xl border border-gray-100">
             <button
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-800"
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition duration-150 p-2 rounded-full hover:bg-gray-50"
               onClick={() => setIsModalOpen(false)}
             >
-              <X />
+              <X className="w-5 h-5" />
             </button>
-            <h3 className="text-lg font-semibold mb-4">
-              Edit Attendance ({editRecord.date})
+            <h3 className="text-xl font-bold text-gray-800 mb-2 border-b pb-2">
+              Edit Attendance
             </h3>
+            <p className="text-sm text-gray-500 mb-6">
+              Date: <span className="font-semibold text-gray-700">{editRecord.date}</span>
+            </p>
 
-            {/* Entry */}
-            {editRecord.entry !== "" && (
-              <div className="relative" ref={modalEntryRef}>
-                <label className="block text-sm text-gray-600 mt-2">
-                  Entry Time
-                </label>
-                <input
-                  type="text"
-                  value={editEntry}
-                  onChange={(e) => setEditEntry(e.target.value)}
-                  onFocus={() => setShowModalEntryDropdown(true)}
-                  className="w-full border px-2 py-1 rounded mt-1"
-                />
-                {showModalEntryDropdown && (
-                  <ul className="absolute z-10 bg-white border border-gray-300 rounded shadow mt-1 w-full max-h-48 overflow-auto text-sm">
-                    {presetTimes.map((time) => (
-                      <li
-                        key={time}
-                        onClick={() => {
-                          setEditEntry(time);
-                          setShowModalEntryDropdown(false);
-                        }}
-                        className="px-3 py-1 hover:bg-orange-100 cursor-pointer"
-                      >
-                        {time}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
+            <div className="space-y-5">
+              {/* Entry */}
+              {editRecord.entry !== "" && (
+                <div className="relative" ref={modalEntryRef}>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Entry Time
+                  </label>
+                  <div className="flex items-center border border-gray-300 focus-within:border-blue-500 rounded-lg px-4 py-2 bg-white transition duration-150">
+                    <LogIn className="text-blue-500 w-5 h-5 mr-3" />
+                    <input
+                      type="text"
+                      value={editEntry}
+                      onChange={(e) => setEditEntry(e.target.value)}
+                      onFocus={() => setShowModalEntryDropdown(true)}
+                      className="w-full text-base text-gray-800 bg-transparent focus:outline-none"
+                    />
+                  </div>
+                  <TimeDropdown
+                    isVisible={showModalEntryDropdown}
+                    times={presetTimes}
+                    setTime={setEditEntry}
+                    closeDropdown={setShowModalEntryDropdown}
+                    iconColor="indigo"
+                  />
+                </div>
+              )}
 
-            {/* Exit */}
-            {editRecord.exit !== "" && (
-              <div className="relative" ref={modalExitRef}>
-                <label className="block text-sm text-gray-600 mt-2">
-                  Exit Time
-                </label>
-                <input
-                  type="text"
-                  value={editExit}
-                  onChange={(e) => setEditExit(e.target.value)}
-                  onFocus={() => setShowModalExitDropdown(true)}
-                  className="w-full border px-2 py-1 rounded mt-1"
-                />
-                {showModalExitDropdown && (
-                  <ul className="absolute z-10 bg-white border border-gray-300 rounded shadow mt-1 w-full max-h-48 overflow-auto text-sm">
-                    {presetTimes.map((time) => (
-                      <li
-                        key={time}
-                        onClick={() => {
-                          setEditExit(time);
-                          setShowModalExitDropdown(false);
-                        }}
-                        className="px-3 py-1 hover:bg-purple-100 cursor-pointer"
-                      >
-                        {time}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
+              {/* Exit */}
+              {editRecord.exit !== "" && (
+                <div className="relative" ref={modalExitRef}>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Exit Time
+                  </label>
+                  <div className="flex items-center border border-gray-300 focus-within:border-red-500 rounded-lg px-4 py-2 bg-white transition duration-150">
+                    <LogOut className="text-red-500 w-5 h-5 mr-3" />
+                    <input
+                      type="text"
+                      value={editExit}
+                      onChange={(e) => setEditExit(e.target.value)}
+                      onFocus={() => setShowModalExitDropdown(true)}
+                      className="w-full text-base text-gray-800 bg-transparent focus:outline-none"
+                    />
+                  </div>
+                  <TimeDropdown
+                    isVisible={showModalExitDropdown}
+                    times={presetTimes}
+                    setTime={setEditExit}
+                    closeDropdown={setShowModalExitDropdown}
+                    iconColor="red"
+                  />
+                </div>
+              )}
+            </div>
 
             {errorMessage && (
-              <p className="text-red-500 text-sm mt-2">{errorMessage}</p>
+              <p className="text-red-600 text-sm mt-6 p-3 bg-red-50 rounded-lg border border-red-300 font-medium">
+                {errorMessage}
+              </p>
             )}
 
             <button
               onClick={handleModalSubmit}
-              className="mt-4 w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition"
+              className="mt-8 w-full bg-blue-600 text-white font-semibold py-2.5 rounded-lg hover:bg-blue-700 transition duration-300 shadow-md flex items-center justify-center space-x-2"
             >
-              Submit
+              <Edit className="w-4 h-4"/>
+              <span>Save Changes</span>
             </button>
           </div>
         </div>

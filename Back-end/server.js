@@ -28,6 +28,9 @@ const dealRoute = require("./routes/v1/dealRoute");
 const messageRoute = require("./routes/v1/messageRoute");
 const trashRoute = require("./routes/v1/trashRoute");
 const subTaskRoute = require("./routes/v1/subTaskRoute");
+const companyRoute = require("./routes/v1/companyRoute");
+const adminRoute = require("./routes/v1/adminTaskRoute");
+const documentRoute = require("./routes/v1/documentRoute");
 
 app.use(express.json());
 app.use(cookieParser());
@@ -49,13 +52,16 @@ app.use("/api/attendance", attendanceRoute);
 app.use("/api/team", teamWorkRoute);
 app.use("/api/pending", pendingRoute);
 app.use("/api/calendar", calendarRoute);
-app.use("/api/completed", completedRoute);
+app.use("/api/Completed", completedRoute);
 app.use("/api/work", workAssignRoute);
 app.use("/api/worklog", worklogRoute);
 app.use("/api/deals", dealRoute);
 app.use("/api/message", messageRoute);
 app.use("/api/trash", trashRoute);
 app.use("/api/sub-task", subTaskRoute);
+app.use("/api/company", companyRoute);
+app.use("/api/adminTask", adminRoute);
+app.use("/api/document", documentRoute);
 
 const server = http.createServer(app);
 
@@ -77,6 +83,13 @@ io.on("connection", (socket) => {
     // console.log(`Socket ${socket.id} joined room ${room}`);
   });
 
+    socket.on("joinNotificationRoom", (userId) => {
+    if (userId) {
+      socket.join(`notify_${userId}`);
+      // console.log(`User ${userId} joined notification room`);
+    }
+  });
+
   // Listen for sending messages
   socket.on("send_message", async (data) => {
     try {
@@ -92,10 +105,28 @@ io.on("connection", (socket) => {
     }
   });
 
+  //notification
+  socket.on("send_notification", (data) => {
+  const { receiverId, title, message, type } = data;
+
+  // Create a unique notification room for the receiver
+  const room = `notify_${receiverId}`;
+
+  // Send notification in real-time to the specific receiver
+  io.to(room).emit("receive_notification", {
+    title,
+    message,
+    type,
+    timestamp: new Date(),
+  });
+});
+
+
   socket.on("disconnect", () => {
     // console.log("User disconnected:", socket.id);
   });
 });
+
 
 // Start server
 const startServer = async () => {
@@ -110,3 +141,6 @@ const startServer = async () => {
 };
 
 startServer();
+
+
+module.exports = { io, server }; // export io so other modules can use it

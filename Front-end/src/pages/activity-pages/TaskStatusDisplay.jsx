@@ -251,7 +251,7 @@ const TaskStatusDetail = () => {
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
-          <h1 className="text-xl font-semibold">{data}</h1>
+        <h1 className="text-indigo-600 text-xl font-bold">{data}</h1>
         </div>
           <button
             onClick={() => navigate(-1)}
