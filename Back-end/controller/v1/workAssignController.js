@@ -4,7 +4,7 @@ const signup = require("../../models/v1/Authentication/authModel");
 const workAssign = require("../../models/v1/Work_space/workAssign");
 const trash = require("../../models/v1/Trash/trash");
 const roleChecker = require("../../utils/v1/roleChecker");
-const { io } = require("../../server");
+const { getIo } = require("../../utils/v1/socket");
 
 const { Op, Sequelize } = require("sequelize");
 
@@ -66,23 +66,23 @@ const createTodo = async (req, res) => {
       }
 
       taskData.staffId = staffDetails.id;
-      const idOfStaff = staffDetails.id;
 
       const newTask = await workAssign.create(taskData);
 
-         io.to(`notify_${idOfStaff}`).emit("receive_notification", {
-      title: "New Work Assigned",
-      message: `You have been assigned new work: ${title}`,
-      type: "work",
-      timestamp: new Date(),
-    });
+         const io = getIo();
+      io.to(`notify_${staffDetails.id}`).emit("receive_notification", {
+        title: "New Work Assigned",
+        message: `You have been assigned new work: ${title}`,
+        type: "work",
+        timestamp: new Date(),
+      });
 
 
       return httpSuccess(res, 201, "Work assigned successfully", newTask);
     }
   } catch (error) {
     console.error("Error in createTodo:", error);
-    return httpError(res, 500, "Internal Server Error");
+    return httpError(res, 500, "Internal Server Error",error);
   }
 };
 
