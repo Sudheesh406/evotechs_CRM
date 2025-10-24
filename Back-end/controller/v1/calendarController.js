@@ -4,6 +4,8 @@ const holiday = require("../../models/v1/Work_space/holiday");
 const Leaves = require("../../models/v1/Work_space/Leave");
 const { signup } = require("../../models/v1/index");
 const dayjs = require("dayjs");
+const { getIo } = require("../../utils/v1/socket");
+
 
 const { Op } = require("sequelize");
 
@@ -247,6 +249,14 @@ const leaveRequestUpdate = async (req, res) => {
       status,
       createdAdminId: user.id,
     });
+
+        const io = getIo();
+      io.to(`notify_${existing.staffId}`).emit("receive_notification", {
+        title: "Leave Notification",
+        message: " You got a update in your leave request",
+        type: "Calender",
+        timestamp: new Date(),
+      });
 
     return res.status(200).json({
       message: "Leave status updated successfully",

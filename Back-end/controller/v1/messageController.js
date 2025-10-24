@@ -3,6 +3,8 @@ const messages = require("../../models/v1/Work_space/message");
 const signup = require("../../models/v1/Authentication/authModel");
 const roleChecker = require("../../utils/v1/roleChecker");
 const { Op, Sequelize } = require("sequelize");
+const { getIo } = require("../../utils/v1/socket");
+
 
 const createMessages = async (data) => {
   try {
@@ -39,6 +41,16 @@ const createMessages = async (data) => {
       senderId,
       isAdmin,
     });
+
+    const senderDetails = await signup.findOne({where:{id : senderId}})
+    const name = senderDetails.name
+      const io = getIo();
+      io.to(`notify_${receiverId}`).emit("receive_notification", {
+        title: "Message Notification",
+        message: `You have a new message from : ${name}`,
+        type: "Message",
+        timestamp: new Date(),
+      });
 
     console.log("✅ Message created successfully:", newMessage.dataValues);
     return newMessage;

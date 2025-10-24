@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import { Edit2, Trash2, X } from "lucide-react";
-import axios from "../../../instance/Axios";
+import axios from "../../instance/Axios";
 
 const statusStages = ["Pending", "Progress", "Completed"];
 const priorities = {
@@ -60,6 +60,10 @@ export default function WorkAssign() {
     }
   };
 
+
+      console.log('testing')
+
+
   // Fetch tasks
   const fetchWorkDetails = async () => {
     try {
@@ -70,6 +74,7 @@ export default function WorkAssign() {
       });
 
       const response = await axios.get("/work/assign/work_details");
+      console.log('response',response)
       const apiData = response.data.data || [];
 
       const apiTasks = apiData.map((item) => {

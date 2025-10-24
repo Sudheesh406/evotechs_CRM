@@ -69,7 +69,7 @@ const createTodo = async (req, res) => {
 
       const newTask = await workAssign.create(taskData);
 
-         const io = getIo();
+      const io = getIo();
       io.to(`notify_${staffDetails.id}`).emit("receive_notification", {
         title: "New Work Assigned",
         message: `You have been assigned new work: ${title}`,
@@ -85,6 +85,7 @@ const createTodo = async (req, res) => {
     return httpError(res, 500, "Internal Server Error",error);
   }
 };
+
 
 const updateTodo = async (req, res) => {
   try {
@@ -144,6 +145,14 @@ const updateTodo = async (req, res) => {
 
       updatedData.staffId = staffDetails.id;
       updatedData.admin = false;
+
+      const io = getIo();
+      io.to(`notify_${staffDetails.id}`).emit("receive_notification", {
+        title: "Work Assigned",
+        message: `Work assign has a change you have been assigned a work: ${title}`,
+        type: "work",
+        timestamp: new Date(),
+      });
     }
 
     // Update the task
@@ -183,6 +192,7 @@ const getUserDetails = async (req, res) => {
     });
   }
 };
+
 
 const getWorkDetails = async (req, res) => {
   try {
@@ -265,6 +275,8 @@ const getWorkDetails = async (req, res) => {
   }
 };
 
+
+
 const deleteTodo = async (req, res) => {
   try {
     const user = req.user;
@@ -318,6 +330,7 @@ const deleteTodo = async (req, res) => {
     });
   }
 };
+
 
 const getAssignedWork = async (req, res) => {
   try {
