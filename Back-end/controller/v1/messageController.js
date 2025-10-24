@@ -3,6 +3,7 @@ const messages = require("../../models/v1/Work_space/message");
 const signup = require("../../models/v1/Authentication/authModel");
 const roleChecker = require("../../utils/v1/roleChecker");
 const { Op, Sequelize } = require("sequelize");
+const {messageNotification} = require('../../utils/v1/messageNotification')
 
 const createMessages = async (data) => {
   try {
@@ -31,6 +32,8 @@ const createMessages = async (data) => {
 
     const isAdmin = await roleChecker(senderId);
 
+    const senderDetails = await signup.findOne({where:{id:senderId}})
+
     const newMessage = await messages.create({
       message: text,
       sendingDate,
@@ -39,6 +42,9 @@ const createMessages = async (data) => {
       senderId,
       isAdmin,
     });
+    
+
+    messageNotification(receiverId,senderDetails.name)
 
     console.log("✅ Message created successfully:", newMessage.dataValues);
     return newMessage;
