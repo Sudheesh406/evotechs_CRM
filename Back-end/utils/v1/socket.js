@@ -40,7 +40,7 @@ io.on("connection", (socket) => {
       const { room, message, senderId, receiverId } = data;
 
       // Save message in DB
-      await createMessages(data);
+      await createMessages(data, io);
 
       // Emit to all clients in room including sender
       io.to(room).emit("receiveMessage", { senderId, message });

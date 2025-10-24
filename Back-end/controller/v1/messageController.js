@@ -5,7 +5,7 @@ const roleChecker = require("../../utils/v1/roleChecker");
 const { Op, Sequelize } = require("sequelize");
 const {messageNotification} = require('../../utils/v1/messageNotification')
 
-const createMessages = async (data) => {
+const createMessages = async (data, io) => {
   try {
     const { senderId, receiverId, message } = data;
     console.log("data", data);
@@ -43,8 +43,9 @@ const createMessages = async (data) => {
       isAdmin,
     });
     
-
-    messageNotification(receiverId,senderDetails.name)
+  if (io) {
+    messageNotification(io, receiverId, senderDetails.name);
+  }
 
     console.log("✅ Message created successfully:", newMessage.dataValues);
     return newMessage;
