@@ -11,6 +11,7 @@ function RemovedSubTask() {
       setLoading(true);
       const response = await axios.get("/sub-task/removed");
       const data = response?.data?.enrichedData || [];
+      console.log(response)
       setRemovedTasks(data);
     } catch (error) {
       console.log("Error fetching removed sub tasks:", error);

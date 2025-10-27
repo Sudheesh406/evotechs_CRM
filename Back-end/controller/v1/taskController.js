@@ -22,7 +22,7 @@ const createTask = async (req, res) => {
 
     // Check if contact exists for given phone & staff
     const customer = await contacts.findOne({
-      where: { phone: data.phone, staffId: user.id },
+      where: { phone: data.phone},
     });
 
     if (!customer) {
@@ -212,6 +212,7 @@ const deleteTask = async (req, res) => {
   }
 };
 
+
 const taskStageUpdate = async (req, res) => {
   try {
     const user = req.user;
@@ -396,6 +397,7 @@ const getTeamTaskDetails = async (req, res) => {
   }
 };
 
+
 const updateTeamStagesAndNotes = async (req, res) => {
   try {
     const { data } = req.body;
@@ -498,6 +500,7 @@ const getPendingTask = async (req, res) => {
     return httpError(res, 500, "Server error", error.message || error);
   }
 };
+
 
 const getTaskDetailForAdmin = async (req, res) => {
   try {
@@ -609,6 +612,7 @@ const updateStagesByAdmin = async (req, res) => {
   }
 };
 
+
 const reworkUpdate = async (req, res) => {
   try {
     const { id } = req.body;
@@ -658,6 +662,7 @@ const reworkUpdate = async (req, res) => {
     });
   }
 };
+
 
 const newUpdate = async (req, res) => {
   try {

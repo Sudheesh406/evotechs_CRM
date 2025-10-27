@@ -181,6 +181,11 @@ const Sidebar = ({ closeSidebar }) => {
           path: "/activities/task/self",
           icon: CheckSquare,
         },
+         {
+          title: "Subtask Removed",
+          path: "/activities/tasks/subtask/removed",
+          icon: CheckSquare,
+        },
       ],
     },
     {

@@ -80,71 +80,71 @@ export default function Personalize() {
     }
   };
 
-  const handleSubmit = async () => {
-    let errors = { title: "", items: [], general: "" };
-    let hasError = false;
+ const handleSubmit = async () => {
+  let errors = { title: "", items: [], general: "" };
+  let hasError = false;
 
-    if (!newListTitle.trim()) {
-      errors.title = "Title is required";
+  if (!newListTitle.trim()) {
+    errors.title = "Title is required";
+    hasError = true;
+  }
+
+  const trimmedItems = newItems.map((item) => item.trim());
+
+  // ✅ Only check that at least one valid item exists
+  const validItems = trimmedItems.filter((item) => item !== "");
+  if (validItems.length === 0) {
+    errors.general = "At least one item is required";
+    hasError = true;
+  }
+
+  if (editingId && !hasError) {
+    const titleUnchanged = newListTitle.trim() === originalData.title.trim();
+    const itemsUnchanged =
+      trimmedItems.length === originalData.items.length &&
+      trimmedItems.every((item, idx) => item === originalData.items[idx]);
+
+    if (titleUnchanged && itemsUnchanged) {
+      errors.general = "No changes detected";
       hasError = true;
     }
+  }
 
-    const trimmedItems = newItems.map((item) => item.trim());
-    errors.items = trimmedItems.map((item) =>
-      item === "" ? "Item is required" : ""
-    );
-    if (errors.items.some((e) => e !== "")) hasError = true;
+  setFormErrors(errors);
+  if (hasError) return;
 
-    if (editingId && !hasError) {
-      const titleUnchanged = newListTitle.trim() === originalData.title.trim();
-      const itemsUnchanged =
-        trimmedItems.length === originalData.items.length &&
-        trimmedItems.every((item, idx) => item === originalData.items[idx]);
+  const data = { project: newListTitle.trim(), data: validItems };
 
-      if (titleUnchanged && itemsUnchanged) {
-        errors.general = "No changes detected";
-        hasError = true;
-      }
+  try {
+    if (editingId) {
+      const response = await axios.put(`/requirement/edit/${editingId}`, data);
+      setLists(
+        lists.map((list) =>
+          list.id === editingId ? response.data.data : list
+        )
+      );
+      Swal.fire("Success", "List updated successfully!", "success");
+    } else {
+      const response = await axios.post("/requirement/create", data);
+      setLists([...lists, response.data.data]);
+      Swal.fire("Success", "List created successfully!", "success");
     }
 
-    setFormErrors(errors);
-    if (hasError) return;
-
-    const validItems = trimmedItems.filter((item) => item !== "");
-    const data = { project: newListTitle, data: validItems };
-
-    try {
-      if (editingId) {
-        const response = await axios.put(
-          `/requirement/edit/${editingId}`,
-          data
-        );
-        setLists(
-          lists.map((list) =>
-            list.id === editingId ? response.data.data : list
-          )
-        );
-        Swal.fire("Success", "List updated successfully!", "success");
-      } else {
-        const response = await axios.post("/requirement/create", data);
-        setLists([...lists, response.data.data]);
-        Swal.fire("Success", "List created successfully!", "success");
-      }
-
-      resetForm();
-    } catch (error) {
-      if (error.response && error.response.status === 409) {
-        Swal.fire(
-          "Error",
-          "A list with this title already exists. Please check your Requirements or trash",
-          "error"
-        );
-      } else {
-        Swal.fire("Error", "Something went wrong.", "error");
-      }
-      console.log("Error in handleSubmit:", error);
+    resetForm();
+  } catch (error) {
+    if (error.response && error.response.status === 409) {
+      Swal.fire(
+        "Error",
+        "A list with this title already exists. Please check your Requirements or trash",
+        "error"
+      );
+    } else {
+      Swal.fire("Error", "Something went wrong.", "error");
     }
-  };
+    console.log("Error in handleSubmit:", error);
+  }
+};
+
 
   const resetForm = () => {
     setShowModal(false);

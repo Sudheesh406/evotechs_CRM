@@ -8,6 +8,9 @@ const task = require("../../models/v1/Project/task");
 const { contacts } = require("../../models/v1");
 const { signup } = require("../../models/v1");
 const trash = require("../../models/v1/Trash/trash");
+const { getIo } = require("../../utils/v1/socket");
+const {createNotification} = require('../../controller/v1/notificationController')
+
 
 const { Op, fn, col, literal, Sequelize } = require("sequelize");
 
@@ -15,6 +18,7 @@ const createTeamWork = async (req, res) => {
   try {
     const user = req.user;
     const data = req.body;
+
 
     const access = await roleChecker(user.id);
     if (!access) {
@@ -40,6 +44,29 @@ const createTeamWork = async (req, res) => {
       staffIds: ids,
       createdAdminId: user.id,
     });
+
+
+    const allIds = data.staffIds
+    const io = getIo();
+    
+    const value = {}
+if (allIds && allIds.length > 0) {
+  allIds.forEach((id) => {
+    io.to(`notify_${id}`).emit("receive_notification", {
+      title: "Team Notification",
+      message: "There is a new Team Created.",
+      type: "Team",
+      timestamp: new Date(),
+    });
+     value.title = 'Team Notification';
+     value.description = 'There is a new Team Created.'
+     value.receiverId = id
+     value.senderId = user.id
+    
+     createNotification(value)
+  });
+}
+
 
     if (!newTeam) {
       return httpError(res, 500, "Failed to create team work");

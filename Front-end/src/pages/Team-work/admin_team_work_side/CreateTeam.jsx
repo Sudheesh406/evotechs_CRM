@@ -128,6 +128,9 @@ function CreateTeam() {
         MySwal.fire({
           icon: "success",
           title: "Team updated successfully!",
+          showConfirmButton: false, // hides the OK button
+          timer: 1500, // closes after 1.5 seconds
+          timerProgressBar: true,
         });
         setEditingTeamId(null);
       } else {
@@ -150,6 +153,9 @@ function CreateTeam() {
         MySwal.fire({
           icon: "success",
           title: "Team created successfully!",
+          showConfirmButton: false, // hides the OK button
+          timer: 1500, // closes after 1.5 seconds
+          timerProgressBar: true,
         });
       }
 
@@ -182,53 +188,52 @@ function CreateTeam() {
     setIsModalOpen(true);
   };
 
-const handleDeleteTeam = async (id) => {
-  const result = await MySwal.fire({
-    title: "Are you sure?",
-    text: "You won't be able to revert this!",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonColor: "#3085d6",
-    cancelButtonColor: "#d33",
-    confirmButtonText: "Yes, delete it!",
-  });
+  const handleDeleteTeam = async (id) => {
+    const result = await MySwal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    });
 
-  if (result.isConfirmed) {
-    try {
-      // Show loading
-      MySwal.fire({
-        title: "Deleting team...",
-        didOpen: () => MySwal.showLoading(),
-        allowOutsideClick: false,
-        showConfirmButton: false, // optional
-      });
+    if (result.isConfirmed) {
+      try {
+        // Show loading
+        MySwal.fire({
+          title: "Deleting team...",
+          didOpen: () => MySwal.showLoading(),
+          allowOutsideClick: false,
+          showConfirmButton: false, // optional
+        });
 
-      // Perform delete
-      await axios.delete(`/team/delete/${id}`);
-      setTeams((prev) => prev.filter((t) => t.id !== id));
+        // Perform delete
+        await axios.delete(`/team/delete/${id}`);
+        setTeams((prev) => prev.filter((t) => t.id !== id));
 
-      // Close loading modal first
-      MySwal.close();
+        // Close loading modal first
+        MySwal.close();
 
-      // Show success
-      MySwal.fire({
-        icon: "success",
-        title: "Team deleted successfully!",
-        timer: 1500,
-        showConfirmButton: false,
-      });
-    } catch (error) {
-      MySwal.close(); // make sure loading is closed if error occurs
-      MySwal.fire({
-        icon: "error",
-        title: "Failed to delete team",
-        text: error.response?.data?.message || error.message,
-      });
-      console.error(error);
+        // Show success
+        MySwal.fire({
+          icon: "success",
+          title: "Team deleted successfully!",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      } catch (error) {
+        MySwal.close(); // make sure loading is closed if error occurs
+        MySwal.fire({
+          icon: "error",
+          title: "Failed to delete team",
+          text: error.response?.data?.message || error.message,
+        });
+        console.error(error);
+      }
     }
-  }
-};
-
+  };
 
   const resetForm = () => {
     setTeamName("");
@@ -284,8 +289,10 @@ const handleDeleteTeam = async (id) => {
       {/* Teams */}
       <div className="space-y-4">
         <div className="flex justify-between items-center mb-2">
-          <h2 className="text-2xl font-bold text-gray-800"><span className="text-indigo-600">Teams</span></h2>
-          
+          <h2 className="text-2xl font-bold text-gray-800">
+            <span className="text-indigo-600">Teams</span>
+          </h2>
+
           <button
             onClick={() => setIsModalOpen(true)}
             className="md:hidden bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-2 rounded-lg shadow hover:from-blue-600 hover:to-indigo-700 transition"

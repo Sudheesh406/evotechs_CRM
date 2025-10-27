@@ -3,6 +3,7 @@ const task = require("../../models/v1/Project/task");
 const roleChecker = require("../../utils/v1/roleChecker");
 const subTask = require("../../models/v1/Project/subTask");
 const contacts = require('../../models/v1/Customer/contacts')
+const adminTask = require('../../models/v1/Project/adminTask')
 
 const createSubTask = async (req, res) => {
   try {
@@ -19,26 +20,47 @@ const createSubTask = async (req, res) => {
     }
 
     const admin = await roleChecker(user.id);
-    console.log("admin:", admin);
+
     if (admin) {
-      httpError(res, 403, "Only Staff can create Sub-Task");
-    }
 
-    const parentTask = await task.findOne({
-      where: { id: data.taskId, staffId: user.id },
-    });
-    if (!parentTask) {
-      return httpError(res, 404, "task not found");
-    }
+      const parentTask = await adminTask.findOne({
+        where: { id: data.taskId, adminId: user.id },
+      });
+      if (!parentTask) {
+        return httpError(res, 404, "task not found");
+      }
+  
+      const newSubTask = await subTask.create({
+        staffId: user.id,
+        taskId: data.taskId,
+        notChecked: data.details,
+        title: data.title,
+        role : 'admin'
+      });
+    return httpSuccess(res, 201, "Sub-Task created successfully", newSubTask);
+      
+    }else{
 
-    const newSubTask = await subTask.create({
-      staffId: user.id,
-      taskId: data.taskId,
-      notChecked: data.details,
-      title: data.title,
-    });
+      const parentTask = await task.findOne({
+        where: { id: data.taskId, staffId: user.id },
+      });
+      if (!parentTask) {
+        return httpError(res, 404, "task not found");
+      }
+  
+      const newSubTask = await subTask.create({
+        staffId: user.id,
+        taskId: data.taskId,
+        notChecked: data.details,
+        title: data.title,
+        role : 'staff'
+
+      });
+
 
     return httpSuccess(res, 201, "Sub-Task created successfully", newSubTask);
+
+  }
   } catch (error) {
     console.error("Error in createSubTask:", error);
     return httpError(res, 500, "Internal Server Error");
@@ -53,9 +75,15 @@ const getSubTasks = async (req, res) => {
     if (!taskId) {
       return httpError(res, 400, "Task ID is required");
     }
-
+    const admin = await roleChecker(user.id);
+    let role = ''
+    if(admin){
+      role = 'admin'
+    }else{
+      role = 'staff'
+    }
     const data = await subTask.findAll({
-      where: { staffId: user.id, taskId, softDelete: false },
+      where: { staffId: user.id, taskId, role, softDelete: false },
     });
     if (!data) {
       return httpError(res, 404, "No Sub-Task found");
@@ -77,8 +105,16 @@ const getTeamSubTasks = async (req, res) => {
       return httpError(res, 400, "Task ID is required");
     }
 
+      const admin = await roleChecker(user.id);
+    let role = ''
+    if(admin){
+      role = 'admin'
+    }else{
+      role = 'staff'
+    }
+
     const data = await subTask.findAll({
-      where: { taskId, softDelete: false },
+      where: { taskId, role, softDelete: false },
     });
     if (!data) {
       return httpError(res, 404, "No Sub-Task found");
@@ -111,8 +147,16 @@ const updateSubTasks = async (req, res) => {
       );
     }
 
+         const admin = await roleChecker(user.id);
+    let role = ''
+    if(admin){
+      role = 'admin'
+    }else{
+      role = 'staff'
+    }
+
     const existingSubTask = await subTask.findOne({
-      where: { staffId: user.id, id: subTaskId, softDelete: false },
+      where: { staffId: user.id, id: subTaskId,role, softDelete: false },
     });
 
     if (!existingSubTask) {
@@ -146,8 +190,16 @@ const checkInUpdate = async (req, res) => {
       return httpError(res, 400, "Missing required fields");
     }
 
+    const admin = await roleChecker(user.id);
+    let role = ''
+    if(admin){
+      role = 'admin'
+    }else{
+      role = 'staff'
+    }
+
     const existingSubTask = await subTask.findOne({
-      where: { staffId: user.id, id: subTaskId, softDelete: false },
+      where: { staffId: user.id, id: subTaskId,role, softDelete: false },
     });
 
     if (!existingSubTask) {
@@ -197,9 +249,17 @@ const deleteSubtask = async (req, res) => {
       return httpError(res, 400, "Sub-task ID is required");
     }
 
+    const admin = await roleChecker(user.id);
+    let role = ''
+    if(admin){
+      role = 'admin'
+    }else{
+      role = 'staff'
+    }
+
     // ✅ Find subtask
     const subtask = await subTask.findOne({
-      where: { id: subTaskId, staffId: user.id },
+      where: { id: subTaskId,role, staffId: user.id },
     });
 
     if (!subtask) {
@@ -227,7 +287,15 @@ const deleteNotCheckedData = async (req, res) => {
       return httpError(res, 400, "Sub task ID and detail to delete are required");
     }
 
-    const task = await subTask.findOne({ where: { id: id, staffId: user.id } });
+         const admin = await roleChecker(user.id);
+    let role = ''
+    if(admin){
+      role = 'admin'
+    }else{
+      role = 'staff'
+    }
+
+    const task = await subTask.findOne({ where: { id: id, staffId: user.id, role} });
     if (!task) {
       return httpError(res, 404, "Sub task not found");
     }
@@ -262,7 +330,27 @@ const deleteNotCheckedData = async (req, res) => {
 const getRemovedSubTask = async (req, res) => {
   try {
     const user = req.user;
+      const admin = await roleChecker(user.id);
+    if(admin){
+     const data = await subTask.findAll({ where: { softDelete: true, staffId: user.id } });
 
+      const enrichedData = await Promise.all(
+      data.map(async (sub) => {
+        // Convert to plain object
+        const subObj = sub.get({ plain: true });
+
+        const taskDetails = await adminTask.findOne({ where: { id: subObj.taskId } });
+        if (taskDetails) {
+          subObj.requirement = taskDetails.taskName;
+        }
+
+        return subObj;
+      })
+    );
+
+    return res.json({ enrichedData, message: "removed sub task fetched successfully" });
+
+    }else{
     // Get all soft-deleted subtasks
     const data = await subTask.findAll({ where: { softDelete: true, staffId: user.id } });
 
@@ -282,8 +370,9 @@ const getRemovedSubTask = async (req, res) => {
         return subObj;
       })
     );
-
     return res.json({ enrichedData, message: "removed sub task fetched successfully" });
+  }
+
   } catch (error) {
     console.error("Error in getting removed sub task :", error);
     return httpError(res, 500, "Internal Server Error");

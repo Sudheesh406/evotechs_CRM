@@ -66,7 +66,7 @@ import MyTask from './pages/activity-pages/admin_activity/MyTask';
 import Settings from "./pages/settings/Settings";
 import CompletedPersonalTask from './pages/operation-pages/CompletedPersonalTask';
 import DetailMyTask from './pages/activity-pages/admin_activity/DetailMyTask'
-
+import SubTaskForAdmin from './pages/activity-pages/admin_activity/SubTaskForAdmin';
 
 import ProtectedRoute from "./components/Routes/ProtectedRoute";
 import Sidebar from "./components/SideBar";
@@ -261,6 +261,9 @@ function Layout() {
             }
           />
 
+
+
+
           {/* Staff Routes */}
           <Route
             path="/"
@@ -441,7 +444,7 @@ function Layout() {
           <Route
             path="/activities/tasks/subtask/:id"
             element={
-              <ProtectedRoute allowedRoles={["staff"]}>
+              <ProtectedRoute allowedRoles={["staff", "admin"]}>
                 <SubTaskPage />
               </ProtectedRoute>
             }
@@ -457,7 +460,7 @@ function Layout() {
            <Route
             path="/activities/tasks/subtask/removed"
             element={
-              <ProtectedRoute allowedRoles={["staff"]}>
+              <ProtectedRoute allowedRoles={["staff", "admin"]}>
                 <RemovedSubTask />
               </ProtectedRoute>
             }

@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { X } from "lucide-react";
+import axios from "../../instance/Axios";
 
 const TaskModal = ({
   showForm,
@@ -11,11 +12,42 @@ const TaskModal = ({
   errors,
   requirements = [],
 }) => {
+  const [contacts, setContacts] = useState([]);
+
+  // Fetch contacts only once
+  useEffect(() => {
+    const getContacts = async () => {
+      try {
+        const res = await axios.get("/customer/contact/get");
+        setContacts(res?.data?.data?.leads || []);
+      } catch (error) {
+        console.error("Error fetching contacts:", error);
+      }
+    };
+    getContacts();
+  }, []);
+
+  // ✅ Move conditional rendering **after** hooks
   if (!showForm) return null;
+
+
+  // When selecting a contact, fill name, phone, etc.
+  const handleContactSelect = (e) => {
+    const selectedId = e.target.value;
+    const selectedContact = contacts.find((c) => c.id === Number(selectedId));
+
+    if (selectedContact) {
+      handleChange({
+        target: {
+          name: "phone",
+          value: selectedContact.phone,
+        },
+      });
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
-      {/* Outer scroll container */}
       <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl relative max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
         {/* Close button */}
         <button
@@ -60,7 +92,25 @@ const TaskModal = ({
               )}
             </div>
 
-            {/* Phone */}
+            {/* Contact Selection */}
+            <div className="flex flex-col">
+              <label className="block text-sm font-medium mb-1">
+                Select Contact
+              </label>
+              <select
+                onChange={handleContactSelect}
+                className="w-full border rounded px-3 py-2 border-gray-300"
+              >
+                <option value="">-- Select Contact --</option>
+                {contacts.map((contact) => (
+                  <option key={contact.id} value={contact.id}>
+                    {`${contact.name} — ${contact.phone} — ${contact.location}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Phone (Auto-filled) */}
             <div className="flex flex-col">
               <label className="block text-sm font-medium mb-1">Phone</label>
               <input
@@ -68,7 +118,8 @@ const TaskModal = ({
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
-                className={`w-full border rounded px-3 py-2 ${
+                readOnly
+                className={`w-full border rounded px-3 py-2 bg-gray-100 cursor-not-allowed ${
                   errors.phone ? "border-red-500" : "border-gray-300"
                 }`}
               />

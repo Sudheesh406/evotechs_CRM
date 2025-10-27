@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useParams,useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "../../../instance/Axios";
 import { MoreVertical, X } from "lucide-react";
@@ -9,7 +9,7 @@ import withReactContent from "sweetalert2-react-content";
 const MySwal = withReactContent(Swal);
 
 // --- TaskCard Component ---
-const TaskCard = ({ task, onEdit, onDelete }) => {
+const TaskCard = ({ task, onEdit, onDelete, onSubTask}) => {
   const { id, taskName, amount, phone, priority, description, status } = task;
   const [showDropdown, setShowDropdown] = useState(false);
 
@@ -75,6 +75,15 @@ const TaskCard = ({ task, onEdit, onDelete }) => {
               >
                 Delete
               </button>
+              <button
+                onClick={() => {
+                  onSubTask(id);
+                  setShowDropdown(false);
+                }}
+                className="flex items-center w-full px-3 py-2 text-left hover:bg-gray-100 text-sm text-red-600"
+              >
+                Sub Task
+              </button>
             </div>
           )}
         </div>
@@ -107,6 +116,8 @@ const TaskCard = ({ task, onEdit, onDelete }) => {
 // --- DetailMyTask Component ---
 const DetailMyTask = () => {
   const { status } = useParams();
+  const navigate = useNavigate()
+
   const [tasks, setTasks] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [currentTask, setCurrentTask] = useState(null);
@@ -192,6 +203,10 @@ const DetailMyTask = () => {
     }
   };
 
+  const handleSubTask = async (id)=>{
+      navigate(`/activities/tasks/subtask/${id}`);
+  }
+
   // --- Handle Edit click ---
   const handleEditClick = (task) => {
     setCurrentTask(task);
@@ -215,7 +230,7 @@ const DetailMyTask = () => {
       {tasks.length > 0 ? (
         <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {tasks.map((task) => (
-            <TaskCard key={task.id} task={task} onEdit={handleEditClick} onDelete={handleDelete} />
+            <TaskCard key={task.id} task={task} onEdit={handleEditClick} onDelete={handleDelete} onSubTask={handleSubTask}/>
           ))}
         </div>
       ) : (

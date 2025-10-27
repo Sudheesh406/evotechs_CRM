@@ -5,22 +5,23 @@ const Leaves = require("../../models/v1/Work_space/Leave");
 const { signup } = require("../../models/v1/index");
 const dayjs = require("dayjs");
 const { getIo } = require("../../utils/v1/socket");
-
+const {
+  createNotification,
+} = require("../../controller/v1/notificationController");
 
 const { Op } = require("sequelize");
 
 const getCalender = async (req, res) => {
   try {
-  const user = req.user;
-  const {year,month} = req.body
-   if (!year || !month) {
+    const user = req.user;
+    const { year, month } = req.body;
+    if (!year || !month) {
       return httpError(res, 400, "date is required");
     }
 
     // Get the start and end of the month
     const startOfMonth = dayjs(`${year}-${month}-01`).startOf("month").toDate();
     const endOfMonth = dayjs(`${year}-${month}-01`).endOf("month").toDate();
-
 
     // fetch holidays between these dates and not soft deleted
     const holidays = await holiday.findAll({
@@ -137,7 +138,6 @@ const editCalendar = async (req, res) => {
   }
 };
 
-
 const deleteCalendar = async (req, res) => {
   try {
     const { id } = req.params; // extract id
@@ -167,7 +167,6 @@ const deleteCalendar = async (req, res) => {
     return httpError(res, 500, "Server error", error.message || error);
   }
 };
-
 
 const getLeaveRequest = async (req, res) => {
   try {
@@ -214,7 +213,6 @@ const getLeaveRequest = async (req, res) => {
   }
 };
 
-
 const leaveRequestUpdate = async (req, res) => {
   try {
     const { id } = req.params;
@@ -250,13 +248,21 @@ const leaveRequestUpdate = async (req, res) => {
       createdAdminId: user.id,
     });
 
-        const io = getIo();
-      io.to(`notify_${existing.staffId}`).emit("receive_notification", {
-        title: "Leave Notification",
-        message: " You got a update in your leave request",
-        type: "Calender",
-        timestamp: new Date(),
-      });
+    const io = getIo();
+    io.to(`notify_${existing.staffId}`).emit("receive_notification", {
+      title: "Leave Notification",
+      message: " You got a update in your leave request.",
+      type: "Calender",
+      timestamp: new Date(),
+    });
+
+    const value = {};
+    value.title = "Leave Notification";
+    value.description = "You got a update in your leave request";
+    value.receiverId = existing.staffId;
+    value.senderId = user.id;
+
+    createNotification(value);
 
     return res.status(200).json({
       message: "Leave status updated successfully",
@@ -268,10 +274,9 @@ const leaveRequestUpdate = async (req, res) => {
   }
 };
 
-
 // ----------------------staff----------------------
 
-const getLeaves = async (req,res)=>{
+const getLeaves = async (req, res) => {
   try {
     const user = req.user;
 
@@ -292,7 +297,7 @@ const getLeaves = async (req,res)=>{
           [Op.between]: [startDate, endDate],
         },
         softDelete: false,
-        staffId : user.id
+        staffId: user.id,
       },
       include: [
         {
@@ -306,11 +311,10 @@ const getLeaves = async (req,res)=>{
 
     return res.status(200).json(allLeave);
   } catch (error) {
-    console.error('error found in getting leaves',error);
+    console.error("error found in getting leaves", error);
     return httpError(res, 500, "Server error", error.message || error);
-
   }
-}
+};
 
 
 const createLeave = async (req, res) => {
@@ -318,6 +322,8 @@ const createLeave = async (req, res) => {
   const { leaveType, category, leaveDate, endDate, description } = req.body;
 
   try {
+    const allAdmins = await signup.findAll({ where: { role: "admin" } });
+
     // 1. Basic validation
     if (!leaveType || !category || !leaveDate || !description) {
       return httpError(res, 400, "All required fields must be filled");
@@ -330,7 +336,7 @@ const createLeave = async (req, res) => {
     if (end < start) {
       return httpError(res, 406, "End date cannot be before start date");
     }
-
+    
     // 3. Create leave entry
     const newLeave = await Leaves.create({
       staffId: user.id,
@@ -340,6 +346,27 @@ const createLeave = async (req, res) => {
       endDate: end,
       description,
     });
+
+    const io = getIo();
+
+    const value = {};
+    if (allAdmins && allAdmins.length > 0) {
+      allAdmins.forEach((admin) => {
+        io.to(`notify_${admin.id}`).emit("receive_notification", {
+          title: "Leave Notification",
+          message: "There is a new leave request.",
+          type: "Calendar",
+          timestamp: new Date(),
+        });
+
+        value.title = "Leave Assigned";
+        value.description = "There is a new leave request";
+        value.receiverId = admin.id;
+        value.senderId = user.id;
+
+        createNotification(value);
+      });
+    }
 
     // 4. Return success response
     return res.status(201).json({
@@ -373,7 +400,11 @@ const updateLeave = async (req, res) => {
 
     // 3. Prevent editing if status is Approved or Rejected
     if (leave.status === "Approved" || leave.status === "Rejected") {
-      return httpError(res, 400, "Cannot edit leave once it is Approved or Rejected");
+      return httpError(
+        res,
+        400,
+        "Cannot edit leave once it is Approved or Rejected"
+      );
     }
 
     // 4. Validate required fields
@@ -408,7 +439,6 @@ const updateLeave = async (req, res) => {
   }
 };
 
-
 const deleteLeave = async (req, res) => {
   try {
     const user = req.user;
@@ -423,7 +453,11 @@ const deleteLeave = async (req, res) => {
 
     // 2. Prevent deletion if status is Approved or Rejected
     if (leave.status === "Approved" || leave.status === "Rejected") {
-      return httpError(res, 400, "Cannot delete leave once it is Approved or Rejected");
+      return httpError(
+        res,
+        400,
+        "Cannot delete leave once it is Approved or Rejected"
+      );
     }
 
     // 3. Delete the leave
@@ -438,7 +472,6 @@ const deleteLeave = async (req, res) => {
   }
 };
 
-
 module.exports = {
   createCalendar,
   getCalender,
@@ -449,5 +482,5 @@ module.exports = {
   getLeaves,
   createLeave,
   updateLeave,
-  deleteLeave
+  deleteLeave,
 };

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import axios from "../../../instance/Axios";
 
+import CustomTable from "../../../components/CustomeTable";
 /* --- Main Component --- */
 export default function TaskDetailDemo() {
   const [taskData, setTaskData] = useState(null);
@@ -305,63 +306,173 @@ export default function TaskDetailDemo() {
                 />
               </section>
 
-              {/* Calls */}
-              <section className="border-b pb-6">
-                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <Phone className="w-5 h-5 text-purple-600" /> Calls History
-                </h3>
+             <section>
+              <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-3">
+                <Phone className="w-5 h-5 text-purple-600" /> Call Logs
+              </h3>
+
+              {/* 🔹 Pending Calls */}
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-3">
+                Pending
+              </h3>
+              {calls.filter((c) => c.status.toLowerCase() === "pending")
+                .length === 0 ? (
+                <div className="p-4 text-center text-sm text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                  No pending calls.
+                </div>
+              ) : (
                 <CustomTable
                   columns={[
                     { key: "date", label: "Date" },
+                    { key: "subject", label: "Subject" },
                     { key: "status", label: "Status" },
                   ]}
-                  data={
-                    calls.length
-                      ? calls.map((c) => ({
-                          date: c.date,
-                          status: (
-                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                              c.status === 'Completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                            }`}>
-                              {c.status}
-                            </span>
-                          ),
-                        }))
-                      : [{ date: "No data found", status: "-" }]
-                  }
+                  data={calls
+                    .filter((c) => c.status.toLowerCase() === "pending")
+                    .map((c) => ({
+                      date: `${c.date} ${c.time}`,
+                      subject: c.subject,
+                      status: (
+                        <span
+                          className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                            c.status === "Completed"
+                              ? "bg-green-100 text-green-800"
+                              : c.status === "Cancelled"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-yellow-100 text-yellow-800"
+                          }`}
+                        >
+                          {c.status}
+                        </span>
+                      ),
+                    }))}
                 />
-              </section>
+              )}
 
-              {/* Meetings */}
-              <section className="border-b pb-6">
-                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <Users className="w-5 h-5 text-orange-600" /> Meetings Log
-                </h3>
+              {/* 🔹 History Calls (Completed or Cancelled) */}
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-3">
+                History
+              </h3>
+              {calls.filter((c) =>
+                ["completed", "cancelled"].includes(c.status.toLowerCase())
+              ).length === 0 ? (
+                <div className="p-4 text-center text-sm text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                  No completed or cancelled calls.
+                </div>
+              ) : (
                 <CustomTable
                   columns={[
                     { key: "date", label: "Date" },
-                    { key: "host", label: "Host" },
+                    { key: "subject", label: "Subject" },
+                    { key: "status", label: "Status" },
                   ]}
-                  data={
-                    meetings.length
-                      ? meetings.map((m) => ({
-                          date: m.meetingDate,
-                          host: m.name || "N/A",
-                        }))
-                      : [{ date: "No data found", host: "-" }]
-                  }
+                  data={calls
+                    .filter((c) =>
+                      ["completed", "cancelled"].includes(
+                        c.status.toLowerCase()
+                      )
+                    )
+                    .map((c) => ({
+                      date: `${c.date} ${c.time}`,
+                      subject: c.subject,
+                      status: (
+                        <span
+                          className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                            c.status === "Completed"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {c.status}
+                        </span>
+                      ),
+                    }))}
                 />
-              </section>
+              )}
+            </section>
 
-              {/* Connected Records */}
-              <section>
-                <h3 className="text-xl font-bold text-gray-800 mb-4">
-                  Connected Records
-                </h3>
-                <div className="border border-gray-300 border-dashed rounded-lg p-6 text-center text-gray-500 italic bg-gray-50">
-                  No connected records found.
+            {/* Meetings Section */}
+            <section>
+              <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-3">
+                <Users className="w-5 h-5 text-orange-600" /> Meetings
+              </h3>
+
+              {/* 🔹 Pending Meetings */}
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-3">
+                Pending
+              </h3>
+              {meetings.filter((m) => m.status?.toLowerCase() === "pending")
+                .length === 0 ? (
+                <div className="p-4 text-center text-sm text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                  No pending meetings.
                 </div>
-              </section>
+              ) : (
+                <CustomTable
+                  columns={[
+                    { key: "date", label: "Date" },
+                    { key: "subject", label: "Subject" },
+                    { key: "host", label: "Host" },
+                    { key: "status", label: "Status" },
+                  ]}
+                  data={meetings
+                    .filter((m) => m.status?.toLowerCase() === "pending")
+                    .map((m) => ({
+                      date: `${m.meetingDate} ${m.startTime} - ${m.endTime}`,
+                      subject: m.subject,
+                      host: m.name || "N/A",
+                      status: (
+                        <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+                          {m.status}
+                        </span>
+                      ),
+                    }))}
+                />
+              )}
+
+              {/* 🔹 History Meetings */}
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-3">
+                History
+              </h3>
+              {meetings.filter((m) =>
+                ["completed", "cancelled"].includes(m.status?.toLowerCase())
+              ).length === 0 ? (
+                <div className="p-4 text-center text-sm text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                  No completed or cancelled meetings.
+                </div>
+              ) : (
+                <CustomTable
+                  columns={[
+                    { key: "date", label: "Date" },
+                    { key: "subject", label: "Subject" },
+                    { key: "host", label: "Host" },
+                    { key: "status", label: "Status" },
+                  ]}
+                  data={meetings
+                    .filter((m) =>
+                      ["completed", "cancelled"].includes(
+                        m.status?.toLowerCase()
+                      )
+                    )
+                    .map((m) => ({
+                      date: `${m.meetingDate} ${m.startTime} - ${m.endTime}`,
+                      subject: m.subject,
+                      host: m.name || "N/A",
+                      status: (
+                        <span
+                          className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                            m.status?.toLowerCase() === "completed"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {m.status}
+                        </span>
+                      ),
+                    }))}
+                />
+              )}
+            </section>
+
             </div>
           </div>
         </div>
@@ -369,10 +480,6 @@ export default function TaskDetailDemo() {
     </div>
   );
 }
-
-// ------------------------------------------------------------------
-// --- Helper Components ---
-// ------------------------------------------------------------------
 
 /* --- Detail Row (Improved Design) --- */
 function Detail({ label, value }) {
@@ -384,82 +491,6 @@ function Detail({ label, value }) {
       <span className="text-sm font-bold text-gray-800 truncate">
         {value || "N/A"}
       </span>
-    </div>
-  );
-}
-
-/* --- Inline Custom Table (Refined Design) --- */
-function CustomTable({ columns, data, renderCell }) {
-  const isNoData = !data || data.length === 0 || (data.length === 1 && data[0].name === "No records found");
-  
-  if (isNoData) {
-    return (
-      <div className="border border-gray-300 border-dashed rounded-lg p-6 text-center text-gray-500 italic bg-gray-50 shadow-inner">
-        No records found.
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
-      {/* Mobile Cards */}
-      <div className="space-y-3 p-4 lg:hidden">
-        {data.map((row, idx) => (
-          <div
-            key={idx}
-            className="border border-gray-300 rounded-lg p-4 shadow-sm bg-white hover:shadow-lg transition-all duration-200"
-          >
-            {columns.map((col) => (
-              <div
-                key={col.key}
-                className="flex justify-between items-center py-1 border-b border-gray-100 last:border-b-0"
-              >
-                <span className="font-medium text-gray-500 text-sm">
-                  {col.label}
-                </span>
-                <span className="text-gray-700 text-sm font-semibold">
-                  {renderCell ? renderCell(col.key, row) : row[col.key] || "N/A"}
-                </span>
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
-
-      {/* Desktop Table */}
-      <div className="hidden lg:block overflow-x-auto">
-        <table className="min-w-full border-collapse text-sm">
-          <thead className="bg-indigo-50 border-b border-gray-200">
-            <tr>
-              {columns.map((col) => (
-                <th
-                  key={col.key}
-                  className="p-3 text-left font-bold text-indigo-700 uppercase tracking-wider"
-                >
-                  {col.label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {data.map((row, idx) => (
-              <tr
-                key={idx}
-                className="hover:bg-indigo-50 transition-colors duration-200"
-              >
-                {columns.map((col) => (
-                  <td
-                    key={col.key}
-                    className={`p-3 align-top ${col.className || "text-gray-700"}`}
-                  >
-                    {renderCell ? renderCell(col.key, row) : row[col.key] || "N/A"}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 }

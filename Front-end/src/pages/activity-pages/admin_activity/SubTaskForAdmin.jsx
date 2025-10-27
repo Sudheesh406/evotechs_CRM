@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { X, Plus, Edit, Trash } from "lucide-react";
-import axios from "../../instance/Axios";
-import TaskFormModal from "../../components/modals/SubTaskModal";
+import axios from "../../../instance/Axios";
+import TaskFormModal from "../../../components/modals/SubTaskModal";
 import Swal from "sweetalert2";
 
 export default function SubTaskPage() {
@@ -247,12 +247,10 @@ export default function SubTaskPage() {
             })}
           </div>
         ) : (
-          <div className="text-center bg-white rounded-2xl shadow-lg border border-gray-200 text-gray-500">
-            <div className="m-10">
-
-            <h2 className="text-xl font-semibold text-gray-700 mb-5">No Sub-Tasks Yet</h2>
+          <div className="text-center bg-white  rounded-2xl shadow-lg border border-gray-200 text-gray-500">
+            <X size={48} className="mx-auto text-gray-400 mb-4" />
+            <h2 className="text-xl font-semibold mb-2 text-gray-700">No Sub-Tasks Yet</h2>
             <p>It looks a little empty here. Click the "New Sub-Task" button to get started!</p>
-            </div>
           </div>
         )}
       </div>

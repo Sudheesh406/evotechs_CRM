@@ -29,6 +29,7 @@ const subTaskRoute = require("./routes/v1/subTaskRoute");
 const companyRoute = require("./routes/v1/companyRoute");
 const adminRoute = require("./routes/v1/adminTaskRoute");
 const documentRoute = require("./routes/v1/documentRoute");
+const notificationRoute = require('./routes/v1/notificationRoute');
 
 app.use(express.json());
 app.use(cookieParser());
@@ -60,6 +61,7 @@ app.use("/api/sub-task", subTaskRoute);
 app.use("/api/company", companyRoute);
 app.use("/api/adminTask", adminRoute);
 app.use("/api/document", documentRoute);
+app.use("/api/notification", notificationRoute);
 
 const server = http.createServer(app);
 

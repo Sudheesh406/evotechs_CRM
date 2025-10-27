@@ -36,7 +36,6 @@ Router.get("/contact/get",authenticate, getContact);
 Router.get("/contact/global/get",authenticate, getGlobalContact);
 
 
-
 // Router.post("/login", handleLogin);
 
 module.exports = Router;

@@ -5,7 +5,8 @@ const signup = require("../../models/v1/Authentication/authModel");
 const secretCode = require("../../models/v1/Authentication/secreatCode");
 const { httpSuccess, httpError } = require("../../utils/v1/httpResponse");
 const Signup = require("../../models/v1/Authentication/authModel");
-const company = require('../../models/v1/company/company')
+const company = require('../../models/v1/company/company');
+const notifications = require('../../models/v1/Work_space/notification')
 
 const handleSignup = async (req, res) => {
   try {
@@ -190,15 +191,17 @@ const getRole = async (req, res) => {
 
     const id = user.id
     const role = userDetails.role
+    const allNotifications = await notifications.findAll({where:{receiverId : user.id}})
 
     return httpSuccess(res, 200, "Role fetched successfully", {
-      id,role
+      id,role,allNotifications
     });
   } catch (error) {
     console.log("error found  in role getting", error);
     return httpError(res, 500, "Server error", err.message);
   }
 };
+
 
 
 const getPin = async (req, res) => {

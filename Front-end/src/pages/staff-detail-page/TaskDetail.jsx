@@ -3,6 +3,7 @@ import axios from "../../instance/Axios";
 import CallModal from "../../components/modals/CallModal";
 import MeetingModal from "../../components/modals/MeetingModal";
 import DocumentModal from "../../components/modals/DocumentModal";
+import CustomTable from "../../components/CustomeTable";
 import Swal from "sweetalert2";
 
 import {
@@ -30,8 +31,7 @@ export default function TaskDetail() {
 
   const [showDocumentModal, setShowDocumentModal] = useState(false);
   const [documentTaskId, setDocumentTaskId] = useState(null);
-    const [refresh, setRefresh] = useState(false);
-  
+  const [refresh, setRefresh] = useState(false);
 
   // Parse URL data
   let parsed = null;
@@ -96,7 +96,7 @@ export default function TaskDetail() {
   const fetchCustomerDetails = async () => {
     try {
       const response = await axios.post("task/details/get", { parsed });
-      console.log(response);
+
       const apiData = response.data?.data || {};
       setCustomer(apiData.customerDetails || null);
       setCalls(apiData.callDetails || []);
@@ -104,12 +104,13 @@ export default function TaskDetail() {
       setTaskDetails(apiData.taskDetails || []);
       setAttachments(apiData.documents[0]); // Still empty as per your comment
       setNotes(apiData.taskDetails?.[0]?.notes || "");
+
     } catch (error) {
       Swal.fire("Error", "Failed to get customer details.", "error");
       console.log("error found in fetching customer details", error);
     }
   };
-  console.log("attachment", attachments);
+
   useEffect(() => {
     fetchCustomerDetails();
   }, []); // only once on mount
@@ -204,7 +205,6 @@ export default function TaskDetail() {
     try {
       // Safely get the task ID
       const id = taskDetails[0]?.id;
-      console.log("Task data:", id);
 
       if (!id) {
         Swal.fire({
@@ -541,9 +541,15 @@ export default function TaskDetail() {
               <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-3">
                 <Phone className="w-5 h-5 text-purple-600" /> Call Logs
               </h3>
-              {calls.length === 0 ? (
+
+              {/* 🔹 Pending Calls */}
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-3">
+                Pending
+              </h3>
+              {calls.filter((c) => c.status.toLowerCase() === "pending")
+                .length === 0 ? (
                 <div className="p-4 text-center text-sm text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                  No call logs recorded.
+                  No pending calls.
                 </div>
               ) : (
                 <CustomTable
@@ -552,21 +558,66 @@ export default function TaskDetail() {
                     { key: "subject", label: "Subject" },
                     { key: "status", label: "Status" },
                   ]}
-                  data={calls.map((c) => ({
-                    date: `${c.date} ${c.time}`,
-                    subject: c.subject,
-                    status: (
-                      <span
-                        className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                          c.status === "Completed"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-yellow-100 text-yellow-800"
-                        }`}
-                      >
-                        {c.status}
-                      </span>
-                    ),
-                  }))}
+                  data={calls
+                    .filter((c) => c.status.toLowerCase() === "pending")
+                    .map((c) => ({
+                      date: `${c.date} ${c.time}`,
+                      subject: c.subject,
+                      status: (
+                        <span
+                          className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                            c.status === "Completed"
+                              ? "bg-green-100 text-green-800"
+                              : c.status === "Cancelled"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-yellow-100 text-yellow-800"
+                          }`}
+                        >
+                          {c.status}
+                        </span>
+                      ),
+                    }))}
+                />
+              )}
+
+              {/* 🔹 History Calls (Completed or Cancelled) */}
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-3">
+                History
+              </h3>
+              {calls.filter((c) =>
+                ["completed", "cancelled"].includes(c.status.toLowerCase())
+              ).length === 0 ? (
+                <div className="p-4 text-center text-sm text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                  No completed or cancelled calls.
+                </div>
+              ) : (
+                <CustomTable
+                  columns={[
+                    { key: "date", label: "Date" },
+                    { key: "subject", label: "Subject" },
+                    { key: "status", label: "Status" },
+                  ]}
+                  data={calls
+                    .filter((c) =>
+                      ["completed", "cancelled"].includes(
+                        c.status.toLowerCase()
+                      )
+                    )
+                    .map((c) => ({
+                      date: `${c.date} ${c.time}`,
+                      subject: c.subject,
+                      status: (
+                        <span
+                          className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                            c.status === "Completed"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {c.status}
+                        </span>
+                      ),
+                    }))}
                 />
               )}
             </section>
@@ -576,9 +627,15 @@ export default function TaskDetail() {
               <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-3">
                 <Users className="w-5 h-5 text-orange-600" /> Meetings
               </h3>
-              {meetings.length === 0 ? (
+
+              {/* 🔹 Pending Meetings */}
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-3">
+                Pending
+              </h3>
+              {meetings.filter((m) => m.status?.toLowerCase() === "pending")
+                .length === 0 ? (
                 <div className="p-4 text-center text-sm text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                  No meetings scheduled.
+                  No pending meetings.
                 </div>
               ) : (
                 <CustomTable
@@ -586,26 +643,77 @@ export default function TaskDetail() {
                     { key: "date", label: "Date" },
                     { key: "subject", label: "Subject" },
                     { key: "host", label: "Host" },
+                    { key: "status", label: "Status" },
                   ]}
-                  data={meetings.map((m) => ({
-                    date: `${m.meetingDate} ${m.startTime} - ${m.endTime}`,
-                    subject: m.subject,
-                    host: m.name || "N/A",
-                  }))}
+                  data={meetings
+                    .filter((m) => m.status?.toLowerCase() === "pending")
+                    .map((m) => ({
+                      date: `${m.meetingDate} ${m.startTime} - ${m.endTime}`,
+                      subject: m.subject,
+                      host: m.name || "N/A",
+                      status: (
+                        <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+                          {m.status}
+                        </span>
+                      ),
+                    }))}
+                />
+              )}
+
+              {/* 🔹 History Meetings */}
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-3">
+                History
+              </h3>
+              {meetings.filter((m) =>
+                ["completed", "cancelled"].includes(m.status?.toLowerCase())
+              ).length === 0 ? (
+                <div className="p-4 text-center text-sm text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                  No completed or cancelled meetings.
+                </div>
+              ) : (
+                <CustomTable
+                  columns={[
+                    { key: "date", label: "Date" },
+                    { key: "subject", label: "Subject" },
+                    { key: "host", label: "Host" },
+                    { key: "status", label: "Status" },
+                  ]}
+                  data={meetings
+                    .filter((m) =>
+                      ["completed", "cancelled"].includes(
+                        m.status?.toLowerCase()
+                      )
+                    )
+                    .map((m) => ({
+                      date: `${m.meetingDate} ${m.startTime} - ${m.endTime}`,
+                      subject: m.subject,
+                      host: m.name || "N/A",
+                      status: (
+                        <span
+                          className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                            m.status?.toLowerCase() === "completed"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {m.status}
+                        </span>
+                      ),
+                    }))}
                 />
               )}
             </section>
           </div>
 
           {/* Connected Records (Empty State) */}
-          <div className="bg-white rounded-xl shadow-xl p-6">
+          {/* <div className="bg-white rounded-xl shadow-xl p-6">
             <h3 className="text-xl font-semibold text-gray-800 mb-2">
               Connected Records
             </h3>
             <div className="border border-gray-300 border-dashed rounded-lg p-6 text-center text-gray-500 italic bg-gray-50">
               No additional connected records found.
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -632,7 +740,7 @@ export default function TaskDetail() {
         <DocumentModal
           onClose={() => setShowDocumentModal(false)}
           taskId={documentTaskId} // Pass the task ID
-           setRefresh={setRefresh}
+          setRefresh={setRefresh}
           refresh={refresh}
         />
       )}
@@ -650,82 +758,6 @@ function Detail({ label, value }) {
       <span className="text-sm font-semibold text-gray-800 truncate">
         {value || "N/A"}
       </span>
-    </div>
-  );
-}
-
-/* --- Inline Custom Table (Refreshed) --- */
-function CustomTable({ columns, data, renderCell }) {
-  if (data.length === 0) {
-    return (
-      <div className="p-4 text-center text-sm text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-        No data available.
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-white rounded-lg overflow-hidden border border-gray-200">
-      {/* Mobile Cards */}
-      <div className="space-y-3 p-3 lg:hidden">
-        {data.map((row, idx) => (
-          <div
-            key={idx}
-            className="border border-gray-200 rounded-lg p-3 shadow-sm bg-white hover:bg-gray-50 transition-shadow duration-200"
-          >
-            {columns.map((col) => (
-              <div
-                key={col.key}
-                className="flex justify-between items-center py-1 border-b last:border-b-0"
-              >
-                <span className="font-medium text-sm text-gray-600 mr-2">
-                  {col.label}:
-                </span>
-                <span className="text-sm text-gray-800 text-right font-normal flex-shrink-0">
-                  {renderCell ? renderCell(col.key, row) : row[col.key]}
-                </span>
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
-
-      {/* Desktop Table */}
-      <div className="hidden lg:block overflow-x-auto">
-        <table className="min-w-full border-collapse text-sm">
-          <thead className="bg-gray-100 border-b border-gray-200">
-            <tr>
-              {columns.map((col) => (
-                <th
-                  key={col.key}
-                  className="p-3 text-left font-semibold text-gray-600 uppercase tracking-wider"
-                >
-                  {col.label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {data.map((row, idx) => (
-              <tr
-                key={idx}
-                className="hover:bg-indigo-50 transition-colors duration-150"
-              >
-                {columns.map((col) => (
-                  <td
-                    key={col.key}
-                    className={`p-3 align-top ${
-                      col.className || "text-gray-700"
-                    }`}
-                  >
-                    {renderCell ? renderCell(col.key, row) : row[col.key]}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 }

@@ -172,7 +172,7 @@ export default function Attendance() {
     });
 
     try {
-      await axios.post("/attendance/register", data);
+    await axios.post("/attendance/register", data);
 
       // Close loading
       Swal.close();

@@ -8,7 +8,7 @@ import withReactContent from "sweetalert2-react-content";
 const MySwal = withReactContent(Swal);
 
 // --- TASK CARD COMPONENT ---
-const TaskCard = ({ task, onEdit, onDelete }) => {
+const TaskCard = ({ task, onEdit, onDelete, onSubTask}) => {
   const { id, taskName, amount, phone, priority, description, status } = task;
   const [showDropdown, setShowDropdown] = useState(false);
 
@@ -73,6 +73,15 @@ const TaskCard = ({ task, onEdit, onDelete }) => {
               >
                 Delete
               </button>
+              <button
+                onClick={() => {
+                  onSubTask(task.id);
+                  setShowDropdown(false);
+                }}
+                className="flex items-center w-full px-3 py-2 text-left hover:bg-gray-100 text-sm text-red-600"
+              >
+                SubTask
+              </button>
             </div>
           )}
         </div>
@@ -98,7 +107,7 @@ const TaskCard = ({ task, onEdit, onDelete }) => {
 };
 
 // --- TASK COLUMN COMPONENT ---
-const TaskColumn = ({ title, color, tasks, onEdit, onDelete }) => {
+const TaskColumn = ({ title, color, tasks, onEdit, onDelete, onSubTask }) => {
   const navigate = useNavigate();
 
   const handleViewClick = () => {
@@ -123,7 +132,7 @@ const TaskColumn = ({ title, color, tasks, onEdit, onDelete }) => {
       <div className="space-y-4">
         {tasks.length > 0 ? (
           tasks.map((task) => (
-            <TaskCard key={task.id} task={task} onEdit={onEdit} onDelete={onDelete} />
+            <TaskCard key={task.id} task={task} onEdit={onEdit} onDelete={onDelete} onSubTask={onSubTask} />
           ))
         ) : (
           <div className="text-center p-8 text-gray-400 text-sm bg-gray-50 rounded-xl border border-gray-100">
@@ -135,11 +144,15 @@ const TaskColumn = ({ title, color, tasks, onEdit, onDelete }) => {
   );
 };
 
+
 // --- MAIN COMPONENT ---
 const AdminTask = () => {
   const [tasks, setTasks] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [currentTask, setCurrentTask] = useState(null);
+
+    const navigate = useNavigate();
+
 
   const [newTask, setNewTask] = useState({
     taskName: "",
@@ -221,6 +234,7 @@ const AdminTask = () => {
     }
   };
 
+
   // --- Handle Edit click ---
   const handleEditClick = (task) => {
     setCurrentTask(task);
@@ -234,6 +248,11 @@ const AdminTask = () => {
     });
     setShowForm(true);
   };
+
+
+  const handleSubtask = (id)=>{
+      navigate(`/activities/tasks/subtask/${id}`);
+  }
 
   // --- Group tasks ---
   const notStartedTasks = tasks.filter((t) => t.status === "Not Started");
@@ -262,10 +281,10 @@ const AdminTask = () => {
 
       {/* Kanban Board */}
       <div className="flex flex-col lg:flex-row lg:justify-between gap-2 overflow-x-auto pb-4">
-        <TaskColumn title="Not Started" color={{ bg: "bg-green-100", text: "text-green-800" }} tasks={notStartedTasks} onEdit={handleEditClick} onDelete={handleDelete} />
-        <TaskColumn title="In Progress" color={{ bg: "bg-amber-100", text: "text-amber-800" }} tasks={inProgressTasks} onEdit={handleEditClick} onDelete={handleDelete} />
-        <TaskColumn title="Final Stage" color={{ bg: "bg-purple-100", text: "text-purple-800" }} tasks={finalStageTasks} onEdit={handleEditClick} onDelete={handleDelete} />
-        <TaskColumn title="Completed" color={{ bg: "bg-blue-100", text: "text-blue-800" }} tasks={completedTasks} onEdit={handleEditClick} onDelete={handleDelete} />
+        <TaskColumn title="Not Started" color={{ bg: "bg-green-100", text: "text-green-800" }} tasks={notStartedTasks} onEdit={handleEditClick} onDelete={handleDelete} onSubTask={handleSubtask}/>
+        <TaskColumn title="In Progress" color={{ bg: "bg-amber-100", text: "text-amber-800" }} tasks={inProgressTasks} onEdit={handleEditClick} onDelete={handleDelete} onSubTask={handleSubtask} />
+        <TaskColumn title="Final Stage" color={{ bg: "bg-purple-100", text: "text-purple-800" }} tasks={finalStageTasks} onEdit={handleEditClick} onDelete={handleDelete} onSubTask={handleSubtask} />
+        <TaskColumn title="Completed" color={{ bg: "bg-blue-100", text: "text-blue-800" }} tasks={completedTasks} onEdit={handleEditClick} onDelete={handleDelete} onSubTask={handleSubtask} />
       </div>
 
       {/* --- ADD/EDIT TASK MODAL --- */}

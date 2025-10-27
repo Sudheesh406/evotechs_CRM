@@ -3,7 +3,8 @@ const Attendance = require("../../models/v1/Work_space/attendance");
 const { Op } = require("sequelize");
 const { signup } = require("../../models/v1");
 const Signup = require("../../models/v1/Authentication/authModel");
-const roleChecker = require("../../utils/v1/roleChecker")
+const roleChecker = require("../../utils/v1/roleChecker");
+const leaves = require("../../models/v1/Work_space/Leave");
 // Helper to convert 12-hour to 24-hour format
 
 function convertTo24Hour(time12h) {
@@ -15,6 +16,60 @@ function convertTo24Hour(time12h) {
   if (modifier === "AM" && hours === 12) hours = 0;
 
   return `${hours.toString().padStart(2, "0")}:${minutes}:00`;
+}
+
+const getThisMonthLeaves = async () => {
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1); // first day of the month
+  startOfMonth.setHours(0, 0, 0, 0);
+
+  const endOfMonth = new Date(startOfMonth);
+  endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+  endOfMonth.setDate(0); // last day of the month
+  endOfMonth.setHours(23, 59, 59, 999);
+
+  const thisMonthLeaves = await leaves.findAll({
+    where: {
+      leaveDate: {
+        [Op.between]: [startOfMonth, endOfMonth],
+      },
+      softDelete: false, // optional filter
+    },
+    order: [["leaveDate", "ASC"]],
+  });
+
+  return thisMonthLeaves;
+};
+
+function getTodayLeaves(leaves) {
+  const today = new Date().toISOString().split("T")[0]; // format: YYYY-MM-DD
+
+  // Filter all leaves where today is between leaveDate and endDate
+  const todayLeaves = leaves.filter((leave) => {
+    const { leaveDate, endDate } = leave.dataValues;
+    const start = leaveDate;
+    const end = endDate || leaveDate;
+    return today >= start && today <= end;
+  });
+
+  return todayLeaves;
+}
+
+function calculateHours(startTime, endTime) {
+  // Convert time strings (e.g. "8:00 AM") into Date objects
+  const start = new Date(`1970-01-01 ${startTime}`);
+  const end = new Date(`1970-01-01 ${endTime}`);
+
+  // If end time is next day (e.g., 10:00 PM to 6:00 AM)
+  if (end < start) {
+    end.setDate(end.getDate() + 1);
+  }
+
+  // Calculate difference in milliseconds → convert to hours
+  const diffMs = end - start;
+  const diffHours = diffMs / (1000 * 60 * 60);
+
+  return diffHours;
 }
 
 const attendanceRegister = async (req, res) => {
@@ -41,6 +96,31 @@ const attendanceRegister = async (req, res) => {
         400,
         `Attendance ${details.shedule} already marked for today`
       );
+    }
+
+    const allLeaves = await getThisMonthLeaves();
+    const value = getTodayLeaves(allLeaves);
+
+    if (value[0].leaveType == "fullday" && value[0].status == "Approve") {
+      return httpError(res, 401, "leave is registered");
+    }
+
+    if (
+      (value[0].leaveType == "morning" && value[0].status == "Approve") ||
+      (value[0].leaveType == "afternoon" && value[0].status == "Approve")
+    ) {
+      if (details.shedule === "exit") {
+        const todaysAttentence = await Attendance.findOne({
+          where: { staffId: user.id, attendanceDate: details.date },
+        });
+        const difference = calculateHours(
+          todaysAttentence.time,
+          details.exitTime
+        );
+        if (difference != "4") {
+          return httpError(res, 401, "Half day only can add 4 hours working");
+        }
+      }
     }
 
     let timeValue;
@@ -178,7 +258,6 @@ const attendanceEdit = async (req, res) => {
   }
 };
 
-
 const handleDelete = async (req, res) => {
   try {
     const date = req.params.id;
@@ -187,7 +266,7 @@ const handleDelete = async (req, res) => {
     if (!date) {
       return httpError(res, 400, "Attendance date is required");
     }
- 
+
     // Only allow deleting for today's date
     const todayStr = new Date().toISOString().split("T")[0];
     if (date !== todayStr) {
@@ -217,7 +296,6 @@ const handleDelete = async (req, res) => {
   }
 };
 
-
 function formatTo12Hour(time24) {
   if (!time24) return null;
   const [hoursStr, minutes] = time24.split(":");
@@ -226,7 +304,6 @@ function formatTo12Hour(time24) {
   hours = hours % 12 || 12;
   return `${hours.toString().padStart(2, "0")}:${minutes} ${ampm}`;
 }
-
 
 const attendanceGet = async (req, res) => {
   try {
@@ -274,7 +351,6 @@ const attendanceGet = async (req, res) => {
   }
 };
 
-
 const getStaffList = async (req, res) => {
   try {
     const user = req.user;
@@ -287,7 +363,7 @@ const getStaffList = async (req, res) => {
     // Fetch only id and name columns for staff role
     const staffList = await Signup.findAll({
       where: { role: "staff" },
-      attributes: ["id", "name"], 
+      attributes: ["id", "name"],
     });
 
     return httpSuccess(res, 200, "staff list fetched successfully", staffList);
@@ -296,7 +372,6 @@ const getStaffList = async (req, res) => {
     return httpError(res, 500, "Internal Server Error");
   }
 };
-
 
 // convert "HH:mm:ss" → "hh:mm AM/PM"
 function formatToAmPm(timeStr) {
@@ -389,17 +464,23 @@ const getStaffAttendance = async (req, res) => {
         date: item.date, // still YYYY-MM-DD
         entryTime: item.entryTime ? formatToAmPm(item.entryTime) : null,
         exitTime: item.exitTime ? formatToAmPm(item.exitTime) : null,
-        workingHours: workingMinutes ? formatMinutesToHoursMins(workingMinutes) : null,
+        workingHours: workingMinutes
+          ? formatMinutesToHoursMins(workingMinutes)
+          : null,
       };
     });
 
-    return httpSuccess(res, 200, "Attendance fetched successfully", finalResult);
+    return httpSuccess(
+      res,
+      200,
+      "Attendance fetched successfully",
+      finalResult
+    );
   } catch (error) {
     console.error("error found in get staff attendance", error);
     return httpError(res, 500, "Internal Server Error");
   }
 };
-
 
 module.exports = {
   attendanceRegister,
@@ -408,5 +489,5 @@ module.exports = {
   handleDelete,
   getStaffAttendance,
   getStaffList,
-  getStaffList
+  getStaffList,
 };

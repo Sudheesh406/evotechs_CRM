@@ -176,6 +176,7 @@ const deleteRequirement = async (req, res) => {
   }
 };
 
+
 module.exports = {
   createRequirement,
   getRequirement,

@@ -27,11 +27,18 @@ const createLeads = async (req, res) => {
       return httpError(res, 400, "All fields are required");
     }
 
-    // Optionally: check if email or phone already exists
+    if(email){
+      const existingLead = await leads.findOne({ where: { email } });
+      if (existingLead) {
+        return httpError(res, 409, "A lead with this email is already exists");
+      }
+    }
+    
     const existingLead = await leads.findOne({ where: { phone } });
     if (existingLead) {
-      return httpError(res, 409, "A lead with this email already exists");
+      return httpError(res, 409, "A lead with this Phone number already exists");
     }
+    // Optionally: check if email or phone already exists
     const Priority = null;
     // Create the lead
     const result = await leads.create({
@@ -52,6 +59,7 @@ const createLeads = async (req, res) => {
     return httpError(res, 500, "Server error", err.message);
   }
 };
+
 
 const getLeads = async (req, res) => {
   try {
@@ -205,6 +213,7 @@ const deleteLeads = async (req, res) => {
   }
 };
 
+
 const approveLeads = async (req, res) => {
   try {
     const user = req.user;
@@ -284,7 +293,7 @@ const createContact = async (req, res) => {
     // Optionally: check if email or phone already exists
     const existingLead = await Contacts.findOne({ where: { email, phone } });
     if (existingLead) {
-      return httpError(res, 409, "A Contacts with this email already exists");
+      return httpError(res, 409, "A Contacts with this email or phone number is already exists");
     }
 
     // Create the Contact
@@ -755,6 +764,7 @@ const getGlobalContact = async (req, res) => {
     return httpError(res, 500, "Internal Server Error");
   }
 };
+
 
 module.exports = {
   createLeads,

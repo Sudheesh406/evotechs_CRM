@@ -1,10 +1,9 @@
 const { DataTypes } = require("sequelize");
 const { sequelize } = require("../../../database/dbConfigue");
-const signup = require("../Authentication/authModel");
-const task = require("./task");
+const signup = require("../../../models/v1/Authentication/authModel");
 
-const subTasks = sequelize.define(
-  "subTasks",
+const notifications = sequelize.define(
+  "notifications",
   {
     id: {
       type: DataTypes.INTEGER,
@@ -15,17 +14,12 @@ const subTasks = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    notChecked: {
-      type: DataTypes.JSON, // stores array of items
-      allowNull: false,
-      defaultValue: [],
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: true,
     },
-    checked: {
-      type: DataTypes.JSON, // stores array of items
-      allowNull: false,
-      defaultValue: [],
-    },
-    staffId: {
+    // 🔹 Who receives this notification (can be admin, staff, etc.)
+    receiverId: {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
@@ -35,20 +29,20 @@ const subTasks = sequelize.define(
       onUpdate: "CASCADE",
       onDelete: "SET NULL",
     },
-    taskId: {
+    // 🔹 Who created/sent this notification (optional)
+    senderId: {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: task,
+        model: signup,
         key: "id",
       },
       onUpdate: "CASCADE",
       onDelete: "SET NULL",
     },
-    role: {
-      type: DataTypes.ENUM("admin", "staff"),
-      allowNull: false,
-      defaultValue: "staff",
+    isRead: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
     },
     softDelete: {
       type: DataTypes.BOOLEAN,
@@ -56,9 +50,9 @@ const subTasks = sequelize.define(
     },
   },
   {
-    tableName: "subTasks",
+    tableName: "notifications",
     timestamps: true,
   }
 );
 
-module.exports = subTasks;
+module.exports = notifications;

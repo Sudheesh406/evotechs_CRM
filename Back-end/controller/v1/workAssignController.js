@@ -5,6 +5,9 @@ const workAssign = require("../../models/v1/Work_space/workAssign");
 const trash = require("../../models/v1/Trash/trash");
 const roleChecker = require("../../utils/v1/roleChecker");
 const { getIo } = require("../../utils/v1/socket");
+const {
+  createNotification,
+} = require("../../controller/v1/notificationController");
 
 const { Op, Sequelize } = require("sequelize");
 
@@ -77,15 +80,21 @@ const createTodo = async (req, res) => {
         timestamp: new Date(),
       });
 
+      const data = {};
+      data.title = "New Work Assigned";
+      data.description = "You have been assigned a new work";
+      data.receiverId = staffDetails.id;
+      data.senderId = user.id;
+
+      createNotification(data);
 
       return httpSuccess(res, 201, "Work assigned successfully", newTask);
     }
   } catch (error) {
     console.error("Error in createTodo:", error);
-    return httpError(res, 500, "Internal Server Error",error);
+    return httpError(res, 500, "Internal Server Error", error);
   }
 };
-
 
 const updateTodo = async (req, res) => {
   try {
@@ -153,6 +162,14 @@ const updateTodo = async (req, res) => {
         type: "work",
         timestamp: new Date(),
       });
+
+      const value = {};
+      value.title = "New Work Assigned";
+      value.description = "You have been assigned a new work";
+      value.receiverId = staffDetails.id;
+      value.senderId = user.id;
+
+      createNotification(value);
     }
 
     // Update the task
@@ -192,7 +209,6 @@ const getUserDetails = async (req, res) => {
     });
   }
 };
-
 
 const getWorkDetails = async (req, res) => {
   try {
@@ -275,8 +291,6 @@ const getWorkDetails = async (req, res) => {
   }
 };
 
-
-
 const deleteTodo = async (req, res) => {
   try {
     const user = req.user;
@@ -331,7 +345,6 @@ const deleteTodo = async (req, res) => {
   }
 };
 
-
 const getAssignedWork = async (req, res) => {
   try {
     const staff = req.user;
@@ -345,7 +358,7 @@ const getAssignedWork = async (req, res) => {
 
     // Build the OR condition dynamically
     const orConditions = [
-      { staffId: staffId } // directly assigned
+      { staffId: staffId }, // directly assigned
     ];
 
     if (staffTeamIds.length) {
@@ -373,13 +386,14 @@ const getAssignedWork = async (req, res) => {
     const userDetails = await signup.findOne({ where: { id: staff.id } });
     const userName = userDetails.name;
 
-    return res.status(200).json({ success: true, data: { workAssigns, userName } });
+    return res
+      .status(200)
+      .json({ success: true, data: { workAssigns, userName } });
   } catch (error) {
     console.error("Error fetching work assignments:", error);
     return res.status(500).json({ success: false, message: "Server Error" });
   }
 };
-
 
 const stageUpdate = async (req, res) => {
   try {
