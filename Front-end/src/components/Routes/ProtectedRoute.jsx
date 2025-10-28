@@ -49,6 +49,7 @@ export default function ProtectedRoute({ allowedRoles, children }) {
     };
     getRole();
   }, []);
+  
 
   const clearNotification = async (id) => {
     try {
