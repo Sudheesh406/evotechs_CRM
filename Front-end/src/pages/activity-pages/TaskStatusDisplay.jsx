@@ -65,16 +65,29 @@ const TaskStatusDetail = () => {
 
       Swal.close();
     } catch (err) {
-      if (err.response && err.response.status === 404) {
-        navigate(-1);
-      }
       console.error(err);
-      Swal.close();
-      Swal.fire({
-        icon: "error",
-        title: "Failed!",
-        text: "Could not fetch tasks.",
-      });
+
+      // If 404 (No Data Found)
+      if (err.response && err.response.status === 404) {
+        Swal.fire({
+          icon: "info",
+          title: "No Data Found",
+          text: "No tasks available right now.",
+          confirmButtonText: "Go to Tasks",
+        }).then((result) => {
+          if (result.isConfirmed) {
+            navigate("/activities/tasks");
+          }
+        });
+      } else {
+        // Other errors
+        Swal.fire({
+          icon: "error",
+          title: "Failed!",
+          text: "Could not fetch tasks.",
+          confirmButtonText: "Retry",
+        });
+      }
     }
   };
 
@@ -251,27 +264,27 @@ const TaskStatusDetail = () => {
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
-        <h1 className="text-indigo-600 text-xl font-bold">{data}</h1>
+          <h1 className="text-indigo-600 text-xl font-bold">{data}</h1>
         </div>
-          <button
-            onClick={() => navigate(-1)}
-            className="px-3 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors flex items-center gap-2"
+        <button
+          onClick={() => navigate(-1)}
+          className="px-3 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors flex items-center gap-2"
+        >
+          {/* Optional: Back Arrow Icon */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            viewBox="0 0 20 20"
+            fill="currentColor"
           >
-            {/* Optional: Back Arrow Icon */}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M7.707 14.707a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 011.414 1.414L4.414 9H18a1 1 0 110 2H4.414l3.293 3.293a1 1 0 010 1.414z"
-                clipRule="evenodd"
-              />
-            </svg>
-            Back
-          </button>
+            <path
+              fillRule="evenodd"
+              d="M7.707 14.707a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 011.414 1.414L4.414 9H18a1 1 0 110 2H4.414l3.293 3.293a1 1 0 010 1.414z"
+              clipRule="evenodd"
+            />
+          </svg>
+          Back
+        </button>
       </div>
 
       {/* Task Cards */}

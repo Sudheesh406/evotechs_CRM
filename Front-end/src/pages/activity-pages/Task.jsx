@@ -17,7 +17,8 @@ const Task = () => {
   const [tasksByStage, setTasksByStage] = useState({
     "Not Started": [],
     "In Progress": [],
-    Completed: [],
+    "Review": [],
+    "Completed": [],
   });
   const [stageModal, setStageModal] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -69,12 +70,14 @@ const Task = () => {
       const mappedTasks = {
         "Not Started": [],
         "In Progress": [],
-        Completed: [],
+        "Review": [],
+        "Completed": [],
       };
       fetchedTasks.forEach((task) => {
         if (task.stage === "1") mappedTasks["Not Started"].push(task);
         else if (task.stage === "2") mappedTasks["In Progress"].push(task);
-        else if (task.stage === "3") mappedTasks["Completed"].push(task);
+        else if (task.stage === "3") mappedTasks["Review"].push(task);
+        else if (task.stage === "4") mappedTasks["Completed"].push(task);
       });
 
       setTasksByStage(mappedTasks);
@@ -293,7 +296,7 @@ const Task = () => {
       </div>
       <hr className="my-6 border-t border-gray-200" />     {" "}
       {/* Kanban Columns: Advanced Grid Layout and Styling */}     {" "}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                {" "}
         {Object.entries(tasksByStage).map(([status, cards]) => (
           <TaskColumn

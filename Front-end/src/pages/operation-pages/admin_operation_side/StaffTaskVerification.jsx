@@ -66,7 +66,7 @@ function StaffTaskVerification() {
   };
 
   const handleRowClick = (row) => {
-    const data = { taskId: row.id, contactId: row.contactId, staffId: row.staffId , pending: false, completed : true};
+    const data = { taskId: row.id, contactId: row.contactId, staffId: row.staffId , pending: false, completed : true, resolve:true};
     const dataToSend = encodeURIComponent(JSON.stringify({ data }));
     navigate(`/activities/task/port/${dataToSend}`);
   };

@@ -18,6 +18,7 @@ const {
   newUpdate,
   getTaskForAdmin,
   getTaskByStatus,
+  againReworkUpdate
 
 } = require("../../controller/v1/taskController");
 
@@ -37,6 +38,7 @@ Router.post("/stage/update", authenticate, updateStagesByAdmin);
 Router.post('/team/details/get',authenticate, getTeamTaskDetails)
 Router.post('/team/stages_notest',authenticate, updateTeamStagesAndNotes)
 Router.patch('/rework/update',authenticate, reworkUpdate)
+Router.patch('/rework/update/direct',authenticate, againReworkUpdate)
 Router.patch('/rework/finish',authenticate, newUpdate)
 
 Router.post('/status/get',authenticate, getTaskByStatus)

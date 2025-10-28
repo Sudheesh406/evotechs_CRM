@@ -1,4 +1,8 @@
 
+const {
+  createNotification,
+} = require("../../controller/v1/notificationController");
+
 const messageNotification = async(io, id, name)=>{
     try {
       io.to(`notify_${id}`).emit("receive_notification", {
@@ -8,6 +12,11 @@ const messageNotification = async(io, id, name)=>{
         timestamp: new Date(),
       });
 
+       const value = {};
+    value.title = "Message Notification";
+    value.description = "You got a new message";
+    value.receiverId = id;
+    createNotification(value);
 
     } catch (error) {
         console.log('error in messageNotification',error)

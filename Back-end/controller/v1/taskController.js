@@ -128,8 +128,10 @@ const getTaskByStage = async (req, res) => {
       stage = '1'
     }else if(data == 'In Progress'){
       stage = '2'
-    }else if(data == 'Completed'){
+    }else if(data == 'Review'){
       stage = '3'
+    }else if(data == 'Completed'){
+      stage = '4'
     }
 
     const allTask = await task.findAll({
@@ -664,6 +666,52 @@ const reworkUpdate = async (req, res) => {
 };
 
 
+const againReworkUpdate = async (req, res) => {
+  try {
+    const { id } = req.body;
+    const user = req.user;
+
+    // Check admin access
+    const access = await roleChecker(user.id);
+    if (!access) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Admins only.",
+      });
+    }
+
+    // Find the task
+    const existing = await task.findOne({ where: { id } });
+
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        message: "Task not found",
+      });
+    }
+
+    // Update the task
+    await existing.update({
+      newUpdate: false,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Task rework status updated successfully",
+      data: existing,
+    });
+  } catch (error) {
+    console.error("Error in updating rework:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message || error,
+    });
+  }
+};
+
+
+
 const newUpdate = async (req, res) => {
   try {
     const { id } = req.body;
@@ -815,4 +863,5 @@ module.exports = {
   getTaskForAdmin,
   getTaskByStatus,
   getAdminTask,
+  againReworkUpdate
 };

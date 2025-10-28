@@ -100,6 +100,8 @@ const attendanceRegister = async (req, res) => {
 
     const allLeaves = await getThisMonthLeaves();
     const value = getTodayLeaves(allLeaves);
+    
+    if (value && value.length > 0) {
 
     if (value[0].leaveType == "fullday" && value[0].status == "Approve") {
       return httpError(res, 401, "leave is registered");
@@ -122,6 +124,7 @@ const attendanceRegister = async (req, res) => {
         }
       }
     }
+  }
 
     let timeValue;
     if (details.shedule === "entry") {

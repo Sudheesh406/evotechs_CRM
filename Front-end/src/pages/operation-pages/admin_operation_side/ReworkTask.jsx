@@ -75,7 +75,7 @@ function ReworkTask() {
   };
 
   const handleRowClick = (row) => {
-    const data = { taskId: row.id, contactId: row.contactId, staffId: row.staffId , pending: true, completed : true};
+    const data = { taskId: row.id, contactId: row.contactId, staffId: row.staffId , pending: true, completed : true, resolve:false};
     const dataToSend = encodeURIComponent(JSON.stringify({ data }));
     navigate(`/activities/task/port/${dataToSend}`);
   };
@@ -87,6 +87,7 @@ function ReworkTask() {
       </div>
     );
   }
+  
 
   return (
     <div className="p-6 bg-gray-50">
