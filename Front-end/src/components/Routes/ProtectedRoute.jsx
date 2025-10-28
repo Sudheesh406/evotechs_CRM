@@ -15,44 +15,40 @@ export default function ProtectedRoute({ allowedRoles, children }) {
   const location = useLocation(); // 👈 get current location (path + state)
   const [showModal, setShowModal] = useState(false);
 
- useEffect(() => {
-  const getRole = async () => {
-    try {
-      const { data } = await axios.get("/auth/get/role");
-      setRole(data?.data?.role);
-      setNotifications(data?.data?.allNotifications);
+  useEffect(() => {
+    const getRole = async () => {
+      try {
+        const { data } = await axios.get("/auth/get/role");
+        setRole(data?.data?.role);
+        setNotifications(data?.data?.allNotifications);
+        const id = data?.data?.id;
 
-      const id = data?.data?.id;
-      if (id) {
-        socket.emit("joinNotificationRoom", id);
-        console.log("Joined notification room:", id);
+        if (id) {
+          // join notification room once user is known
+          socket.emit("joinNotificationRoom", id);
+          console.log("Joined notification room:", id);
+        }
+
+        const handleNotification = (data) => {
+          console.log("🔔 New Notification:", data);
+          // ✅ Show global notification
+          toast.success(`${data.title}: ${data.message}`);
+        };
+
+        socket.on("receive_notification", handleNotification);
+
+        return () => {
+          socket.off("receive_notification", handleNotification);
+        };
+      } catch (err) {
+        console.error("Error fetching role:", err);
+        setRole(null);
+      } finally {
+        setLoading(false);
       }
-
-      // Notification listener
-      const handleNotification = (notif) => {
-        console.log("🔔 New Notification:", notif);
-        toast.success(`${notif.title}: ${notif.message}`);
-
-        setNotifications((prev) => [notif, ...prev]);
-      };
-
-      socket.on("receive_notification", handleNotification);
-    } catch (err) {
-      console.error("Error fetching role:", err);
-      setRole(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  getRole();
-
-  // ✅ Proper cleanup here
-  return () => {
-    socket.off("receive_notification");
-  };
-}, []);
-
+    };
+    getRole();
+  }, []);
 
   const clearNotification = async (id) => {
     try {
