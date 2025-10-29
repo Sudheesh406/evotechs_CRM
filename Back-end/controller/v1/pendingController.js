@@ -20,8 +20,7 @@ const getPendingTask = async (req, res) => {
       where: {
         staffId: user.id,
         finishBy: { [Op.lt]: today },
-        stage: { [Op.ne]: 3 },
-      },
+       stage: { [Op.in]: [0, 1, 2, 3] }, },
       include: [
         {
           model: contacts, // contacts model
