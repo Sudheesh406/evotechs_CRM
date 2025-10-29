@@ -31,8 +31,8 @@ export default function ProtectedRoute({ allowedRoles, children }) {
 
         const handleNotification = (data) => {
           console.log("🔔 New Notification:", data);
-          // ✅ Show global notification
           toast.success(`${data.title}: ${data.message}`);
+          setNotifications((prev) => [data, ...prev]);
         };
 
         socket.on("receive_notification", handleNotification);
@@ -122,7 +122,7 @@ export default function ProtectedRoute({ allowedRoles, children }) {
                 <Bell className="w-5 h-5 text-green-600" /> Notifications
               </h2>
 
-              {notification.length > 0 && (
+              {notification?.length > 0 && (
                 <button
                   onClick={() => {
                     setTimeout(() => setNotifications([]), 400);
