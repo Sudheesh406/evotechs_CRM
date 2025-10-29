@@ -81,6 +81,8 @@ const getStaffPendingTask = async (req, res) => {
       order: [["finishBy", "ASC"]],
     });
 
+    console.log('pendingTasks',pendingTasks)
+
     return httpSuccess(
       res,
       200,
