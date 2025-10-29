@@ -2,6 +2,7 @@ const { DataTypes } = require("sequelize");
 const { sequelize } = require("../../../database/dbConfigue");
 const signup = require("../Authentication/authModel");
 const contacts = require("../Customer/contacts");
+const workAssign = require("../Work_space/workAssign")
 
 const task = sequelize.define(
   "task",
@@ -77,6 +78,16 @@ const task = sequelize.define(
     newUpdate: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
+    },
+     assignId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: workAssign,
+        key: "id",
+      },
+      onUpdate: "CASCADE",
+      onDelete: "CASCADE",
     },
   },
   {

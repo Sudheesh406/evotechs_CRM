@@ -364,44 +364,58 @@ const updateContact = async (req, res) => {
     const data = req.body;
 
     const customer = await Contacts.findOne({ where: { id } });
-    if (!customer) return httpError(res, 404, "contact not found");
+    if (!customer) return httpError(res, 404, "Contact not found");
 
     if (customer.staffId !== user.id) {
       return httpError(res, 403, "Access denied");
     }
 
-    // Check duplicates separately
-    const existEmail = await Contacts.findOne({
-      where: { email: data.email, staffId: user.id },
-    });
+    // ✅ Check for duplicate email among *other* contacts of the same staff
+    if (data.email) {
+      const existEmail = await Contacts.findOne({
+        where: {
+          email: data.email,
+          staffId: user.id,
+          id: { [Op.ne]: id }, // exclude current contact
+        },
+      });
 
-    const existPhone = await Contacts.findOne({
-      where: { phone: data.phone, staffId: user.id },
-    });
-
-    if (existEmail && existEmail.id != id) {
-      return httpError(
-        res,
-        409,
-        "Another contact already exists with this email"
-      );
+      if (existEmail) {
+        return httpError(
+          res,
+          409,
+          "Another contact already exists with this email"
+        );
+      }
     }
 
-    if (existPhone && existPhone.id != id) {
-      return httpError(
-        res,
-        409,
-        "Another contact already exists with this phone"
-      );
+    // ✅ Check for duplicate phone among *other* contacts of the same staff
+    if (data.phone) {
+      const existPhone = await Contacts.findOne({
+        where: {
+          phone: data.phone,
+          staffId: user.id,
+          id: { [Op.ne]: id }, // exclude current contact
+        },
+      });
+
+      if (existPhone) {
+        return httpError(
+          res,
+          409,
+          "Another contact already exists with this phone"
+        );
+      }
     }
 
     const updated = await customer.update(data);
-    return httpSuccess(res, 200, "contact updated successfully", updated);
+    return httpSuccess(res, 200, "Contact updated successfully", updated);
   } catch (error) {
-    console.error("Error in updating Contact:", error);
+    console.error("Error updating contact:", error);
     return httpError(res, 500, "Internal Server Error");
   }
 };
+
 
 const deleteContact = async (req, res) => {
   try {

@@ -375,7 +375,7 @@ const TaskStatusDetail = () => {
 
               {/* Task Details */}
               <div className="text-sm space-y-2">
-                <DetailRow label="Stage" value={task.stage} />
+                {/* <DetailRow label="Stage" value={task.stage} /> */}
                 <DetailRow label="Finish By" value={task.finishBy} />
                 <DetailRow
                   label="Amount"

@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from "react";
-import { ChevronDown, Phone, X, Edit, Trash, CheckCircle } from "lucide-react";
+import { Phone, Edit, Trash } from "lucide-react";
 import DataTable from "../../components/Table2";
 import axios from "../../instance/Axios";
 import Swal from "sweetalert2";
+import ContactModal from "../../components/modals/ContactModal";
 
-const contacts = () => {
+const Contacts = () => {
   const [leads, setLeads] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
   const limit = 10;
-  const [searchTerm, setSearchTerm] = useState(""); // 🔍 search input
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [originalData, setOriginalData] = useState(null); // store original row for edit validation
+  const [originalData, setOriginalData] = useState(null);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -27,7 +28,7 @@ const contacts = () => {
   const [errors, setErrors] = useState({});
 
   const columns = [
-    { label: "contact Name", key: "name", className: "font-medium text-gray-800" },
+    { label: "Contact Name", key: "name", className: "font-medium text-gray-800" },
     { label: "Description", key: "description" },
     {
       label: "Email",
@@ -42,7 +43,7 @@ const contacts = () => {
     { label: "Actions", key: "actions" },
   ];
 
-  // Fetch leads
+  // ✅ Fetch contacts
   const getLeads = async (pageNo = 1, search = "") => {
     try {
       const response = await axios.get(
@@ -54,19 +55,18 @@ const contacts = () => {
         setTotalCount(total || 0);
       }
     } catch (error) {
-      console.log("error", error);
+      console.log("Error fetching contacts", error);
     }
   };
 
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       getLeads(page, searchTerm);
-    }, 500); // debounce search
-
+    }, 500);
     return () => clearTimeout(delayDebounce);
   }, [page, searchTerm]);
 
-  // Open modal for create or edit
+  // ✅ Open modal (edit or create)
   const openModal = (contact = null) => {
     if (contact) {
       setEditingId(contact.id);
@@ -81,7 +81,7 @@ const contacts = () => {
         amount: contact.amount || "",
       };
       setFormData(leadData);
-      setOriginalData(leadData); // store original
+      setOriginalData(leadData);
     } else {
       setEditingId(null);
       setFormData({
@@ -105,165 +105,92 @@ const contacts = () => {
     setErrors({});
   };
 
-  // Handle form input
-const handleChange = (e) => {
-  const { name, value } = e.target;
-  let newValue = value;
+  // ✅ Create or Update
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  // Strictly allow only numbers for phone & amount
-  if (name === "phone" || name === "amount") {
-    newValue = value.replace(/[^0-9]/g, ""); // remove anything that's not a digit
-  }
-  setFormData((prev) => ({ ...prev, [name]: newValue }));
-  setErrors((prev) => ({
-    ...prev,
-    [name]: newValue.trim() === "" ? "This field is required" : "",
-  }));
-};
-
-
-  // Create or Update
-const handleSubmit = async (e) => {
-  e.preventDefault();
-
-// ✅ Validation
-const newErrors = {};
-Object.keys(formData).forEach((key) => {
-  if (key !== "email" && !formData[key].trim()) { // skip email
-    newErrors[key] = "This field is required";
-  }
-});
-if (Object.keys(newErrors).length > 0) {
-  setErrors(newErrors);
-  return;
-}
-
-
-  // 🔍 No changes check when editing
-  if (editingId && JSON.stringify(formData) === JSON.stringify(originalData)) {
-    Swal.fire({
-      title: "No changes!",
-      text: "You didn't modify any fields.",
-      icon: "info",
-      confirmButtonColor: "#3085d6",
+    // validation
+    const newErrors = {};
+    Object.keys(formData).forEach((key) => {
+      if (key !== "email" && !formData[key].trim()) {
+        newErrors[key] = "This field is required";
+      }
     });
-    return;
-  }
-
-  try {
-    if (editingId) {
-      await axios.put(`/customer/contact/update/${editingId}`, formData);
-
-      Swal.fire({
-        title: "Updated!",
-        text: "Contact has been successfully updated.",
-        icon: "success",
-        confirmButtonColor: "#3085d6",
-      });
-    } else {
-      await axios.post("/customer/contact/create", formData);
-
-      Swal.fire({
-        title: "Created!",
-        text: "Contact has been successfully created.",
-        icon: "success",
-        confirmButtonColor: "#3085d6",
-      });
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
     }
 
-    // Reset form & close modal
-    setIsModalOpen(false);
-    setEditingId(null);
-    setFormData({
-      name: "",
-      description: "",
-      email: "",
-      phone: "",
-      location: "",
-      source: "",
-      priority: "",
-      amount: "",
-    });
-    setOriginalData(null);
-    getLeads(page);
-  } catch (error) {
-    console.log("error found in save", error);
-
-    // Check for specific Axios error (e.g., duplicate)
-    if (error.response?.status === 409) {
+    // check for unchanged edit
+    if (editingId && JSON.stringify(formData) === JSON.stringify(originalData)) {
       Swal.fire({
-        title: "Error!",
-        text: "This contact already exists. Please check contacts and trash.",
-        icon: "error",
-        confirmButtonColor: "#d33",
+        title: "No changes!",
+        text: "You didn't modify any fields.",
+        icon: "info",
       });
       return;
     }
 
-    // Generic error
-    Swal.fire({
-      title: "Error!",
-      text: "Something went wrong while saving.",
-      icon: "error",
-      confirmButtonColor: "#d33",
-    });
-  }
-};
+    try {
+      if (editingId) {
+        await axios.put(`/customer/contact/update/${editingId}`, formData);
+        Swal.fire("Updated!", "Contact updated successfully.", "success");
+      } else {
+        await axios.post("/customer/contact/create", formData);
+        Swal.fire("Created!", "Contact created successfully.", "success");
+      }
 
-
-  // Delete contact
-const handleDelete = async (id) => {
-  Swal.fire({
-    title: "Are you sure?",
-    text: "This contact will be moved to Trash!",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonColor: "#3085d6",
-    cancelButtonColor: "#d33",
-    confirmButtonText: "Yes, delete it!",
-    cancelButtonText: "Cancel",
-  }).then(async (result) => {
-    if (result.isConfirmed) {
-      try {
-        await axios.delete(`/customer/contact/delete/${id}`);
-
-        Swal.fire({
-          title: "Deleted!",
-          text: "The contact has been moved to Trash.",
-          icon: "success",
-          confirmButtonColor: "#3085d6",
-        }).then(() => {
-          getLeads(page); // Refresh the list after user clicks OK
-        });
-      } catch (error) {
-
-        if(error.response?.status === 406){
-          Swal.fire({
-            title: "Error!",
-            text: "A Task is created in this contact. please delete that permanently",
-            icon: "error",
-            confirmButtonColor: "#d33",
-          });
-        }else{
-          console.log("Error deleting contact", error.response);
-          Swal.fire({
-            title: "Error!",
-            text: "Something went wrong while deleting the contact.",
-            icon: "error",
-            confirmButtonColor: "#d33",
-          });
-        }
+      closeModal();
+      getLeads(page);
+    } catch (error) {
+      if (error.response?.status === 409) {
+        Swal.fire(
+          "Error!",
+          "This contact already exists. Please check contacts and trash.",
+          "error"
+        );
+      } else {
+        Swal.fire("Error!", "Something went wrong while saving.", "error");
       }
     }
-  });
-};
+  };
 
+  // ✅ Delete contact
+  const handleDelete = async (id) => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "This contact will be moved to Trash!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await axios.delete(`/customer/contact/delete/${id}`);
+          Swal.fire("Deleted!", "The contact has been moved to Trash.", "success");
+          getLeads(page);
+        } catch (error) {
+          if (error.response?.status === 406) {
+            Swal.fire(
+              "Error!",
+              "A Task is created in this contact. Please delete that permanently first.",
+              "error"
+            );
+          } else {
+            Swal.fire("Error!", "Something went wrong while deleting.", "error");
+          }
+        }
+      }
+    });
+  };
 
   const totalPages = Math.ceil(totalCount / limit);
 
   return (
     <div className="bg-gray-50 min-h-[680px] p-4">
-      {/* Top bar */}
+      {/* 🔍 Search + Create bar */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
         <div className="flex flex-wrap items-center gap-2">
           <input
@@ -277,17 +204,17 @@ const handleDelete = async (id) => {
             Total Records {totalCount}
           </span>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div>
           <button
             onClick={() => openModal()}
-            className="bg-blue-600 text-white px-4 py-2 rounded shadow w-full sm:w-auto"
+            className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700"
           >
-            Create contact
+            Create Contact
           </button>
         </div>
       </div>
 
-      {/* DataTable */}
+      {/* 📊 Data Table */}
       <DataTable
         columns={columns}
         data={leads}
@@ -322,16 +249,14 @@ const handleDelete = async (id) => {
                 >
                   <Trash size={16} />
                 </button>
-             
               </div>
             );
           }
-
           return row[key];
         }}
       />
 
-      {/* Pagination */}
+      {/* 📄 Pagination */}
       <div className="flex justify-between items-center mt-4 text-sm text-gray-600">
         <span>{limit} Records Per Page</span>
         <div className="flex items-center gap-2">
@@ -355,93 +280,31 @@ const handleDelete = async (id) => {
         </div>
       </div>
 
-      {/* Modal */}
-     {isModalOpen && (
-  <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
-    {/* Scrollable container */}
-    <div className="bg-white rounded-lg w-full max-w-2xl p-6 relative overflow-y-auto max-h-[90vh]">
-      {/* Close Button */}
-      <button
-        onClick={() => closeModal()}
-        className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
-      >
-        <X />
-      </button>
-
-      {/* Title */}
-      <h2 className="text-xl font-semibold mb-4">
-        {editingId ? "Edit Contact" : "Create New Contact"}
-      </h2>
-
-      {/* Form */}
-      <form
-        onSubmit={handleSubmit}
-        className="grid grid-cols-1 md:grid-cols-2 gap-4"
-      >
-        {[
-          { label: "Name", key: "name" },
-          { label: "Description", key: "description" },
-          { label: "Email", key: "email", type: "email" },
-          { label: "Phone", key: "phone", type: "tel" },
-          { label: "Location", key: "location" },
-          { label: "Source", key: "source" },
-          { label: "Priority", key: "priority" },
-          { label: "Amount", key: "amount" },
-        ].map((field) => (
-          <div key={field.key} className="flex flex-col">
-            <label className="text-gray-700 font-medium mb-1">
-              {field.label}
-            </label>
-
-            {field.key === "priority" ? (
-              <select
-                name="priority"
-                value={formData.priority}
-                onChange={handleChange}
-                className={`border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.priority ? "border-red-500" : "border-gray-300"
-                }`}
-              >
-                <option value="">Select Priority</option>
-                <option value="High">High</option>
-                <option value="Normal">Normal</option>
-                <option value="Low">Low</option>
-              </select>
-            ) : (
-              <input
-                type={field.type || "text"}
-                name={field.key}
-                value={formData[field.key]}
-                onChange={handleChange}
-                className={`border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors[field.key] ? "border-red-500" : "border-gray-300"
-                }`}
-              />
-            )}
-
-            {errors[field.key] && (
-              <span className="text-red-500 text-sm mt-1">
-                {errors[field.key]}
-              </span>
-            )}
-          </div>
-        ))}
-
-        {/* Submit Button */}
-        <div className="col-span-1 md:col-span-2 flex justify-end mt-3">
-          <button
-            type="submit"
-            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
-          >
-            {editingId ? "Update Contact" : "Save Contact"}
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-)}
+      {/* 🧱 Modal Component */}
+      {isModalOpen && (
+        <ContactModal
+          isOpen={isModalOpen}
+          onClose={closeModal}
+          onSubmit={handleSubmit} // ✅ Fixed prop name
+          formData={formData}
+          errors={errors}
+          handleChange={(e) => {
+            const { name, value } = e.target;
+            let newValue = value;
+            if (name === "phone" || name === "amount") {
+              newValue = value.replace(/[^0-9]/g, "");
+            }
+            setFormData((prev) => ({ ...prev, [name]: newValue }));
+            setErrors((prev) => ({
+              ...prev,
+              [name]: newValue.trim() === "" ? "This field is required" : "",
+            }));
+          }}
+          editingId={editingId}
+        />
+      )}
     </div>
   );
 };
 
-export default contacts;
+export default Contacts;

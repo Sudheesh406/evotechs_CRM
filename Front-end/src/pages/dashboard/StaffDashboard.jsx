@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import axios from "../../instance/Axios";
 import Swal from "sweetalert2";
-
+import ContactModal from "../../components/modals/ContactModal";
+import TaskModal from "../../components/modals/TaskModal";
 import { MoreVertical } from "lucide-react";
 
 const statuses = ["Pending", "Progress", "Completed"];
@@ -13,39 +14,80 @@ const statusColors = {
 
 const StaffDashboard = () => {
   const [workDetails, setWorkDetails] = useState([]);
-  const [expandedTasks, setExpandedTasks] = useState({}); // Track which tasks are expanded
-  const [userName, setUserName] = useState();
-
+  const [expandedTasks, setExpandedTasks] = useState({});
+  const [userName, setUserName] = useState("");
   const [openMenuId, setOpenMenuId] = useState(null);
+  const [requirements, setRequirements] = useState([]);
+  const [id,setId] = useState()
+
+  // ✅ Modal states
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+
+  // ✅ Separate form data states for each modal
+  const [contactForm, setContactForm] = useState({
+    name: "",
+    description: "",
+    email: "",
+    phone: "",
+    location: "",
+    source: "",
+    priority: "",
+    amount: "",
+  });
+
+  const [taskForm, setTaskForm] = useState({
+    requirement: "",
+    phone: "",
+    finishBy: "",
+    priority: "Normal",
+    notes: "",
+    description: "",
+  });
+
+  // ✅ Error states
+  const [contactErrors, setContactErrors] = useState({});
+  const [taskErrors, setTaskErrors] = useState({});
 
   const toggleMenu = (id) => {
     setOpenMenuId(openMenuId === id ? null : id);
   };
 
+  const fetchRequirements = async () => {
+    try {
+      Swal.fire({
+        title: "Loading Requirements...",
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading(),
+      });
+
+      const res = await axios.get("/requirement/get");
+      setRequirements(res.data.data || []);
+      Swal.close();
+    } catch (err) {
+      Swal.close();
+      Swal.fire({
+        icon: "error",
+        title: "Failed!",
+        text: "Could not fetch requirements.",
+      });
+    }
+  };
+
   const getWorkAssign = async () => {
     try {
-      // Show loading alert
       Swal.fire({
         title: "Loading work assignments...",
         allowOutsideClick: false,
-        didOpen: () => {
-          Swal.showLoading();
-        },
+        didOpen: () => Swal.showLoading(),
       });
 
       const { data } = await axios.get("/work/get");
-
-      console.log(data);
-      setWorkDetails(data?.data?.workAssigns);
-      setUserName(data?.data?.userName);
-
-      // Close loading alert
+      setWorkDetails(data?.data?.workAssigns || []);
+      setUserName(data?.data?.userName || "");
       Swal.close();
     } catch (error) {
-      // Close loading if it was still open
       Swal.close();
-
-      // Show error alert
       Swal.fire({
         icon: "error",
         title: "Error",
@@ -53,12 +95,11 @@ const StaffDashboard = () => {
           error?.response?.data?.message ||
           "Something went wrong while fetching work assignments",
       });
-
-      console.log("error found in getWorkAssign", error);
     }
   };
 
   useEffect(() => {
+    fetchRequirements();
     getWorkAssign();
   }, []);
 
@@ -75,18 +116,14 @@ const StaffDashboard = () => {
     if (result.isConfirmed) {
       try {
         const response = await axios.put(`/work/stage/update/${task.id}`);
-        console.log(response);
         if (response) {
           Swal.fire({
             title: "Updated!",
             text: "The task has been updated.",
             icon: "success",
-            showConfirmButton: true, // hides the "OK" button
-          }).then(() => {
-            getWorkAssign();
-          });
+          }).then(() => getWorkAssign());
         }
-      } catch (error) {
+      } catch {
         Swal.fire("Error!", "Something went wrong.", "error");
       }
     }
@@ -99,12 +136,121 @@ const StaffDashboard = () => {
     }));
   };
 
+  // ✅ Modal control handlers
+  const openContactModal = () => setIsContactModalOpen(true);
+  const closeContactModal = () => setIsContactModalOpen(false);
+  const openTaskModal = () => setIsTaskModalOpen(true);
+  const closeTaskModal = () => setIsTaskModalOpen(false);
+
+  // ✅ Handle form changes
+  const handleContactChange = (e) => {
+    const { name, value } = e.target;
+    let newValue = value;
+    if (name === "phone" || name === "amount") {
+      newValue = value.replace(/[^0-9]/g, "");
+    }
+    setContactForm((prev) => ({ ...prev, [name]: newValue }));
+  };
+
+  const handleTaskChange = (e) => {
+    const { name, value } = e.target;
+    setTaskForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // ✅ Submit handlers
+  const handleContactSubmit = async (e) => {
+    e.preventDefault();
+    const errors = {};
+    if (!contactForm.name) errors.name = "Name is required";
+    if (!contactForm.phone) errors.phone = "Phone is required";
+    if (!contactForm.location) errors.location = "Location is required";
+
+    if (Object.keys(errors).length > 0) {
+      setContactErrors(errors);
+      return;
+    }
+
+    try {
+      await axios.post("/customer/contact/create", contactForm);
+      Swal.fire({
+        icon: "success",
+        title: "Contact Created",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+      closeContactModal();
+      setContactForm({
+        name: "",
+        description: "",
+        email: "",
+        phone: "",
+        location: "",
+        source: "",
+        priority: "",
+        amount: "",
+      });
+      setContactErrors({});
+    } catch {
+      Swal.fire({
+        icon: "error",
+        title: "Failed!",
+        text: "Could not create contact.",
+      });
+    }
+  };
+
+  const handleAssign = async(id)=>{
+    setId(id)
+  }
+
+  const handleTaskSubmit = async (e) => {
+    e.preventDefault();
+    const errors = {};
+    if (!taskForm.requirement) errors.requirement = "Requirement is required";
+    if (!taskForm.finishBy) errors.finishBy = "Finish date is required";
+    if (!taskForm.notes) errors.notes = "Notes are required";
+    if (!taskForm.description) errors.description = "Description is required";
+    if (!taskForm.phone) errors.phone = "phone number is required";
+
+    if (Object.keys(errors).length > 0) {
+      setTaskErrors(errors);
+      return;
+    }
+    taskForm.assignId = id
+
+    try {
+      await axios.post("/task/create", taskForm);
+      Swal.fire({
+        icon: "success",
+        title: "Task Created",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+      closeTaskModal();
+      setTaskForm({
+        requirement: "",
+        phone: "",
+        finishBy: "",
+        priority: "Normal",
+        notes: "",
+        description: "",
+      });
+      setTaskErrors({});
+    } catch {
+      Swal.fire({
+        icon: "error",
+        title: "Failed!",
+        text: "Could not create task.",
+      });
+    }
+  };
+
   return (
     <div className="bg-[#f5f5f5] min-h-[680px] text-gray-800 p-4">
       <h1 className="text-2xl font-bold mb-4">
         Hello{" "}
         <span className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-          {userName} !
+          {userName}!
         </span>
       </h1>
 
@@ -153,7 +299,7 @@ const StaffDashboard = () => {
                             </button>
                           )}
 
-                          {/* 3-dot menu */}
+                          {/* 3-dot dropdown */}
                           <div className="relative mt-2">
                             <button
                               onClick={() => toggleMenu(task.id)}
@@ -162,13 +308,12 @@ const StaffDashboard = () => {
                               <MoreVertical className="w-5 h-5" />
                             </button>
 
-                            {/* Dropdown */}
-                            {/* {openMenuId === task.id && (
+                            {openMenuId === task.id && (
                               <div className="absolute right-0 mt-2 w-40 bg-white shadow-lg rounded-md border border-gray-200 z-50">
                                 <button
                                   onClick={() => {
                                     setOpenMenuId(null);
-                                    // handle create contact
+                                    openContactModal();
                                   }}
                                   className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50"
                                 >
@@ -177,38 +322,40 @@ const StaffDashboard = () => {
                                 <button
                                   onClick={() => {
                                     setOpenMenuId(null);
-                                    // handle create task
+                                    openTaskModal();
+                                    handleAssign(task.id)
                                   }}
                                   className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50"
                                 >
                                   Create Task
                                 </button>
                               </div>
-                            )} */}
+                            )}
                           </div>
                         </div>
                       </div>
+
                       <div className="flex flex-col gap-3">
                         <div className="flex justify-between pt-2">
-                          <p className="text-sm text-gray-500 font-bold ">
+                          <p className="text-sm text-gray-500 font-bold">
                             {new Date(task.date).toLocaleDateString("en-GB")}
                           </p>
                           {task.team?.teamName && (
-                            <p className="text-sm text-gray-600 font-medium text-indigo-600 font-bold">
+                            <p className="text-sm text-indigo-600 font-bold">
                               {task.team.teamName}
                             </p>
                           )}
                         </div>
                         <p
                           className="inline-flex items-center px-3 py-1 text-sm font-bold rounded-full 
-              bg-gradient-to-r from-red-400 to-pink-500 text-white shadow-md max-w-[150px]"
+                          bg-gradient-to-r from-red-400 to-pink-500 text-white shadow-md max-w-[150px]"
                         >
                           Priority: {task.priority}
                         </p>
 
                         <p className="text-sm text-gray-500 font-bold">
                           Description:{" "}
-                          {isExpanded ? task.description : shortDesc}{" "}
+                          {isExpanded ? task.description : shortDesc}
                           {task.description.length > 100 && (
                             <span
                               onClick={() => toggleExpand(task.id)}
@@ -233,6 +380,33 @@ const StaffDashboard = () => {
           );
         })}
       </div>
+
+      {/* ✅ Contact Modal */}
+      {isContactModalOpen && (
+        <ContactModal
+          isOpen={isContactModalOpen}
+          onClose={closeContactModal}
+          onSubmit={handleContactSubmit}
+          formData={contactForm}
+          errors={contactErrors}
+          handleChange={handleContactChange}
+          position="right"
+        />
+      )}
+
+      {/* ✅ Task Modal */}
+      {isTaskModalOpen && (
+        <TaskModal
+          showForm={isTaskModalOpen}
+          closeForm={closeTaskModal}
+          handleSubmit={handleTaskSubmit}
+          formData={taskForm}
+          errors={taskErrors}
+          handleChange={handleTaskChange}
+          requirements={requirements}
+          position="right"
+        />
+      )}
     </div>
   );
 };

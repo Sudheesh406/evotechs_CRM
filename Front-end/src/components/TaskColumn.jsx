@@ -162,7 +162,7 @@ const TaskColumn = ({
                 {/* Details Section (Formatted to match the two-column style of the image) */}
                 <div className="mt-3 pt-3 border-t border-gray-200 space-y-1">
                   {/* Using the two-column DetailRow for a cleaner, profile-like look */}
-                  <DetailRow label="Stage" value={task.stage} />
+                  {/* <DetailRow label="Stage" value={task.stage} /> */}
                   <DetailRow label="Finish By" value={finishByDate} />
                   <DetailRow label="Amount" value={formattedAmount} />
                   <DetailRow label="Phone" value={task.phone} />

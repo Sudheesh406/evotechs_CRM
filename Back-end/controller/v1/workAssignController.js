@@ -3,6 +3,8 @@ const team = require("../../models/v1/Team_work/team");
 const signup = require("../../models/v1/Authentication/authModel");
 const workAssign = require("../../models/v1/Work_space/workAssign");
 const trash = require("../../models/v1/Trash/trash");
+const task = require('../../models/v1/Project/task')
+
 const roleChecker = require("../../utils/v1/roleChecker");
 const { getIo } = require("../../utils/v1/socket");
 const {

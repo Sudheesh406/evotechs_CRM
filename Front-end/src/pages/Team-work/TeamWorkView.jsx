@@ -94,6 +94,15 @@ export default function TeamWorkView() {
           confirmButtonText: "OK",
         });
       }
+      if (error?.response?.status === 406) {
+        console.log("No history:", error);
+        return Swal.fire({
+          icon: "info",
+          title: "Please select a team",
+          text: "There are no projects available right now.",
+          confirmButtonText: "OK",
+        })          
+      }
 
       // Generic error
       console.log("Error fetching projects:", error);

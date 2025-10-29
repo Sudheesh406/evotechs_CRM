@@ -11,6 +11,7 @@ const TaskModal = ({
   handleSubmit,
   errors,
   requirements = [],
+  position 
 }) => {
   const [contacts, setContacts] = useState([]);
 
@@ -47,7 +48,11 @@ const TaskModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
+<div
+  className={`fixed inset-0 flex ${
+    position === "right" ? "justify-end items-center mr-10" : "justify-center items-center backdrop-blur-[1px]"
+  }  bg-opacity-50 z-50`}
+>
       <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl relative max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
         {/* Close button */}
         <button

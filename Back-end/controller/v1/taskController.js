@@ -6,8 +6,9 @@ const meetings = require("../../models/v1/Customer/meetings");
 const calls = require("../../models/v1/Customer/calls");
 const team = require("../../models/v1/Team_work/team");
 const signup = require("../../models/v1/Authentication/authModel");
-const trash = require('../../models/v1/Trash/trash')
-const document = require('../../models/v1/Project/documents')
+const trash = require("../../models/v1/Trash/trash");
+const document = require("../../models/v1/Project/documents");
+const workAssign = require("../../models/v1/Work_space/workAssign");
 
 const { Op, Sequelize } = require("sequelize");
 
@@ -16,13 +17,15 @@ const createTask = async (req, res) => {
     const data = req.body;
     const user = req.user;
 
+    console.log(data);
+
     if (!data || !data.phone) {
       return httpError(res, 400, "Phone number is required to create a task");
     }
 
     // Check if contact exists for given phone & staff
     const customer = await contacts.findOne({
-      where: { phone: data.phone},
+      where: { phone: data.phone },
     });
 
     if (!customer) {
@@ -47,7 +50,6 @@ const createTask = async (req, res) => {
   }
 };
 
-
 const getTask = async (req, res) => {
   const user = req.user;
   try {
@@ -70,25 +72,24 @@ const getTask = async (req, res) => {
   }
 };
 
-
-const getTaskByStatus = async (req,res)=>{
+const getTaskByStatus = async (req, res) => {
   try {
-    const user = req.user
-    const parsed = req.body.parsed?.status
-  
-    let stage = null
-    if(parsed == 'Not Started'){
-      stage = '1'
-    }else if(parsed == 'In Progress'){
-      stage = '2'
-    }else if(parsed == 'Review'){
-      stage = '3'
-    }else if(parsed == 'Completed'){
-      stage = '4'
+    const user = req.user;
+    const parsed = req.body.parsed?.status;
+
+    let stage = null;
+    if (parsed == "Not Started") {
+      stage = "1";
+    } else if (parsed == "In Progress") {
+      stage = "2";
+    } else if (parsed == "Review") {
+      stage = "3";
+    } else if (parsed == "Completed") {
+      stage = "4";
     }
 
-     const allTask = await task.findAll({
-      where: {softDelete: false, stage },
+    const allTask = await task.findAll({
+      where: { softDelete: false, stage },
       order: [["createdAt", "DESC"]],
       include: [
         {
@@ -102,35 +103,32 @@ const getTaskByStatus = async (req,res)=>{
           attributes: ["id", "name", "email"],
         },
       ],
-   
     });
 
-      if (allTask.length === 0) {
+    if (allTask.length === 0) {
       return httpError(res, 404, "No tasks found");
     }
 
     return httpSuccess(res, 200, "Tasks getted successfully", allTask);
-    
   } catch (error) {
-     console.error("Error in getTask:", error);
+    console.error("Error in getTask:", error);
     return httpError(res, 500, "Server error", error.message || error);
   }
-}
+};
 
 const getTaskByStage = async (req, res) => {
   const user = req.user;
-  const data  = req.params.data
- let stage = null
+  const data = req.params.data;
+  let stage = null;
   try {
-
-    if(data == 'Not Started'){
-      stage = '1'
-    }else if(data == 'In Progress'){
-      stage = '2'
-    }else if(data == 'Review'){
-      stage = '3'
-    }else if(data == 'Completed'){
-      stage = '4'
+    if (data == "Not Started") {
+      stage = "1";
+    } else if (data == "In Progress") {
+      stage = "2";
+    } else if (data == "Review") {
+      stage = "3";
+    } else if (data == "Completed") {
+      stage = "4";
     }
 
     const allTask = await task.findAll({
@@ -156,7 +154,6 @@ const getTaskByStage = async (req, res) => {
   }
 };
 
-
 const editTask = async (req, res) => {
   try {
     const user = req.user;
@@ -177,7 +174,6 @@ const editTask = async (req, res) => {
   }
 };
 
-
 const deleteTask = async (req, res) => {
   try {
     const user = req.user;
@@ -185,7 +181,7 @@ const deleteTask = async (req, res) => {
     const existingTask = await task.findOne({
       where: { id: taskId, staffId: user.id },
     });
-    
+
     if (!existingTask) {
       return httpError(res, 404, "Task not found");
     }
@@ -213,7 +209,6 @@ const deleteTask = async (req, res) => {
   }
 };
 
-
 const taskStageUpdate = async (req, res) => {
   try {
     const user = req.user;
@@ -227,6 +222,24 @@ const taskStageUpdate = async (req, res) => {
     if (!existingTask) {
       return httpError(res, 404, "Task not found");
     }
+
+    let assignData = null;
+    const assignId = existingTask.assignId;
+
+    if (assignId) {
+      assignData = await workAssign.findOne({ where: { id: assignId } });
+    }
+
+    if (assignData) {
+      if (data.data == 2) {
+        await assignData.update({ workUpdate: "Progress" });
+      } else if (data.data == 3 || data.data == 4) {
+        await assignData.update({ workUpdate: "Completed" });
+      } else if (data.data == 1) {
+        await assignData.update({ workUpdate: "Pending" });
+      }
+    }
+
     await existingTask.update({ stage: data.data });
     return httpSuccess(
       res,
@@ -251,7 +264,7 @@ const getTaskDetails = async (req, res) => {
     const { taskId, contactId } = parsed.data;
     const user = req.user;
 
-    console.log(taskId,)
+    console.log(taskId);
 
     if (!contactId) {
       return httpError(res, 400, "Missing contactId ");
@@ -266,20 +279,21 @@ const getTaskDetails = async (req, res) => {
     }
 
     // Fetch related data
-    const [meetingDetails, callDetails, taskDetails, documents] = await Promise.all([
-      meetings.findAll({
-        where: { contactId, staffId: user.id },
-      }),
-      calls.findAll({
-        where: { contactId, staffId: user.id },
-      }),
-      task.findAll({
-        where: { contactId, staffId: user.id },
-      }),
-      document.findAll({
-        where: { taskId : taskId, staffId: user.id },
-      }),
-    ]);
+    const [meetingDetails, callDetails, taskDetails, documents] =
+      await Promise.all([
+        meetings.findAll({
+          where: { contactId, staffId: user.id },
+        }),
+        calls.findAll({
+          where: { contactId, staffId: user.id },
+        }),
+        task.findAll({
+          where: { contactId, staffId: user.id },
+        }),
+        document.findAll({
+          where: { taskId: taskId, staffId: user.id },
+        }),
+      ]);
 
     // Optionally filter task by taskId if provided
     const filteredTaskDetails = taskId
@@ -292,7 +306,7 @@ const getTaskDetails = async (req, res) => {
       meetingDetails,
       callDetails,
       taskDetails: filteredTaskDetails,
-      documents
+      documents,
     });
   } catch (error) {
     console.error("Error in getTaskDetails:", error);
@@ -316,6 +330,23 @@ const updateStagesAndNotes = async (req, res) => {
       });
     }
 
+    let assignData = null;
+    const assignId = existingTask.assignId;
+
+    if (assignId) {
+      assignData = await workAssign.findOne({ where: { id: assignId } });
+    }
+
+    if (assignData) {
+      if (data.stages == 2) {
+        await assignData.update({ workUpdate: "Progress" });
+      } else if (data.stages == 3 || data.stages == 4) {
+        await assignData.update({ workUpdate: "Completed" });
+      } else if (data.stages == 1) {
+        await assignData.update({ workUpdate: "Pending" });
+      }
+    }
+
     await existingTask.update({
       stage: data.stages,
       notes: data.notes,
@@ -335,7 +366,6 @@ const updateStagesAndNotes = async (req, res) => {
     });
   }
 };
-
 
 const getTeamTaskDetails = async (req, res) => {
   try {
@@ -364,20 +394,21 @@ const getTeamTaskDetails = async (req, res) => {
     }
 
     // Fetch related data
-    const [meetingDetails, callDetails, taskDetails, documents] = await Promise.all([
-      meetings.findAll({
-        where: { contactId },
-      }),
-      calls.findAll({
-        where: { contactId },
-      }),
-      task.findAll({
-        where: { contactId },
-      }),
-      document.findAll({
-        where: { taskId :parsed.taskId},
-      }),
-    ]);
+    const [meetingDetails, callDetails, taskDetails, documents] =
+      await Promise.all([
+        meetings.findAll({
+          where: { contactId },
+        }),
+        calls.findAll({
+          where: { contactId },
+        }),
+        task.findAll({
+          where: { contactId },
+        }),
+        document.findAll({
+          where: { taskId: parsed.taskId },
+        }),
+      ]);
 
     // Optionally filter task by taskId if provided
     const filteredTaskDetails = taskId
@@ -390,14 +421,13 @@ const getTeamTaskDetails = async (req, res) => {
       meetingDetails,
       callDetails,
       taskDetails: filteredTaskDetails,
-      documents
+      documents,
     });
   } catch (error) {
     console.error("Error in get team task details:", error);
     return httpError(res, 500, "Server error", error.message || error);
   }
 };
-
 
 const updateTeamStagesAndNotes = async (req, res) => {
   try {
@@ -446,6 +476,23 @@ const updateTeamStagesAndNotes = async (req, res) => {
       const updatedTeamWork = existingTask.teamWork
         ? [...existingTask.teamWork, fullDetails]
         : [fullDetails];
+
+      let assignData = null;
+      const assignId = existingTask.assignId;
+
+      if (assignId) {
+        assignData = await workAssign.findOne({ where: { id: assignId } });
+      }
+
+      if (assignData) {
+        if (data.stages == 2) {
+          await assignData.update({ workUpdate: "Progress" });
+        } else if (data.stages == 3 || data.stages == 4) {
+          await assignData.update({ workUpdate: "Completed" });
+        } else if (data.stages == 1) {
+          await assignData.update({ workUpdate: "Pending" });
+        }
+      }
 
       await existingTask.update({
         stage: data.stages,
@@ -502,7 +549,6 @@ const getPendingTask = async (req, res) => {
   }
 };
 
-
 const getTaskDetailForAdmin = async (req, res) => {
   try {
     // Validate input
@@ -533,20 +579,21 @@ const getTaskDetailForAdmin = async (req, res) => {
     }
 
     // Fetch related data
-    const [meetingDetails, callDetails, taskDetails, documents] = await Promise.all([
-      meetings.findAll({
-        where: { contactId, staffId },
-      }),
-      calls.findAll({
-        where: { contactId, staffId },
-      }),
-      task.findAll({
-        where: { contactId, staffId },
-      }),
+    const [meetingDetails, callDetails, taskDetails, documents] =
+      await Promise.all([
+        meetings.findAll({
+          where: { contactId, staffId },
+        }),
+        calls.findAll({
+          where: { contactId, staffId },
+        }),
+        task.findAll({
+          where: { contactId, staffId },
+        }),
         document.findAll({
-        where: { taskId :taskId},
-      }),
-    ]);
+          where: { taskId: taskId },
+        }),
+      ]);
 
     // Optionally filter task by taskId if provided
     const filteredTaskDetails = taskId
@@ -559,7 +606,7 @@ const getTaskDetailForAdmin = async (req, res) => {
       meetingDetails,
       callDetails,
       taskDetails: filteredTaskDetails,
-      documents
+      documents,
     });
   } catch (error) {
     console.error("Error in getting task details for admin:", error);
@@ -613,7 +660,6 @@ const updateStagesByAdmin = async (req, res) => {
   }
 };
 
-
 const reworkUpdate = async (req, res) => {
   try {
     const { id } = req.body;
@@ -664,7 +710,6 @@ const reworkUpdate = async (req, res) => {
   }
 };
 
-
 const againReworkUpdate = async (req, res) => {
   try {
     const { id } = req.body;
@@ -709,8 +754,6 @@ const againReworkUpdate = async (req, res) => {
   }
 };
 
-
-
 const newUpdate = async (req, res) => {
   try {
     const { id } = req.body;
@@ -750,7 +793,6 @@ const newUpdate = async (req, res) => {
     });
   }
 };
-
 
 const getTaskForAdmin = async (req, res) => {
   try {
@@ -841,8 +883,6 @@ const getAdminTask = async (req, res) => {
   }
 };
 
-
-
 module.exports = {
   createTask,
   getTask,
@@ -862,5 +902,5 @@ module.exports = {
   getTaskForAdmin,
   getTaskByStatus,
   getAdminTask,
-  againReworkUpdate
+  againReworkUpdate,
 };

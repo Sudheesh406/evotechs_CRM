@@ -5,7 +5,7 @@ import Swal from "sweetalert2";
 
 import TaskModal from "../../components/modals/TaskModal";
 import StageModal from "../../components/modals/StageModal";
-import TaskColumn from "../../components/TaskColumn"; // Assuming this component will render the modern card design
+import TaskColumn from "../../components/TaskColumn";
 
 const Task = () => {
   const navigate = useNavigate(); // State
@@ -17,8 +17,8 @@ const Task = () => {
   const [tasksByStage, setTasksByStage] = useState({
     "Not Started": [],
     "In Progress": [],
-    "Review": [],
-    "Completed": [],
+    Review: [],
+    Completed: [],
   });
   const [stageModal, setStageModal] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -32,7 +32,7 @@ const Task = () => {
     priority: "Normal",
   });
   const [errors, setErrors] = useState({});
-  const [requirements, setRequirements] = useState([]); // -------------------- Fetch & Handlers --------------------
+  const [requirements, setRequirements] = useState([]);
 
   const fetchRequirements = async () => {
     try {
@@ -70,8 +70,8 @@ const Task = () => {
       const mappedTasks = {
         "Not Started": [],
         "In Progress": [],
-        "Review": [],
-        "Completed": [],
+        Review: [],
+        Completed: [],
       };
       fetchedTasks.forEach((task) => {
         if (task.stage === "1") mappedTasks["Not Started"].push(task);
@@ -84,7 +84,7 @@ const Task = () => {
       Swal.close();
     } catch (err) {
       console.error(err);
-      Swal.close(); // Swal.fire({ //   icon: "error", //   title: "Failed!", //   text: "Could not fetch tasks.", // });
+      Swal.close();
     }
   };
 
@@ -137,7 +137,7 @@ const Task = () => {
           didOpen: () => Swal.showLoading(),
         });
 
-        const response = await axios.delete(`/task/delete/${taskId}`); // ✅ Make sure deletion was successful
+        const response = await axios.delete(`/task/delete/${taskId}`);
 
         if (response.status === 200 || response.status === 204) {
           Swal.close();
@@ -146,7 +146,7 @@ const Task = () => {
             title: "Deleted!",
             showConfirmButton: false,
             timer: 1000,
-          }); // ✅ Now refresh task list
+          });
 
           fetchTasks();
         } else {
@@ -182,7 +182,7 @@ const Task = () => {
   useEffect(() => {
     fetchRequirements();
     fetchTasks();
-  }, []); // -------------------- Form Handlers --------------------
+  }, []);
 
   const openForm = () => {
     setFormData({
@@ -290,7 +290,7 @@ const Task = () => {
            "
           onClick={openForm}
         >
-                    <span className="mr-2">➕</span> Create New Task        {" "}
+                    <span className="mr-2">➕</span> Create New Task {" "}
         </button>
              {" "}
       </div>
@@ -306,14 +306,11 @@ const Task = () => {
             onCardClick={handleCardClick}
             activeCardId={activeCardId}
             toggleMenu={setActiveCardId}
-            // NOTE: Ensure TaskColumn has styles: bg-white/50, p-4, rounded-xl, shadow-inner
-            // for the best look.
           />
         ))}
              {" "}
       </div>
-            {/* Task Form Modal */}
-           {" "}
+            {/* Task Form Modal */}     {" "}
       <TaskModal
         showForm={showForm}
         closeForm={closeForm}
@@ -324,8 +321,7 @@ const Task = () => {
         requirements={requirements}
         isEditing={isEditing}
       />
-            {/* Stage Modal */}
-           {" "}
+            {/* Stage Modal */}     {" "}
       <StageModal
         stageModal={stageModal}
         setStageModal={setStageModal}

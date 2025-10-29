@@ -359,6 +359,7 @@ const postTeamHistory = async (req, res) => {
   }
 };
 
+
 const getSectors = async (req, res) => {
   try {
     const user = req.user;
@@ -367,7 +368,7 @@ const getSectors = async (req, res) => {
     const history = await teamHistory.findOne({ where: { staffId: user.id } });
     if (!history) {
       return res
-        .status(404)
+        .status(406)
         .json({ message: "No history found for this user" });
     }
     const teamId = history.teamId;
@@ -413,6 +414,7 @@ const getSectors = async (req, res) => {
     );
   }
 };
+
 
 
 const getProjects = async (req, res) => {
