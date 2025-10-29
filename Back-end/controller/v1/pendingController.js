@@ -54,41 +54,40 @@ const getStaffPendingTask = async (req, res) => {
   try {
     const user = req.user;
     const admin = await roleChecker(user.id);
-    // if (!admin) {
-    //   return httpError(res, 403, "Access denied");
-    // }
-    // // Today’s date at 00:00
-    // const today = new Date();
-    // today.setHours(0, 0, 0, 0);
+    if (!admin) {
+      return httpError(res, 403, "Access denied");
+    }
+    // Today’s date at 00:00
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    // const pendingTasks = await task.findAll({
-    //   where: {
-    //      finishBy: { [Op.lt]: today },
-    //     stage: { [Op.ne]: 3 },
-    //   },
-    //   include: [
-    //     {
-    //       model: contacts, // contacts model
-    //       as: "customer",
-    //       attributes: ["id", "name", "email", "phone", "amount", "source"],
-    //     },
-    //     {
-    //       model: signup, // your staff model (or User model)
-    //       as: "staff", // alias must match your association
-    //       attributes: ["id", "name", "email"], // choose what you need
-    //     },
-    //   ],
-    //   order: [["finishBy", "ASC"]],
-    // });
+    const pendingTasks = await task.findAll({
+      where: {
+         finishBy: { [Op.lt]: today },
+         stage: { [Op.in]: [0, 1, 2, 3] }, },
+      include: [
+        {
+          model: contacts, // contacts model
+          as: "customer",
+          attributes: ["id", "name", "email", "phone", "amount", "source"],
+        },
+        {
+          model: signup, // your staff model (or User model)
+          as: "staff", // alias must match your association
+          attributes: ["id", "name", "email"], // choose what you need
+        },
+      ],
+      order: [["finishBy", "ASC"]],
+    });
 
-    // console.log('pendingTasks',pendingTasks)
+    console.log('pendingTasks',pendingTasks)
 
-    // return httpSuccess(
-    //   res,
-    //   200,
-    //   "Pending tasks fetched successfully",
-    //   pendingTasks
-    // );
+    return httpSuccess(
+      res,
+      200,
+      "Pending tasks fetched successfully",
+      pendingTasks
+    );
   } catch (error) {
     console.error("Error in getting staff Pending:", error);
     return httpError(res, 500, "Server error", error.message || error);
