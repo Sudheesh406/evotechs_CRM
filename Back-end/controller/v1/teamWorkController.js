@@ -9,8 +9,9 @@ const { contacts } = require("../../models/v1");
 const { signup } = require("../../models/v1");
 const trash = require("../../models/v1/Trash/trash");
 const { getIo } = require("../../utils/v1/socket");
-const {createNotification} = require('../../controller/v1/notificationController')
-
+const {
+  createNotification,
+} = require("../../controller/v1/notificationController");
 
 const { Op, fn, col, literal, Sequelize } = require("sequelize");
 
@@ -18,7 +19,6 @@ const createTeamWork = async (req, res) => {
   try {
     const user = req.user;
     const data = req.body;
-
 
     const access = await roleChecker(user.id);
     if (!access) {
@@ -45,28 +45,26 @@ const createTeamWork = async (req, res) => {
       createdAdminId: user.id,
     });
 
-
-    const allIds = data.staffIds
+    const allIds = data.staffIds;
     const io = getIo();
-    
-    const value = {}
-if (allIds && allIds.length > 0) {
-  allIds.forEach((id) => {
-    io.to(`notify_${id}`).emit("receive_notification", {
-      title: "Team Notification",
-      message: "There is a new Team Created.",
-      type: "Team",
-      timestamp: new Date(),
-    });
-     value.title = 'Team Notification';
-     value.description = 'There is a new Team Created.'
-     value.receiverId = id
-     value.senderId = user.id
-    
-     createNotification(value)
-  });
-}
 
+    const value = {};
+    if (allIds && allIds.length > 0) {
+      allIds.forEach((id) => {
+        io.to(`notify_${id}`).emit("receive_notification", {
+          title: "Team Notification",
+          message: "There is a new Team Created.",
+          type: "Team",
+          timestamp: new Date(),
+        });
+        value.title = "Team Notification";
+        value.description = "There is a new Team Created.";
+        value.receiverId = id;
+        value.senderId = user.id;
+
+        createNotification(value);
+      });
+    }
 
     if (!newTeam) {
       return httpError(res, 500, "Failed to create team work");
@@ -129,7 +127,6 @@ const getTeam = async (req, res) => {
   }
 };
 
-
 const getStaff = async (req, res) => {
   try {
     const user = req.user;
@@ -147,7 +144,7 @@ const getStaff = async (req, res) => {
     // Fetch all staff users
     const staffList = await signup.findAll({
       where: { role: "staff" },
-      attributes: ["id", "name", "email","verified"], // select only necessary fields
+      attributes: ["id", "name", "email", "verified"], // select only necessary fields
     });
 
     const userId = user.id;
@@ -307,7 +304,6 @@ const getTeamDetails = async (req, res) => {
   }
 };
 
-
 const postTeamHistory = async (req, res) => {
   try {
     const { selectedTeam } = req.body;
@@ -358,7 +354,6 @@ const postTeamHistory = async (req, res) => {
     );
   }
 };
-
 
 const getSectors = async (req, res) => {
   try {
@@ -415,14 +410,11 @@ const getSectors = async (req, res) => {
   }
 };
 
-
-
 const getProjects = async (req, res) => {
   try {
     const user = req.user;
     const { parsedData } = req.body;
     const { staffIds, projectName } = parsedData;
-
 
     if (!Array.isArray(staffIds) || staffIds.length === 0) {
       return res
@@ -473,26 +465,39 @@ const getProjects = async (req, res) => {
 const getLeads = async (req, res) => {
   try {
     const user = req.user;
+    const { page , limit } = req.query; // default 10 per page
+    const offset = (page - 1) * limit;
 
     // Find all teams that include the current user
     const allTeams = await team.findAll({
       where: fn("JSON_CONTAINS", col("staffIds"), JSON.stringify(user.id)),
     });
 
-    // Collect all unique staff IDs from these teams
+    // Collect all unique staff IDs
     const allStaffIds = [...new Set(allTeams.flatMap((t) => t.staffIds || []))];
 
     if (!allStaffIds.length) {
-      return res.status(200).json({ leads: [] });
+      return res.status(200).json({ leads: [], totalPages: 0, currentPage: 1, userId: user.id });
     }
 
-    // Fetch all leads for these staff IDs
+    // Count total leads for pagination
+    const totalLeads = await leads.count({
+      where: {
+        staffId: allStaffIds,
+        softDelete: false,
+        priority: {
+          [Op.in]: ["WaitingPeriod", "NoUpdates"],
+        },
+      },
+    });
+
+    // Fetch paginated leads
     const allLeads = await leads.findAll({
       where: {
         staffId: allStaffIds,
         softDelete: false,
-        phone: {
-          [Op.notIn]: Sequelize.literal("(SELECT phone FROM contacts)"),
+        priority: {
+          [Op.in]: ["WaitingPeriod", "NoUpdates"],
         },
       },
       include: [
@@ -502,20 +507,31 @@ const getLeads = async (req, res) => {
           attributes: ["id", "name", "email"],
         },
       ],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      order: [["createdAt", "DESC"]],
     });
 
-    // console.log(allLeads);
+    const totalPages = Math.ceil(totalLeads / limit);
 
-    return res.status(200).json({ leads: allLeads, userId: user.id });
+    return res.status(200).json({
+      leads: allLeads,
+      totalPages,
+      currentPage: parseInt(page),
+      userId: user.id,
+    });
   } catch (error) {
     console.error("Error fetching leads:", error);
     return httpError(res, 500, "Failed to get leads. Please try again later.");
   }
 };
 
+
 const getContacts = async (req, res) => {
   try {
     const user = req.user;
+    const { page , limit} = req.query; // Default values
+    const offset = (page - 1) * limit;
 
     // Find all teams that include the current user
     const allTeams = await team.findAll({
@@ -526,14 +542,42 @@ const getContacts = async (req, res) => {
     const allStaffIds = [...new Set(allTeams.flatMap((t) => t.staffIds || []))];
 
     if (!allStaffIds.length) {
-      return res.status(200).json({ contacts: [] });
+      return res.status(200).json({ contacts: [], totalCount: 0 });
     }
 
-    // Fetch all contacts for these staff IDs
+    // Get total count for pagination
+    const totalCount = await contacts.count({
+      where: {
+        staffId: allStaffIds,
+        softDelete: false,
+        [Op.and]: Sequelize.literal(`
+          NOT EXISTS (
+            SELECT 1 
+            FROM task AS t
+            WHERE 
+              t.phone = contacts.phone
+              AND t.staffId = contacts.staffId
+              AND t.softDelete = false
+          )
+        `),
+      },
+    });
+
+    // Fetch paginated contacts
     const allContacts = await contacts.findAll({
       where: {
         staffId: allStaffIds,
         softDelete: false,
+        [Op.and]: Sequelize.literal(`
+          NOT EXISTS (
+            SELECT 1 
+            FROM task AS t
+            WHERE 
+              t.phone = contacts.phone
+              AND t.staffId = contacts.staffId
+              AND t.softDelete = false
+          )
+        `),
       },
       include: [
         {
@@ -542,26 +586,40 @@ const getContacts = async (req, res) => {
           attributes: ["id", "name", "email"],
         },
       ],
+      offset: parseInt(offset),
+      limit: parseInt(limit),
+      order: [["createdAt", "DESC"]],
     });
 
-    return res.status(200).json({ contacts: allContacts, userId: user.id });
+    return res.status(200).json({
+      contacts: allContacts,
+      userId: user.id,
+      totalCount,
+      currentPage: parseInt(page),
+      totalPages: Math.ceil(totalCount / limit),
+    });
   } catch (error) {
     console.error("Error fetching contacts:", error);
     return httpError(res, 500, "Failed to get leads. Please try again later.");
   }
 };
 
+
 const contactReassign = async (req, res) => {
   try {
     const user = req.user; // Logged-in user
-    const { phone } = req.body;
+    const { phone, staffId } = req.body;
 
-    if (!phone) {
-      return httpError(res, 400, "Phone number is required for reassignment.");
+    if (!phone || !staffId) {
+      return httpError(
+        res,
+        400,
+        "Phone number and staff ID is required for reassignment."
+      );
     }
 
     // Find the contact by phone
-    const existing = await contacts.findOne({ where: { phone } });
+    const existing = await contacts.findOne({ where: { phone, staffId } });
 
     if (!existing) {
       return httpError(res, 404, "Contact not found.");
@@ -582,6 +640,74 @@ const contactReassign = async (req, res) => {
   }
 };
 
+
+const getSearchContacts = async (req, res) => {
+  try {
+    const { name, phone } = req.body;
+    const user = req.user; // Assuming you have user info from auth middleware
+
+    // Step 1: Find all teams where this user is part of
+    const allTeams = await team.findAll({
+      where: fn("JSON_CONTAINS", col("staffIds"), JSON.stringify(user.id)),
+    });
+
+    // Step 2: Collect all unique staff IDs
+    const allStaffIds = [...new Set(allTeams.flatMap((t) => t.staffIds || []))];
+
+    if (!allStaffIds.length) {
+      return res.status(200).json({ contacts: [], totalCount: 0, userId: user.id });
+    }
+
+    // Step 3: Build where condition
+    const where = {
+      staffId: allStaffIds,
+      softDelete: false,
+      [Op.and]: Sequelize.literal(`
+        NOT EXISTS (
+          SELECT 1 
+          FROM task AS t
+          WHERE 
+            t.phone = contacts.phone
+            AND t.staffId = contacts.staffId
+            AND t.softDelete = false
+        )
+      `),
+    };
+
+    // Add filters dynamically
+    if (name) {
+      where.name = { [Op.like]: `%${name}%` };
+    }
+    if (phone) {
+      where.phone = { [Op.like]: `%${phone}%` };
+    }
+
+    // Step 4: Fetch contacts
+    const allContacts = await contacts.findAll({
+      where,
+      include: [
+        {
+          model: signup,
+          as: "assignedStaff",
+          attributes: ["id", "name", "email"],
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
+
+    // Step 5: Send response
+    res.status(200).json({
+      contacts: allContacts,
+      totalCount: allContacts.length,
+      userId: user.id,
+    });
+
+  } catch (err) {
+    console.error("Search contacts error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
 module.exports = {
   createTeamWork,
   getTeam,
@@ -595,4 +721,5 @@ module.exports = {
   getLeads,
   getContacts,
   contactReassign,
+  getSearchContacts
 };

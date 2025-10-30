@@ -17,15 +17,13 @@ const createTask = async (req, res) => {
     const data = req.body;
     const user = req.user;
 
-    console.log(data);
-
     if (!data || !data.phone) {
       return httpError(res, 400, "Phone number is required to create a task");
     }
 
     // Check if contact exists for given phone & staff
     const customer = await contacts.findOne({
-      where: { phone: data.phone },
+      where: { phone: data.phone, staffId : user.id },
     });
 
     if (!customer) {
@@ -50,6 +48,7 @@ const createTask = async (req, res) => {
   }
 };
 
+
 const getTask = async (req, res) => {
   const user = req.user;
   try {
@@ -71,6 +70,7 @@ const getTask = async (req, res) => {
     return httpError(res, 500, "Server error", error.message || error);
   }
 };
+
 
 const getTaskByStatus = async (req, res) => {
   try {
@@ -116,6 +116,7 @@ const getTaskByStatus = async (req, res) => {
   }
 };
 
+
 const getTaskByStage = async (req, res) => {
   const user = req.user;
   const data = req.params.data;
@@ -153,6 +154,7 @@ const getTaskByStage = async (req, res) => {
     return httpError(res, 500, "Server error", error.message || error);
   }
 };
+
 
 const editTask = async (req, res) => {
   try {
@@ -253,6 +255,7 @@ const taskStageUpdate = async (req, res) => {
   }
 };
 
+
 const getTaskDetails = async (req, res) => {
   try {
     // Validate input
@@ -263,8 +266,6 @@ const getTaskDetails = async (req, res) => {
 
     const { taskId, contactId } = parsed.data;
     const user = req.user;
-
-    console.log(taskId);
 
     if (!contactId) {
       return httpError(res, 400, "Missing contactId ");
@@ -313,6 +314,7 @@ const getTaskDetails = async (req, res) => {
     return httpError(res, 500, "Server error", error.message || error);
   }
 };
+
 
 const updateStagesAndNotes = async (req, res) => {
   try {
@@ -366,6 +368,7 @@ const updateStagesAndNotes = async (req, res) => {
     });
   }
 };
+
 
 const getTeamTaskDetails = async (req, res) => {
   try {
@@ -428,6 +431,7 @@ const getTeamTaskDetails = async (req, res) => {
     return httpError(res, 500, "Server error", error.message || error);
   }
 };
+
 
 const updateTeamStagesAndNotes = async (req, res) => {
   try {
@@ -614,6 +618,7 @@ const getTaskDetailForAdmin = async (req, res) => {
   }
 };
 
+
 const updateStagesByAdmin = async (req, res) => {
   try {
     const data = req.body;
@@ -659,6 +664,7 @@ const updateStagesByAdmin = async (req, res) => {
     });
   }
 };
+
 
 const reworkUpdate = async (req, res) => {
   try {
@@ -710,6 +716,7 @@ const reworkUpdate = async (req, res) => {
   }
 };
 
+
 const againReworkUpdate = async (req, res) => {
   try {
     const { id } = req.body;
@@ -754,6 +761,7 @@ const againReworkUpdate = async (req, res) => {
   }
 };
 
+
 const newUpdate = async (req, res) => {
   try {
     const { id } = req.body;
@@ -793,6 +801,7 @@ const newUpdate = async (req, res) => {
     });
   }
 };
+
 
 const getTaskForAdmin = async (req, res) => {
   try {
@@ -882,6 +891,7 @@ const getAdminTask = async (req, res) => {
     });
   }
 };
+
 
 module.exports = {
   createTask,

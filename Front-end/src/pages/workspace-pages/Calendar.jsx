@@ -269,7 +269,13 @@ export default function Calendar() {
           title: "Failed",
           text: "End date cannot be before start date",
         });
-      } else {
+      } else if(status === 405){
+         Swal.fire({
+          icon: "error",
+          title: "Failed",
+          text: "You can request only one leave on the same date.",
+        });
+      }else {
         console.error("Failed to save leave", err);
         Swal.fire({
           icon: "error",

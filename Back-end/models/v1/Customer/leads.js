@@ -34,6 +34,10 @@ const leads = sequelize.define(
       type: DataTypes.TEXT,
       allowNull: true,
     },
+      purpose: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+    },
     priority: {
       type: DataTypes.ENUM(
         "NotAnClient",

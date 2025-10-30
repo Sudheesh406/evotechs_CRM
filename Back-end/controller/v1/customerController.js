@@ -15,6 +15,7 @@ const createLeads = async (req, res) => {
       name,
       description,
       location,
+      purpose,
       phone,
       source,
       priority,
@@ -23,18 +24,18 @@ const createLeads = async (req, res) => {
     } = req.body;
 
     // Validate required fields
-    if (!name || !description || !phone || !source || !location || !amount) {
+    if (!name || !description || !phone || !source || !location || !amount || !purpose) {
       return httpError(res, 400, "All fields are required");
     }
 
     if(email){
-      const existingLead = await leads.findOne({ where: { email } });
+      const existingLead = await leads.findOne({ where: { email, staffId: user.id} });
       if (existingLead) {
         return httpError(res, 409, "A lead with this email is already exists");
       }
     }
     
-    const existingLead = await leads.findOne({ where: { phone } });
+    const existingLead = await leads.findOne({ where: { phone, staffId: user.id } });
     if (existingLead) {
       return httpError(res, 409, "A lead with this Phone number already exists");
     }
@@ -47,6 +48,7 @@ const createLeads = async (req, res) => {
       email,
       phone,
       location,
+      purpose,
       source,
       Priority,
       amount,
@@ -100,6 +102,7 @@ const getLeads = async (req, res) => {
   }
 };
 
+
 const updateLeads = async (req, res) => {
   try {
     const user = req.user;
@@ -112,17 +115,9 @@ const updateLeads = async (req, res) => {
     if (customer.staffId !== user.id)
       return httpError(res, 403, "Access denied");
 
-    // Check duplicates separately
-    const existEmail = await leads.findOne({
-      where: { email: data.email, id: { [Op.ne]: id } },
-    });
-
-    if (existEmail) {
-      return httpError(res, 409, "Another lead already exists with this email");
-    }
 
     const existPhone = await leads.findOne({
-      where: { phone: data.phone, id: { [Op.ne]: id } },
+      where: { phone: data.phone, staffId:user.id, id: { [Op.ne]: id } },
     });
 
     const contactDetails = await Contacts.findAll({
@@ -144,6 +139,7 @@ const updateLeads = async (req, res) => {
           staffId: user.id,
           amount: data.amount,
           location: data.location,
+          purpose: data.purpose,
           source: data.source,
           phone: data.phone,
           email: data.email,
@@ -245,6 +241,7 @@ const approveLeads = async (req, res) => {
       email: customer.email,
       phone: customer.phone,
       location: customer.location,
+      purpose: customer.purpose,
       source: customer.source,
       priority: customer.priority,
       amount: customer.amount,
@@ -273,10 +270,10 @@ const approveLeads = async (req, res) => {
 const createContact = async (req, res) => {
   try {
     const user = req.user;
-
-    const { name, description, email, phone, source, priority, amount, location } =
-      req.body;
-
+    
+    const { name, description, email, phone, source, priority, amount, location, purpose } =
+    req.body;
+    
     // Validate required fields
     if (
       !name ||
@@ -285,15 +282,24 @@ const createContact = async (req, res) => {
       !source ||
       !priority ||
       !amount ||
-      !location
+      !location ||
+      !purpose 
     ) {
       return httpError(res, 400, "All fields are required");
     }
 
     // Optionally: check if email or phone already exists
-    const existingLead = await Contacts.findOne({ where: { email, phone } });
-    if (existingLead) {
-      return httpError(res, 409, "A Contacts with this email or phone number is already exists");
+    // if(email){
+    //   const existingLead = await Contacts.findOne({ where: { email, staffId: user.id } });
+
+    //   if (existingLead) {
+    //     return httpError(res, 409, "A Contacts with this email is already exists");
+    //   }
+    // }
+
+    const existingPhone = await Contacts.findOne({ where: { phone, staffId: user.id } });
+    if (existingPhone) {
+      return httpError(res, 409, "A Contacts with this phone number is already exists");
     }
 
     // Create the Contact
@@ -302,6 +308,7 @@ const createContact = async (req, res) => {
       description,
       email,
       location,
+      purpose,
       phone,
       source,
       priority,
@@ -423,7 +430,7 @@ const deleteContact = async (req, res) => {
     const { id } = req.params;
 
     // Find the contact
-    const customer = await Contacts.findOne({ where: { id } });
+    const customer = await Contacts.findOne({ where: { id, staffId: user.id } });
 
     if (!customer) {
       return httpError(res, 404, "Contact not found");
@@ -436,7 +443,7 @@ const deleteContact = async (req, res) => {
 
     // Check if any task is linked with this contact's phone
     const taskDetails = await task.findOne({
-      where: { phone: customer.phone },
+      where: { phone: customer.phone, staffId : user.id },
     });
     if (taskDetails) {
       return httpError(res, 406, "A Task is associated with this contact");

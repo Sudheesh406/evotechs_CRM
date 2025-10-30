@@ -138,200 +138,221 @@ const Worklog = () => {
     triggerToast();
   };
 
+  const getWorklog = async (month, year) => {
+    try {
+      Swal.fire({
+        title: "Loading Worklogs...",
+        text: "Please wait while we fetch your data",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
 
+      const response = await axios.post("/worklog/get", { month, year });
+      console.log(response);
 
-const getWorklog = async (month, year) => {
-  try {
-    Swal.fire({
-      title: "Loading Worklogs...",
-      text: "Please wait while we fetch your data",
-      allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-      },
-    });
+      const worklogs = response.data.data.worklogs; // your array of worklogs
+      const dailyWorkHours = response.data.data.dailyWorkHours || []; // new attendance array
 
-    const response = await axios.post("/worklog/get", { month, year });
-    console.log(response);
+      const daysInMonth = getDaysInMonth(year, month - 1);
+      const { generatedData, initialAttendance } = generateInitialData(
+        daysInMonth,
+        numColumns
+      );
 
-    const worklogs = response.data.data.worklogs; // your array of worklogs
-    const dailyWorkHours = response.data.data.dailyWorkHours || []; // new attendance array
+      const newTableData = generatedData;
+      const newAttendance = initialAttendance;
 
-    const daysInMonth = getDaysInMonth(year, month - 1);
-    const { generatedData, initialAttendance } = generateInitialData(
-      daysInMonth,
-      numColumns
-    );
+      // Temporary array to hold retrieved task names
+      const retrievedTasks = Array(numColumns).fill(null);
 
-    const newTableData = generatedData;
-    const newAttendance = initialAttendance;
+      // Fill worklog tasks
+      worklogs.forEach((log) => {
+        const dateObj = new Date(log.date);
+        const day = dateObj.getDate();
+        const rowIndex = day - 1; // 1st day -> index 0
 
-    // Temporary array to hold retrieved task names
-    const retrievedTasks = Array(numColumns).fill(null);
+        if (rowIndex >= 0 && rowIndex < daysInMonth) {
+          const taskMatch = log.taskNumber.match(/task(\d+)/i);
+          const taskNum = taskMatch ? parseInt(taskMatch[1]) : null;
+          const colIndex = taskNum ? taskNum - 1 : -1;
 
-    // Fill worklog tasks
-    worklogs.forEach((log) => {
-      const dateObj = new Date(log.date);
-      const day = dateObj.getDate();
-      const rowIndex = day - 1; // 1st day -> index 0
+          if (colIndex >= 0 && colIndex < numColumns) {
+            newTableData[rowIndex][colIndex] = {
+              value: log.time || "",
+              comment: log.comment || "",
+            };
 
-      if (rowIndex >= 0 && rowIndex < daysInMonth) {
-        const taskMatch = log.taskNumber.match(/task(\d+)/i);
-        const taskNum = taskMatch ? parseInt(taskMatch[1]) : null;
-        const colIndex = taskNum ? taskNum - 1 : -1;
-
-        if (colIndex >= 0 && colIndex < numColumns) {
-          newTableData[rowIndex][colIndex] = {
-            value: log.time || "",
-            comment: log.comment || "",
-          };
-
-          if (log.taskName && !retrievedTasks[colIndex]) {
-            retrievedTasks[colIndex] = log.taskName;
+            if (log.taskName && !retrievedTasks[colIndex]) {
+              retrievedTasks[colIndex] = log.taskName;
+            }
           }
         }
-      }
-    });
+      });
 
-    // Fill attendance from dailyWorkHours
-    dailyWorkHours.forEach((att) => {
-      const dateObj = new Date(att.date);
-      const day = dateObj.getDate();
-      const rowIndex = day - 1;
+      // Fill attendance from dailyWorkHours
+      dailyWorkHours.forEach((att) => {
+        const dateObj = new Date(att.date);
+        const day = dateObj.getDate();
+        const rowIndex = day - 1;
 
-      if (rowIndex >= 0 && rowIndex < daysInMonth) {
-        newAttendance[rowIndex] = att.workTime; // fill with workTime
-      }
-    });
-
-    setTableData(newTableData);
-    setAttendance(newAttendance);
-
-    const defaultTasks = Array(numColumns)
-      .fill("")
-      .map((_, i) => `Task ${i + 1}`);
-
-    const finalTasks = defaultTasks.map((defaultName, i) => {
-      return retrievedTasks[i] || tasks[i] || defaultName;
-    });
-
-    setTasks(finalTasks);
-
-    Swal.close();
-  } catch (error) {
-    Swal.close();
-    console.error("Error found in getWorklog", error);
-
-    Swal.fire({
-      icon: "error",
-      title: "Oops...",
-      text: "Failed to fetch worklogs. Please try again.",
-    });
-
-    if (tasks.length === 0) {
-      setTasks(
-        Array(numColumns)
-          .fill("")
-          .map((_, i) => `Task ${i + 1}`)
-      );
-    }
-  }
-};
-
-
-
-
-const handleSave = async () => {
-  try {
-    // Show loading popup
-    Swal.fire({
-      title: "Saving Worklogs...",
-      text: "Please wait while we save your data",
-      allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-      },
-    });
-
-    const payload = tableData
-      .map((rowData, rowIndex) => {
-        const typedTasks = rowData
-          .map((cellData, colIndex) => {
-            const value = cellData.value;
-            const comment = cellData.comment;
-
-            if (value !== "") {
-              return {
-                taskName: tasks[colIndex],
-                time: value,
-                comment: comment || "",
-                taskNumber: `task${colIndex + 1}`,
-              };
-            }
-            return null;
-          })
-          .filter(Boolean);
-
-        if (typedTasks.length > 0 || attendance[rowIndex] !== "") {
-          const dateString = `${dates[rowIndex]}, ${currentYear}`;
-          const date = new Date(dateString);
-          const formatted = date.toLocaleDateString("en-CA"); // YYYY-MM-DD
-
-          return {
-            date: formatted,
-            attendance: attendance[rowIndex] || "",
-            tasks: typedTasks,
-          };
+        if (rowIndex >= 0 && rowIndex < daysInMonth) {
+          newAttendance[
+            rowIndex
+          ] = `${att.totalHours}h ${att.totalMinutes}m (${att.workTime})`;
         }
-        return null;
-      })
-      .filter(Boolean);
+      });
 
-    console.log("Filtered Data:", payload);
+      setTableData(newTableData);
+      setAttendance(newAttendance);
 
-    // Send payload to backend
-    await axios.post("/worklog/create", { worklogs: payload });
+      const defaultTasks = Array(numColumns)
+        .fill("")
+        .map((_, i) => `Task ${i + 1}`);
 
-    // Close loading popup
-    Swal.close();
+      const finalTasks = defaultTasks.map((defaultName, i) => {
+        return retrievedTasks[i] || tasks[i] || defaultName;
+      });
 
-    // Show success popup
-    Swal.fire({
-      icon: "success",
-      title: "Worklogs Saved!",
-      text: "Your worklogs have been saved successfully.",
-      timer: 2000,
-      showConfirmButton: false,
-    });
+      setTasks(finalTasks);
 
-    triggerToast();
-  } catch (error) {
-    console.error("Error saving data:", error);
-    Swal.close();
+      Swal.close();
+    } catch (error) {
+      Swal.close();
+      console.error("Error found in getWorklog", error);
 
-    // Show error popup
-    Swal.fire({
-      icon: "error",
-      title: "Save Failed",
-      text: "Failed to save worklogs. Please try again.",
-    });
-  }
-};
+      Swal.fire({
+        icon: "error",
+        title: "Oops...",
+        text: "Failed to fetch worklogs. Please try again.",
+      });
 
+      if (tasks.length === 0) {
+        setTasks(
+          Array(numColumns)
+            .fill("")
+            .map((_, i) => `Task ${i + 1}`)
+        );
+      }
+    }
+  };
 
-  const columnTotals = tasks.map((_, colIndex) =>
-    tableData.reduce((sum, row) => {
-      const val = row[colIndex] ? parseFloat(row[colIndex].value) : 0;
-      return sum + (isNaN(val) ? 0 : val);
-    }, 0)
-  );
+  const handleSave = async () => {
+    try {
+      // Show loading popup
+      Swal.fire({
+        title: "Saving Worklogs...",
+        text: "Please wait while we save your data",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
 
-  const rowTotals = tableData.map((row) =>
-    row.reduce((sum, val) => {
-      const num = val ? parseFloat(val.value) : 0;
-      return sum + (isNaN(num) ? 0 : num);
-    }, 0)
-  );
+      const payload = tableData
+        .map((rowData, rowIndex) => {
+          const typedTasks = rowData
+            .map((cellData, colIndex) => {
+              const value = cellData.value;
+              const comment = cellData.comment;
+
+              if (value !== "") {
+                return {
+                  taskName: tasks[colIndex],
+                  time: value,
+                  comment: comment || "",
+                  taskNumber: `task${colIndex + 1}`,
+                };
+              }
+              return null;
+            })
+            .filter(Boolean);
+
+          if (typedTasks.length > 0 || attendance[rowIndex] !== "") {
+            const dateString = `${dates[rowIndex]}, ${currentYear}`;
+            const date = new Date(dateString);
+            const formatted = date.toLocaleDateString("en-CA"); // YYYY-MM-DD
+
+            return {
+              date: formatted,
+              attendance: attendance[rowIndex] || "",
+              tasks: typedTasks,
+            };
+          }
+          return null;
+        })
+        .filter(Boolean);
+
+      // Send payload to backend
+      await axios.post("/worklog/create", { worklogs: payload });
+
+      // Close loading popup
+      Swal.close();
+
+      // Show success popup
+      Swal.fire({
+        icon: "success",
+        title: "Worklogs Saved!",
+        text: "Your worklogs have been saved successfully.",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+
+      triggerToast();
+    } catch (error) {
+      console.error("Error saving data:", error);
+      Swal.close();
+
+      // Show error popup
+      Swal.fire({
+        icon: "error",
+        title: "Save Failed",
+        text: "Failed to save worklogs. Please try again.",
+      });
+    }
+  };
+
+  // Helper: convert "HH:MM:SS" → total minutes
+  const parseTimeToMinutes = (timeStr) => {
+    if (!timeStr) return 0;
+    const [h, m, s] = timeStr.split(":").map(Number);
+    return (h || 0) * 60 + (m || 0) + Math.floor((s || 0) / 60);
+  };
+
+  // Helper: convert total minutes → "Xh Ym"
+  const formatMinutes = (totalMinutes) => {
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return `${hours}h ${minutes}m`;
+  };
+
+  // ✅ Column totals
+  const columnTotals = tasks.map((_, colIndex) => {
+    const totalMinutes = tableData.reduce((sum, row) => {
+      const val = row[colIndex]?.value || "";
+      return sum + parseTimeToMinutes(val);
+    }, 0);
+    return formatMinutes(totalMinutes);
+  });
+
+  // ✅ Row totals
+  const rowTotals = tableData.map((row) => {
+    const totalMinutes = row.reduce((sum, cell) => {
+      const val = cell?.value || "";
+      return sum + parseTimeToMinutes(val);
+    }, 0);
+    return formatMinutes(totalMinutes);
+  });
+
+  // ✅ Grand total
+  const grandTotal = (() => {
+    const totalMinutes = tableData.flat().reduce((sum, cell) => {
+      const val = cell?.value || "";
+      return sum + parseTimeToMinutes(val);
+    }, 0);
+    return formatMinutes(totalMinutes);
+  })();
 
   // month navigation
   const goToPreviousMonth = () => {
@@ -351,7 +372,6 @@ const handleSave = async () => {
       setCurrentMonth(currentMonth + 1);
     }
   };
-
 
   // handle double-click to open comment modal
   const handleCellDoubleClick = (rowIndex, colIndex) => {
@@ -381,7 +401,7 @@ const handleSave = async () => {
     <div className="flex flex-col bg-gray-50 font-sans text-gray-800 relative">
       <header className="p-4 bg-white shadow-md flex justify-between items-center relative">
         <div className="flex items-center gap-4">
-             <h1 className="text-xl font-extrabold text-gray-900 tracking-tight">
+          <h1 className="text-xl font-extrabold text-gray-900 tracking-tight">
             <span className="text-indigo-600">Work</span> Log
           </h1>
           <span className="text-sm font-semibold">
@@ -549,7 +569,7 @@ const handleSave = async () => {
                 </td>
               ))}
               <td className="p-3 text-sm text-gray-700 whitespace-nowrap border-r border-gray-300">
-                {rowTotals.reduce((a, b) => a + b, 0)}
+                {grandTotal}
               </td>
               <td className="p-3 text-sm text-gray-700 whitespace-nowrap border-r border-gray-300"></td>
             </tr>

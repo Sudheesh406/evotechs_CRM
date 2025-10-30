@@ -31,6 +31,7 @@ const StaffDashboard = () => {
     email: "",
     phone: "",
     location: "",
+    purpose: "",
     source: "",
     priority: "",
     amount: "",
@@ -164,6 +165,7 @@ const StaffDashboard = () => {
     if (!contactForm.name) errors.name = "Name is required";
     if (!contactForm.phone) errors.phone = "Phone is required";
     if (!contactForm.location) errors.location = "Location is required";
+    if (!contactForm.purpose) errors.purpose = "Purpose is required";
 
     if (Object.keys(errors).length > 0) {
       setContactErrors(errors);
@@ -185,6 +187,7 @@ const StaffDashboard = () => {
         email: "",
         phone: "",
         location: "",
+        purpose: "",
         source: "",
         priority: "",
         amount: "",
@@ -244,6 +247,35 @@ const StaffDashboard = () => {
       });
     }
   };
+
+
+useEffect(()=>{
+  if(!isTaskModalOpen){
+     setTaskForm({
+        requirement: "",
+        phone: "",
+        finishBy: "",
+        priority: "Normal",
+        notes: "",
+        description: "",
+      });
+  }
+
+  if(!isContactModalOpen){
+       setContactForm({
+        name: "",
+        description: "",
+        email: "",
+        phone: "",
+        location: "",
+        purpose: "",
+        source: "",
+        priority: "",
+        amount: "",
+      });
+  }
+},[isTaskModalOpen, isContactModalOpen])
+
 
   return (
     <div className="bg-[#f5f5f5] min-h-[680px] text-gray-800 p-4">

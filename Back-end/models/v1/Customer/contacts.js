@@ -39,6 +39,10 @@ const contacts = sequelize.define(
       type: DataTypes.TEXT,
       allowNull: true,
     },
+    purpose: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+    },
     amount: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: true,

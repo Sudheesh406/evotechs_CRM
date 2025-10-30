@@ -11,9 +11,12 @@ const TaskModal = ({
   handleSubmit,
   errors,
   requirements = [],
-  position 
+  position,
 }) => {
   const [contacts, setContacts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+
 
   // Fetch contacts only once
   useEffect(() => {
@@ -31,7 +34,6 @@ const TaskModal = ({
   // ✅ Move conditional rendering **after** hooks
   if (!showForm) return null;
 
-
   // When selecting a contact, fill name, phone, etc.
   const handleContactSelect = (e) => {
     const selectedId = e.target.value;
@@ -48,11 +50,13 @@ const TaskModal = ({
   };
 
   return (
-<div
-  className={`fixed inset-0 flex ${
-    position === "right" ? "justify-end items-center mr-10" : "justify-center items-center backdrop-blur-[1px]"
-  }  bg-opacity-50 z-50`}
->
+    <div
+      className={`fixed inset-0 flex ${
+        position === "right"
+          ? "justify-end items-center mr-10"
+          : "justify-center items-center backdrop-blur-[1px]"
+      }  bg-opacity-50 z-50`}
+    >
       <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl relative max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
         {/* Close button */}
         <button
@@ -98,21 +102,72 @@ const TaskModal = ({
             </div>
 
             {/* Contact Selection */}
-            <div className="flex flex-col">
+            {/* Contact Selection */}
+            <div className="flex flex-col relative">
               <label className="block text-sm font-medium mb-1">
                 Select Contact
               </label>
-              <select
-                onChange={handleContactSelect}
-                className="w-full border rounded px-3 py-2 border-gray-300"
-              >
-                <option value="">-- Select Contact --</option>
-                {contacts.map((contact) => (
-                  <option key={contact.id} value={contact.id}>
-                    {`${contact.name} — ${contact.phone} — ${contact.location}`}
-                  </option>
-                ))}
-              </select>
+
+              {/* Search Input */}
+              <input
+                type="text"
+                placeholder="Search by name, phone, or location..."
+                className="w-full border rounded px-3 py-2 border-gray-300 mb-2"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onClick={() => setShowDropdown((prev) => !prev)} // toggle dropdown manually
+              />
+
+              {/* Custom Dropdown */}
+              {showDropdown && (
+                <ul className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded shadow-md max-h-48 overflow-y-auto z-10">
+                  {contacts
+                    .filter((contact) => {
+                      const search = searchTerm.toLowerCase();
+                      const name = contact.name?.toLowerCase() || "";
+                      const phone = contact.phone?.toLowerCase() || "";
+                      const location = contact.location?.toLowerCase() || "";
+                      return (
+                        name.includes(search) ||
+                        phone.includes(search) ||
+                        location.includes(search)
+                      );
+                    })
+                    .map((contact) => (
+                      <li
+                        key={contact.id}
+                        className="px-3 py-2 hover:bg-blue-100 cursor-pointer"
+                        onClick={() => {
+                          // fill form data
+                          handleChange({
+                            target: {
+                              name: "phone",
+                              value: contact.phone,
+                            },
+                          });
+                          setSearchTerm(`${contact.name} — ${contact.phone}`);
+                          setShowDropdown(false); // close only when selected
+                        }}
+                      >
+                        {`${contact.name || "N/A"} — ${
+                          contact.phone || "N/A"
+                        } — ${contact.location || "N/A"}`}
+                      </li>
+                    ))}
+                  {contacts.filter((c) => {
+                    const s = searchTerm.toLowerCase();
+                    return (
+                      c.name?.toLowerCase().includes(s) ||
+                      c.phone?.toLowerCase().includes(s) ||
+                      c.location?.toLowerCase().includes(s)
+                    );
+                  }).length === 0 && (
+                    <li className="px-3 py-2 text-gray-500">
+                      No results found
+                    </li>
+                  )}
+                </ul>
+              )}
             </div>
 
             {/* Phone (Auto-filled) */}
@@ -135,7 +190,9 @@ const TaskModal = ({
 
             {/* Finish By */}
             <div className="flex flex-col">
-              <label className="block text-sm font-medium mb-1">Finish By</label>
+              <label className="block text-sm font-medium mb-1">
+                Finish By
+              </label>
               <input
                 type="date"
                 name="finishBy"

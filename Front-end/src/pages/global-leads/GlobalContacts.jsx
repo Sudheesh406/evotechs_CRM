@@ -16,6 +16,7 @@ const GlobalContacts = () => {
     { label: "Email", key: "email", className: "text-indigo-600" },
     { label: "Phone", key: "phone" },
     { label: "Location", key: "location" },
+    { label: "Purpose", key: "purpose" },
     { label: "Contact Source", key: "source" },
     { label: "Follower Name", key: "followerName" },
     { label: "Role", key: "role" },

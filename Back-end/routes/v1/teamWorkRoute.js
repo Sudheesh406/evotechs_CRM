@@ -13,7 +13,8 @@ const {
   getProjects,
   getLeads,
   getContacts,
-  contactReassign
+  contactReassign,
+  getSearchContacts
 } = require("../../controller/v1/teamWorkController");
 
 Router.post("/create", authenticate, createTeamWork);
@@ -30,6 +31,7 @@ Router.get("/sectors/get/:id", authenticate, getSectors);
 Router.post("/projects/post", authenticate, getProjects);
 Router.get("/leads/get", authenticate, getLeads);
 Router.get("/contacts/get", authenticate, getContacts);
+Router.post("/contacts/get/search", authenticate, getSearchContacts);
 Router.patch("/contact/reassign", authenticate, contactReassign);
 
 

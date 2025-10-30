@@ -19,6 +19,7 @@ const ContactModal = ({
     { label: "Email", key: "email", type: "email" },
     { label: "Phone", key: "phone", type: "tel" },
     { label: "Location", key: "location" },
+    { label: "Purpose", key: "purpose" },
     { label: "Source", key: "source" },
     { label: "Priority", key: "priority" },
     { label: "Amount", key: "amount" },

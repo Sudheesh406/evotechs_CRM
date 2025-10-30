@@ -225,7 +225,6 @@ function Layout() {
             }
           />
 
-
           <Route
             path="/activities/task/details/port/:data"
             element={
@@ -234,7 +233,6 @@ function Layout() {
               </ProtectedRoute>
             }
           />
-
 
           <Route
             path="/workspace/auth/pin/generator"
@@ -261,9 +259,6 @@ function Layout() {
             }
           />
 
-
-
-
           {/* Staff Routes */}
           <Route
             path="/"
@@ -281,8 +276,6 @@ function Layout() {
               </ProtectedRoute>
             }
           />
-
-
 
           <Route
             path="/global/leads"
@@ -341,7 +334,6 @@ function Layout() {
             }
           />
           
-
           <Route
             path="/operations/contacts"
             element={

@@ -16,6 +16,7 @@ const GlobalRejectedLeads = () => {
     { label: "Email", key: "email", className: "text-indigo-600" },
     { label: "Phone", key: "phone" },
     { label: "Location", key: "location" },
+    { label: "Purpose", key: "purpose" },
     { label: "Lead Source", key: "source" },
     { label: "Priority", key: "priority" },
     { label: "Amount", key: "amount" },

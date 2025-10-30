@@ -336,6 +336,40 @@ const createLeave = async (req, res) => {
     if (end < start) {
       return httpError(res, 406, "End date cannot be before start date");
     }
+
+     // Check for overlapping leave
+    const existingLeave = await Leaves.findOne({
+      where: {
+        staffId: user.id,
+        [Op.or]: [
+          // 1️⃣ Existing leave starts during the new leave period
+          {
+            leaveDate: {
+              [Op.between]: [start, end],
+            },
+          },
+          // 2️⃣ Existing leave ends during the new leave period
+          {
+            endDate: {
+              [Op.between]: [start, end],
+            },
+          },
+          // 3️⃣ Existing leave fully covers the new leave range
+          {
+            [Op.and]: [
+              { leaveDate: { [Op.lte]: start } },
+              { endDate: { [Op.gte]: end } },
+            ],
+          },
+        ],
+      },
+    });
+
+    if (existingLeave) {
+      return res.status(405).json({
+        message: "You already have a leave that overlaps with this date range.",
+      });
+    }
     
     // 3. Create leave entry
     const newLeave = await Leaves.create({
@@ -438,6 +472,7 @@ const updateLeave = async (req, res) => {
     return httpError(res, 500, "Server error", error.message || error);
   }
 };
+
 
 const deleteLeave = async (req, res) => {
   try {

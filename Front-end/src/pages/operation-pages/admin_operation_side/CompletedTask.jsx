@@ -24,7 +24,6 @@ function CompletedTask() {
   const getCompletedWork = async () => {
     try {
       const response = await axios.get("/Completed/get");
-      console.log("raw response", response);
 
       const mapped = response.data.data.map((item) => ({
         id: item.id,
@@ -66,7 +65,7 @@ function CompletedTask() {
   };
 
   const handleRowClick = (row) => {
-    const data = { taskId: row.id, contactId: row.contactId, staffId: row.staffId , pending: false, completed: false};
+    const data = { taskId: row.id, contactId: row.contactId, staffId: row.staffId , pending: false, completed: false, resolve:true};
     const dataToSend = encodeURIComponent(JSON.stringify({ data }));
     navigate(`/activities/task/port/${dataToSend}`);
   };

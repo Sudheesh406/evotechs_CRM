@@ -14,7 +14,7 @@ const {authenticate} = require('../../middleware/v1/verification/Auth')
 Router.post("/lead/create",authenticate, createLeads);
 Router.put("/lead/update/:id",authenticate, updateLeads);
 Router.delete("/lead/delete/:id",authenticate, deleteLeads);
-Router.patch("/lead/confirm/:id",authenticate, approveLeads);
+// Router.patch("/lead/confirm/:id",authenticate, approveLeads);
 Router.get("/lead/get",authenticate, getLeads);
 Router.get("/pending/lead/get",authenticate, getPendingLeads);
 Router.get("/reject/lead/get",authenticate, getRejectLeads);

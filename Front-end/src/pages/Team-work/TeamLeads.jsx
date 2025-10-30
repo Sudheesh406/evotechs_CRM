@@ -1,27 +1,24 @@
 import React, { useEffect, useState } from "react";
 import axios from "../../instance/Axios";
 import Table2 from "../../components/Table2";
-import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 
 export default function TeamLeads() {
   const [teamLeads, setTeamLeads] = useState([]);
-  // const navigate = useNavigate();
-  const [user, setUser] = useState()
+  const [user, setUser] = useState();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const limit = 50; // per page
 
-  const [value, setValue] = useState(true)
-
-
-  ////--------------------------------------send staff id to table to work ------------------------//
-
-  const getTeamLeads = async () => {
+  const getTeamLeads = async (page = 1) => {
     try {
-      const response = await axios.get("/team/leads/get");
+      const response = await axios.get(`/team/leads/get?page=${page}&limit=${limit}`);
       const leads = response.data?.leads || [];
-      const userId = response.data?.userId
-      setUser(userId)
+      const userId = response.data?.userId;
+      setUser(userId);
+      setTotalPages(response.data?.totalPages || 1);
+      setCurrentPage(response.data?.currentPage || 1);
 
-      // Transform data into table-friendly format
       const transformedLeads = leads.map((lead) => ({
         staffId: lead.assignedStaff?.id,
         date: new Date(lead.createdAt).toLocaleDateString(),
@@ -30,7 +27,8 @@ export default function TeamLeads() {
         priority: lead.priority || "Normal",
         email: lead.email,
         phone: lead.phone,
-        location : lead.location,
+        location: lead.location,
+        purpose: lead.purpose,
         followerName: lead.assignedStaff?.name || "-",
         followerEmail: lead.assignedStaff?.email || "-",
       }));
@@ -42,10 +40,9 @@ export default function TeamLeads() {
   };
 
   useEffect(() => {
-    getTeamLeads();
-  }, []);
+    getTeamLeads(currentPage);
+  }, [currentPage]);
 
-  // Columns need key + label
   const columns = [
     { key: "date", label: "Date" },
     { key: "customerName", label: "Customer Name" },
@@ -54,30 +51,47 @@ export default function TeamLeads() {
     { key: "email", label: "Email" },
     { key: "phone", label: "Phone" },
     { key: "location", label: "Location" },
+    { key: "purpose", label: "Purpose" },
     { key: "followerName", label: "Follower Name" },
     { key: "followerEmail", label: "Follower Email" },
   ];
 
-  const handleRowClick = (lead) => {
-    // console.log("Row clicked:", lead);
-  };
-
-
-const handleActionClick = (row) => {
- 
-};
-
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <h1 className="text-xl font-semibold mb-6 text-black">Team Leads</h1>
+
       <Table2
         columns={columns}
         data={teamLeads}
-        currentStaffId= {user}
-        onRowClick={handleRowClick}
-        onActionClick={handleActionClick}   // <-- new prop
-      
+        currentStaffId={user}
       />
+
+      {/* Pagination Controls */}
+      <div className="flex justify-center items-center gap-4 mt-6">
+        <button
+          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+          disabled={currentPage === 1}
+          className={`px-4 py-2 rounded-lg ${
+            currentPage === 1 ? "bg-gray-300" : "bg-blue-500 hover:bg-blue-600"
+          } text-white`}
+        >
+          Prev
+        </button>
+        <span className="text-gray-700">
+          Page {currentPage} of {totalPages}
+        </span>
+        <button
+          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+          disabled={currentPage === totalPages}
+          className={`px-4 py-2 rounded-lg ${
+            currentPage === totalPages
+              ? "bg-gray-300"
+              : "bg-blue-500 hover:bg-blue-600"
+          } text-white`}
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 }
