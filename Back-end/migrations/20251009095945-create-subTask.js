@@ -37,12 +37,6 @@ module.exports = {
       taskId: {
         type: Sequelize.INTEGER,
         allowNull: true,
-        references: {
-          model: 'task', // Make sure this matches the table name of your task model
-          key: 'id',
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'SET NULL',
       },
       softDelete: {
         type: Sequelize.BOOLEAN,

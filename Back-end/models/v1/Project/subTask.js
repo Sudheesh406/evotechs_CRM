@@ -38,12 +38,6 @@ const subTasks = sequelize.define(
     taskId: {
       type: DataTypes.INTEGER,
       allowNull: true,
-      references: {
-        model: task,
-        key: "id",
-      },
-      onUpdate: "CASCADE",
-      onDelete: "SET NULL",
     },
     role: {
       type: DataTypes.ENUM("admin", "staff"),
