@@ -1,7 +1,6 @@
 const { DataTypes } = require("sequelize");
 const { sequelize } = require("../../../database/dbConfigue");
 const signup = require("../Authentication/authModel");
-const task = require("./task");
 
 const subTasks = sequelize.define(
   "subTasks",
