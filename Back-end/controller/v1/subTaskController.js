@@ -234,7 +234,7 @@ const checkInUpdate = async (req, res) => {
     return httpSuccess(res, 200, "Sub-Task check-in updated successfully",result);
   } catch (error) {
     console.error("Error in update SubTasks:", error);
-    return httpError(res, 500, "Internal Server Error");
+    return httpError(res, 500, "Internal Server Error",error);
   }
 };
 
