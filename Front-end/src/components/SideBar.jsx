@@ -161,6 +161,8 @@ const Sidebar = ({ closeSidebar }) => {
       icon: ClipboardList,
       subMenu: [
         { title: "Highlights", path: "/operations/deals", icon: Briefcase },
+        { title: "Assignment", path: "/workspace/todo", icon: ClipboardList },
+
         { title: "Pending", path: "/operations/pending/task", icon: Hourglass },
         {
           title: "Completed",
@@ -211,9 +213,8 @@ const Sidebar = ({ closeSidebar }) => {
           icon: Calendar,
         },
         { title: "Messages", path: "/workspace/messages", icon: MessageSquare },
-        { title: "Assignment", path: "/workspace/todo", icon: ClipboardList },
         {
-          title: "Forget Password",
+          title: "Forgot Password",
           path: "/workspace/auth/pin/generator",
           icon: Lock,
         },
