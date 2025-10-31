@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "../instance/Axios";
 import { NavLink, useNavigate } from "react-router-dom";
+import DefaultLog from '../assets/images/logo1.png'
 import {
   Home,
   ClipboardList,
@@ -37,7 +38,7 @@ const ACCENT_BG = "#E0F2FF"; // Light blue for hover/submenu active background
 const Sidebar = ({ closeSidebar }) => {
   const [openMenus, setOpenMenus] = useState({});
   const [menuItems, setMenuItems] = useState();
-  const [company, setCompany] = useState('company');
+  const [company, setCompany] = useState("company");
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -69,7 +70,7 @@ const Sidebar = ({ closeSidebar }) => {
       icon: ClipboardList,
       subMenu: [
         { title: "Contacts", path: "/operations/contacts", icon: Users },
-        { title: "Personalize", path: "/operations/personalize", icon: Shield },
+        { title: "Work list", path: "/operations/personalize", icon: Shield },
         { title: "Pending", path: "/operations/pendings", icon: Hourglass },
         { title: "Rework", path: "/operations/reworks", icon: RotateCcw },
         {
@@ -127,7 +128,7 @@ const Sidebar = ({ closeSidebar }) => {
   const adminItems = [
     { title: "Home", icon: Home, path: "/admin" },
     {
-      title: "Global Sales",
+      title: "Evo Sales",
       icon: Globe,
       subMenu: [
         { title: "Leads", path: "/global/leads", icon: UserPlus },
@@ -183,7 +184,7 @@ const Sidebar = ({ closeSidebar }) => {
           path: "/activities/task/self",
           icon: CheckSquare,
         },
-         {
+        {
           title: "Subtask Removed",
           path: "/activities/tasks/subtask/removed",
           icon: CheckSquare,
@@ -236,7 +237,7 @@ const Sidebar = ({ closeSidebar }) => {
         let acess = null;
         const { data } = await axios.get("/auth/role");
 
-        setCompany(data?.data?.company)
+        setCompany(data?.data?.company);
         if (data?.data?.role) {
           acess = data?.data?.role;
         }
@@ -270,8 +271,14 @@ const Sidebar = ({ closeSidebar }) => {
   if (loading) {
     // Elegant loading state with new color
     return (
-      <div className="flex items-center justify-center h-screen w-64" style={{ backgroundColor: LIGHT_BG }}>
-        <Loader className="animate-spin h-6 w-6" style={{ color: PRIMARY_BLUE }} />
+      <div
+        className="flex items-center justify-center h-screen w-64"
+        style={{ backgroundColor: LIGHT_BG }}
+      >
+        <Loader
+          className="animate-spin h-6 w-6"
+          style={{ color: PRIMARY_BLUE }}
+        />
       </div>
     );
   }
@@ -279,18 +286,33 @@ const Sidebar = ({ closeSidebar }) => {
   // --- Start of Main Component Rendering with Blue Theme ---
 
   return (
-    <div 
-      className="flex flex-col justify-between h-screen w-64 shadow-2xl transition-all duration-300" 
+    <div
+      className="flex flex-col justify-between h-screen w-64 shadow-2xl transition-all duration-300"
       style={{ backgroundColor: LIGHT_BG, color: DARK_TEXT }}
     >
       {/* Top + Menu Scrollable */}
       <div className="flex flex-col overflow-y-auto flex-1 custom-scrollbar">
         {/* Logo */}
-        <div className="p-6 border-b border-gray-200">
-          <h1 className="text-3xl font-black tracking-widest leading-none" style={{ color: PRIMARY_BLUE }}>
-            {company?.companyName || 'Company Name'}
-          </h1>
-          <p className="text-xs text-gray-500 mt-1">Client Relationship Management</p>
+        <div className="p-6 border-b border-gray-200 flex items-center gap-4">
+          {/* Company Logo */}
+          <img
+            src={company?.logoUrl || DefaultLog} // <-- default image
+            alt="Company Logo"
+            className="w-12 h-12 rounded-full object-cover border border-gray-300"
+          />
+
+          {/* Company Info */}
+          <div>
+            <h1
+              className="text-xl font-black tracking-widest leading-none"
+              style={{ color: PRIMARY_BLUE }}
+            >
+              {company?.companyName || "Company Name"}
+            </h1>
+            <p className="text-xs text-gray-500 mt-1">
+              Client Relationship Management
+            </p>
+          </div>
         </div>
 
         {/* Menu */}
@@ -312,11 +334,13 @@ const Sidebar = ({ closeSidebar }) => {
                   to={item.path}
                   onClick={closeSidebar}
                   className={({ isActive }) =>
-                    `${baseClass} ${isActive ? activeClass : inactiveHoverClass}`
+                    `${baseClass} ${
+                      isActive ? activeClass : inactiveHoverClass
+                    }`
                   }
                   style={({ isActive }) => ({
-                    backgroundColor: isActive ? PRIMARY_BLUE : 'transparent',
-                    color: isActive ? 'white' : DARK_TEXT,
+                    backgroundColor: isActive ? PRIMARY_BLUE : "transparent",
+                    color: isActive ? "white" : DARK_TEXT,
                   })}
                 >
                   <Icon className="w-5 h-5 flex-shrink-0" />
@@ -331,10 +355,9 @@ const Sidebar = ({ closeSidebar }) => {
                 <div
                   onClick={() => toggleMenu(i)}
                   className={`${baseClass} cursor-pointer 
-                    ${openMenus[i] ? 'bg-gray-100' : inactiveHoverClass}`
-                  }
-                  style={{ 
-                      color: openMenus[i] ? PRIMARY_BLUE : DARK_TEXT,
+                    ${openMenus[i] ? "bg-gray-100" : inactiveHoverClass}`}
+                  style={{
+                    color: openMenus[i] ? PRIMARY_BLUE : DARK_TEXT,
                   }}
                 >
                   <div className="flex items-center gap-3">
@@ -345,7 +368,9 @@ const Sidebar = ({ closeSidebar }) => {
                     className={`w-4 h-4 transform transition-transform duration-300 flex-shrink-0 ${
                       openMenus[i] ? "rotate-90" : "text-gray-400"
                     }`}
-                    style={{ color: openMenus[i] ? PRIMARY_BLUE : 'currentColor' }}
+                    style={{
+                      color: openMenus[i] ? PRIMARY_BLUE : "currentColor",
+                    }}
                   />
                 </div>
 
@@ -361,10 +386,16 @@ const Sidebar = ({ closeSidebar }) => {
                           onClick={closeSidebar}
                           className={({ isActive }) =>
                             `flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-300
-                              ${isActive ? subMenuActiveClass : subMenuInactiveHoverClass}`
+                              ${
+                                isActive
+                                  ? subMenuActiveClass
+                                  : subMenuInactiveHoverClass
+                              }`
                           }
                           style={({ isActive }) => ({
-                            backgroundColor: isActive ? ACCENT_BG : 'transparent',
+                            backgroundColor: isActive
+                              ? ACCENT_BG
+                              : "transparent",
                             color: isActive ? PRIMARY_BLUE : DARK_TEXT,
                           })}
                         >
@@ -380,7 +411,7 @@ const Sidebar = ({ closeSidebar }) => {
           })}
         </nav>
       </div>
-      
+
       {/* --- Logout Button --- */}
       <div className="space-y-2 p-4 border-t border-gray-200">
         <div
