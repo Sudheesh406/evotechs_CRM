@@ -65,7 +65,7 @@ const createSubTask = async (req, res) => {
   }
   } catch (error) {
     console.error("Error in createSubTask:", error);
-    return httpError(res, 500, "Internal Server Error");
+    return httpError(res, 500, "Internal Server Error",error);
   }
 };
 
