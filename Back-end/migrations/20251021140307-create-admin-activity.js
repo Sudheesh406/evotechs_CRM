@@ -47,6 +47,16 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'SET NULL',
       },
+       requirementId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: {
+          model: 'requirement', 
+          key: 'id',
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL',
+      },
 
       // --- Metadata ---
       status: {

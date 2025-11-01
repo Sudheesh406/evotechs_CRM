@@ -145,8 +145,8 @@ const restore = async (req, res) => {
   try {
     const user = req.user;
     const { id, data } = req.body;
-    console.log(id, data);
 
+    
     if (!id || !data) {
       return httpError(res, 400, "id and data type is required");
     }
@@ -176,8 +176,8 @@ const permenantDelete = async (req, res) => {
   try {
     const user = req.user;
     const { id, data } = req.body;
-    console.log(id, data);
 
+    
     if (!id || !data) {
       return httpError(res, 400, "id and data type is required");
     }

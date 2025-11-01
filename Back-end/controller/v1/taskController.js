@@ -767,7 +767,7 @@ const newUpdate = async (req, res) => {
     const { id } = req.body;
     const user = req.user;
 
-    const existing = await task.findOne({ where: { id, staffId: user.id } });
+    const existing = await task.findOne({ where: { id} });
     if (!existing) {
       return res.status(404).json({
         success: false,
@@ -775,7 +775,6 @@ const newUpdate = async (req, res) => {
       });
     }
 
-    if (existing.staffId == user.id) {
       const updatedTask = await existing.update({
         newUpdate: !existing.newUpdate,
       });
@@ -786,12 +785,7 @@ const newUpdate = async (req, res) => {
         message: `new update set to ${updatedTask.rework}`,
         data: updatedTask,
       });
-    } else {
-      return res.status(403).json({
-        success: false,
-        message: "Access denied.",
-      });
-    }
+  
   } catch (error) {
     console.error("Error in updating new Update:", error);
     return res.status(500).json({

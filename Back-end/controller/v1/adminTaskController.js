@@ -1,6 +1,7 @@
 const roleChecker = require("../../utils/v1/roleChecker");
 const adminTask = require("../../models/v1/Project/adminTask");
 const trash = require("../../models/v1/Trash/trash");
+const requirement = require('../../models/v1/Project/requirements')
 
 const CreateAdminTask = async (req, res) => {
   try {
@@ -28,6 +29,7 @@ const CreateAdminTask = async (req, res) => {
   }
 };
 
+
 const GetAdminTask = async (req, res) => {
   try {
     const user = req.user;
@@ -36,7 +38,26 @@ const GetAdminTask = async (req, res) => {
       return httpError(res, 403, "Access denied. Admins only.");
     }
 
-    const result = await adminTask.findAll({ where: { adminId: user.id } });
+    const tasks = await adminTask.findAll({
+      where: { adminId: user.id, softDelete:false },
+    });
+
+    const result = await Promise.all(
+      tasks.map(async (task) => {
+        let requirementData = null;
+        if (task.requirementId) {
+          requirementData = await requirement.findOne({
+            where: { id: task.requirementId },
+          });
+        }
+
+        return {
+          ...task.toJSON(),
+          requirement: requirementData ? requirementData.toJSON() : null,
+        };
+      })
+    );
+
     return res.status(200).json({
       success: true,
       result,
@@ -50,6 +71,7 @@ const GetAdminTask = async (req, res) => {
     });
   }
 };
+
 
 const editAdminTask = async (req, res) => {
   try {

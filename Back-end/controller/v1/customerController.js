@@ -133,6 +133,7 @@ const updateLeads = async (req, res) => {
       client = "NotAnClient";
     }
 
+    let value = false
     if (!contactDetails || contactDetails.length == 0) {
       if (client === "Client") {
         Contacts.create({
@@ -146,6 +147,7 @@ const updateLeads = async (req, res) => {
           description: data.description,
           name: data.name,
         });
+        value = true
       }
     }
 
@@ -158,7 +160,8 @@ const updateLeads = async (req, res) => {
     data.priority = client;
 
     const updated = await customer.update(data);
-    return httpSuccess(res, 200, "Lead updated successfully", updated);
+    const obj = {updated,value}
+    return httpSuccess(res, 200, "Lead updated successfully", obj);
   } catch (error) {
     console.error("Error in updating Leads:", error);
     return httpError(res, 500, "Internal Server Error");

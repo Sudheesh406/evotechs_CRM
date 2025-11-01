@@ -1,6 +1,7 @@
 const { DataTypes } = require("sequelize");
 const { sequelize } = require("../../../database/dbConfigue");
 const signup = require("../Authentication/authModel");
+const requirement = require("../Project/requirements")
 
 const AdminActivity = sequelize.define(
   "AdminActivity",
@@ -44,6 +45,16 @@ const AdminActivity = sequelize.define(
       allowNull: true,
       references: {
         model: signup,
+        key: "id",
+      },
+      onUpdate: "CASCADE",
+      onDelete: "SET NULL",
+    },
+      requirementId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: requirement,
         key: "id",
       },
       onUpdate: "CASCADE",
