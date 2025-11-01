@@ -18,12 +18,14 @@ const columns = [
 
 function CompletedTask() {
   const [completedWorks, setCompletedWorks] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const getCompletedWork = async () => {
+  const getCompletedWork = async (page = 1) => {
     try {
-      const response = await axios.get("/Completed/get");
+      const response = await axios.get(`/Completed/get?page=${page}&limit=20`);
 
       const mapped = response.data.data.map((item) => ({
         id: item.id,
@@ -42,6 +44,7 @@ function CompletedTask() {
       }));
 
       setCompletedWorks(mapped);
+      setTotalPages(response.data.pagination.totalPages);
     } catch (error) {
       console.log("error found in getCompletedWork", error);
     } finally {
@@ -50,13 +53,15 @@ function CompletedTask() {
   };
 
   useEffect(() => {
-    getCompletedWork();
-  }, []);
+    getCompletedWork(currentPage);
+  }, [currentPage]);
 
   const renderCell = (key, row) => {
     if (key === "date") {
       return (
-        <span className={`px-2 py-1 rounded-full text-sm font-medium ${row.dateColor}`}>
+        <span
+          className={`px-2 py-1 rounded-full text-sm font-medium ${row.dateColor}`}
+        >
           {row.date}
         </span>
       );
@@ -65,7 +70,14 @@ function CompletedTask() {
   };
 
   const handleRowClick = (row) => {
-    const data = { taskId: row.id, contactId: row.contactId, staffId: row.staffId , pending: false, completed: false, resolve:true};
+    const data = {
+      taskId: row.id,
+      contactId: row.contactId,
+      staffId: row.staffId,
+      pending: false,
+      completed: false,
+      resolve: true,
+    };
     const dataToSend = encodeURIComponent(JSON.stringify({ data }));
     navigate(`/activities/task/port/${dataToSend}`);
   };
@@ -80,7 +92,9 @@ function CompletedTask() {
 
   return (
     <div className="p-6 bg-gray-50 ">
-      <h1 className="text-xl font-semibold mb-6 text-gray-800">Completed Works</h1>
+      <h1 className="text-xl font-semibold mb-6 text-gray-800">
+        Completed Works
+      </h1>
 
       {completedWorks.length === 0 ? (
         <div className="flex justify-center items-center h-64">
@@ -94,6 +108,25 @@ function CompletedTask() {
           onRowClick={handleRowClick}
         />
       )}
+      <div className="flex justify-center items-center gap-4 mt-6">
+        <button
+          disabled={currentPage === 1}
+          onClick={() => setCurrentPage((p) => p - 1)}
+          className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+        >
+          Prev
+        </button>
+        <span className="text-gray-700 font-medium">
+          Page {currentPage} of {totalPages}
+        </span>
+        <button
+          disabled={currentPage === totalPages}
+          onClick={() => setCurrentPage((p) => p + 1)}
+          className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 }

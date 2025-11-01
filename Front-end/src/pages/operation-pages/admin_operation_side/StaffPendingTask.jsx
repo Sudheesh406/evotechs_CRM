@@ -18,19 +18,20 @@ const columns = [
 
 export default function StaffPendingTask() {
   const [pendingWorks, setPendingWorks] = useState([]);
-  const navigate = useNavigate()
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const navigate = useNavigate();
 
-  const getPendingWork = async () => {
+  const getPendingWork = async (page = 1) => {
     try {
-      const response = await axios.get("/pending/admin/task/get");
+      const response = await axios.get(`/pending/admin/task/get?page=${page}&limit=20`);
       console.log("raw response", response);
 
-      // Map API data to your table keys:
-      const mapped = response.data.data.map((item) => ({
-         id: item.id,
-         staffId : item.staff?.id,
-        contactId: item.customer?.id, 
-        date: new Date(item.createdAt).toLocaleDateString(), // or item.finishBy if needed
+      const mapped = response.data.data.data.map((item) => ({
+        id: item.id,
+        staffId: item.staff?.id,
+        contactId: item.customer?.id,
+        date: new Date(item.createdAt).toLocaleDateString(),
         customerName: item.name ?? item.customer?.name,
         customerPhone: item.phone ?? item.customer?.phone,
         amount: item.amount ?? item.customer?.amount,
@@ -43,6 +44,8 @@ export default function StaffPendingTask() {
       }));
 
       setPendingWorks(mapped);
+      setTotalPages(response.data.data.totalPages);
+      setCurrentPage(response.data.data.currentPage);
     } catch (error) {
       console.log("error found in getPendingWork", error);
     }
@@ -52,7 +55,7 @@ export default function StaffPendingTask() {
     getPendingWork();
   }, []);
 
-    const renderCell = (key, row) => {
+  const renderCell = (key, row) => {
     if (key === "finishBy") {
       return (
         <span className="px-1 py-1 rounded-full text-sm font-medium bg-red-500 text-white">
@@ -63,11 +66,14 @@ export default function StaffPendingTask() {
     return row[key];
   };
 
-
-    const handleRowClick = (row) => {
-    const data = { taskId: row.id, contactId: row.contactId, staffId : row.staffId, pending: true, completed: false};
-    console.log(data);
-    
+  const handleRowClick = (row) => {
+    const data = {
+      taskId: row.id,
+      contactId: row.contactId,
+      staffId: row.staffId,
+      pending: true,
+      completed: false,
+    };
     const dataToSend = encodeURIComponent(JSON.stringify({ data }));
     navigate(`/activities/task/port/${dataToSend}`);
   };
@@ -75,7 +81,34 @@ export default function StaffPendingTask() {
   return (
     <div className="p-6 bg-gray-50">
       <h1 className="text-xl font-semibold mb-6 text-red-500">Pendings</h1>
-      <Table2 columns={columns} data={pendingWorks} renderCell={renderCell} onRowClick={handleRowClick} />
+
+      <Table2
+        columns={columns}
+        data={pendingWorks}
+        renderCell={renderCell}
+        onRowClick={handleRowClick}
+      />
+
+      {/* Pagination Controls */}
+      <div className="flex justify-center items-center gap-3 mt-6">
+        <button
+          className="px-4 py-2 rounded-lg font-medium text-white bg-gradient-to-r from-indigo-500 to-blue-500 shadow hover:opacity-90 disabled:opacity-40"
+          onClick={() => getPendingWork(currentPage - 1)}
+          disabled={currentPage === 1}
+        >
+          Prev
+        </button>
+        <span className="text-gray-700 font-medium">
+          Page {currentPage} of {totalPages}
+        </span>
+        <button
+          className="px-4 py-2 rounded-lg font-medium text-white bg-gradient-to-r from-indigo-500 to-blue-500 shadow hover:opacity-90 disabled:opacity-40"
+          onClick={() => getPendingWork(currentPage + 1)}
+          disabled={currentPage === totalPages}
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 }

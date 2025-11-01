@@ -8,6 +8,8 @@ import Swal from "sweetalert2";
 export default function CompletedPersonalTask() {
   const [reworks, setReworks] = useState([]);
   const navigate = useNavigate();
+   const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
 
   const columns = [
     { key: "date", label: "Date" },
@@ -23,37 +25,40 @@ export default function CompletedPersonalTask() {
     { key: "status", label: "Status" },
   ];
 
-  const getCompletedTask = async () => {
-    try {
-      const res = await axios.get("/completed/staff/get");
-      const tasks = res.data.data.map((t) => ({
-        id: t.id,
-        contactId: t.customer?.id, // or t.customer.id
-        newUpdate : t.newUpdate,
-        date: new Date(t.createdAt).toLocaleDateString(),
-        customerName: t.customer?.name || "",
-        customerPhone: t.customer?.phone || "",
-        amount: t.customer?.amount || "",
-        stage: t.stage,
-        requirement: t.requirement,
-        finishBy: new Date(t.finishBy).toLocaleDateString(),
-        staffName: t.staff?.name || "",
-        priority: t.priority,
-        source: t.customer?.source || "",
-        status: t.newUpdate ? "Completed" : "Pending"
+ const getCompletedTask = async () => {
+  try {
+    const res = await axios.get(`/completed/staff/get?page=${currentPage}&limit=20`);
+    const tasks = res.data.data.map((t) => ({
+      id: t.id,
+      contactId: t.customer?.id,
+      newUpdate: t.newUpdate,
+      date: new Date(t.createdAt).toLocaleDateString(),
+      customerName: t.customer?.name || "",
+      customerPhone: t.customer?.phone || "",
+      amount: t.customer?.amount || "",
+      stage: t.stage,
+      requirement: t.requirement,
+      finishBy: new Date(t.finishBy).toLocaleDateString(),
+      staffName: t.staff?.name || "",
+      priority: t.priority,
+      source: t.customer?.source || "",
+      status: t.newUpdate ? "Completed" : "Pending",
+    }));
 
-      }));
-      setReworks(tasks);
-  
-    } catch (error) {
-       Swal.fire('Error', 'Failed to get reworks.', 'error');
-      console.error("error found in get reworks", error);
-    }
-  };
+    setReworks(tasks);
+    setTotalPages(res.data.pagination?.totalPages || 1);
 
-  useEffect(() => {
-    getCompletedTask();
-  }, []);
+  } catch (error) {
+    Swal.fire("Error", "Failed to get completed tasks.", "error");
+    console.error("Error found in get completed tasks", error);
+  }
+};
+
+
+ useEffect(() => {
+  getCompletedTask();
+}, [currentPage]);
+
 
   const renderCell = (key, row) => {
     if (key === "date") {
@@ -89,6 +94,36 @@ const role = true
         renderCell={renderCell}
         onRowClick={handleRowClick} // Table2 should handle this
       />
+        {/* Pagination Controls */}
+      <div className="flex justify-center items-center gap-4 mt-6">
+        <button
+          disabled={currentPage === 1}
+          onClick={() => setCurrentPage((prev) => prev - 1)}
+          className={`px-4 py-2 rounded-lg font-medium shadow ${
+            currentPage === 1
+              ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+              : "bg-blue-600 text-white hover:bg-blue-700"
+          }`}
+        >
+          Prev
+        </button>
+
+        <span className="text-gray-700 font-medium">
+          Page {currentPage} of {totalPages || 1}
+        </span>
+
+        <button
+          disabled={currentPage === totalPages || totalPages === 0}
+          onClick={() => setCurrentPage((prev) => prev + 1)}
+          className={`px-4 py-2 rounded-lg font-medium shadow ${
+            currentPage === totalPages || totalPages === 0
+              ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+              : "bg-blue-600 text-white hover:bg-blue-700"
+          }`}
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 }

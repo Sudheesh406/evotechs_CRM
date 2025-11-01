@@ -10,8 +10,6 @@ const createSubTask = async (req, res) => {
     const user = req.user;
     const data = req.body;
 
-    console.log('data---',data)
-
     if (
       !data.title ||
       !data.details ||

@@ -6,6 +6,9 @@ import Swal from "sweetalert2";
 
 export default function Pendings() {
   const [pendingWorks, setPendingWorks] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
   const navigate = useNavigate();
 
   const columns = [
@@ -23,10 +26,11 @@ export default function Pendings() {
 
   const getPendingTask = async () => {
     try {
-      const res = await axios.get("/pending/task/get");
-      const tasks = res.data.data.map((t) => ({
+      const res = await axios.get(`/pending/task/get?page=${currentPage}`);
+      const { tasks, totalPages } = res.data.data;
+      const mapped = tasks.map((t) => ({
         id: t.id,
-        contactId: t.customer?.id, // or t.customer.id
+        contactId: t.customer?.id,
         date: new Date(t.createdAt).toLocaleDateString(),
         customerName: t.customer?.name || "",
         customerPhone: t.customer?.phone || "",
@@ -38,16 +42,17 @@ export default function Pendings() {
         priority: t.priority,
         source: t.customer?.source || "",
       }));
-      setPendingWorks(tasks);
+      setPendingWorks(mapped);
+      setTotalPages(totalPages);
     } catch (error) {
       console.error("error found in pending task", error);
-       Swal.fire('Error', 'Failed to get pendings.', 'error');
+      Swal.fire("Error", "Failed to get pendings.", "error");
     }
   };
 
   useEffect(() => {
     getPendingTask();
-  }, []);
+  }, [currentPage]);
 
   const renderCell = (key, row) => {
     if (key === "finishBy") {
@@ -63,7 +68,7 @@ export default function Pendings() {
   const handleRowClick = (row) => {
     const data = { taskId: row.id, contactId: row.contactId };
     console.log(data);
-    
+
     const dataToSend = encodeURIComponent(JSON.stringify({ data }));
     navigate(`/activities/tasks/person/${dataToSend}`);
   };
@@ -77,6 +82,28 @@ export default function Pendings() {
         renderCell={renderCell}
         onRowClick={handleRowClick} // Table2 should handle this
       />
+       {/* Pagination Controls */}
+      <div className="flex justify-center items-center mt-6 gap-3">
+        <button
+          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+          disabled={currentPage === 1}
+          className="px-4 py-2 rounded-lg font-medium text-white bg-gradient-to-r from-indigo-500 to-blue-500 shadow hover:opacity-90 disabled:opacity-40"
+        >
+          Prev
+        </button>
+
+        <span className="text-gray-700 font-medium">
+          Page {currentPage} of {totalPages}
+        </span>
+
+        <button
+          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+          disabled={currentPage === totalPages}
+          className="px-4 py-2 rounded-lg font-medium text-white bg-gradient-to-r from-indigo-500 to-blue-500 shadow hover:opacity-90 disabled:opacity-40"
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 }

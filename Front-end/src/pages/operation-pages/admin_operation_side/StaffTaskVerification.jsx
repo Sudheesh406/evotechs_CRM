@@ -19,14 +19,16 @@ const columns = [
 function StaffTaskVerification() {
   const [completedWorks, setCompletedWorks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const navigate = useNavigate();
 
-  const getCompletedWork = async () => {
+  const getCompletedWork = async (page = 1) => {
     try {
-      const response = await axios.get("/completed/resolved/get");
+      const response = await axios.get(`/completed/resolved/get?page=${page}&limit=20`);
       console.log("raw response", response);
 
-      const mapped = response.data.data.map((item) => ({
+      const mapped = response.data.data.data.map((item) => ({
         id: item.id,
         staffId: item.staff?.id,
         contactId: item.customer?.id,
@@ -43,6 +45,8 @@ function StaffTaskVerification() {
       }));
 
       setCompletedWorks(mapped);
+      setTotalPages(response.data.data.totalPages);
+      setCurrentPage(response.data.data.currentPage);
     } catch (error) {
       console.log("error found in getCompletedWork", error);
     } finally {
@@ -66,7 +70,14 @@ function StaffTaskVerification() {
   };
 
   const handleRowClick = (row) => {
-    const data = { taskId: row.id, contactId: row.contactId, staffId: row.staffId , pending: false, completed : true, resolve:true};
+    const data = {
+      taskId: row.id,
+      contactId: row.contactId,
+      staffId: row.staffId,
+      pending: false,
+      completed: true,
+      resolve: true,
+    };
     const dataToSend = encodeURIComponent(JSON.stringify({ data }));
     navigate(`/activities/task/port/${dataToSend}`);
   };
@@ -88,12 +99,35 @@ function StaffTaskVerification() {
           <p className="text-gray-400 text-lg font-medium">No Data Found</p>
         </div>
       ) : (
-        <Table2
-          columns={columns}
-          data={completedWorks}
-          renderCell={renderCell}
-          onRowClick={handleRowClick}
-        />
+        <>
+          <Table2
+            columns={columns}
+            data={completedWorks}
+            renderCell={renderCell}
+            onRowClick={handleRowClick}
+          />
+
+          {/* Pagination Controls */}
+          <div className="flex justify-center items-center gap-3 mt-6">
+            <button
+              className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+              onClick={() => getCompletedWork(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              Prev
+            </button>
+            <span className="text-gray-700 font-medium">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+              onClick={() => getCompletedWork(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </button>
+          </div>
+        </>
       )}
     </div>
   );

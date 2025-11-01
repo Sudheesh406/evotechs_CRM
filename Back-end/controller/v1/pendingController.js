@@ -11,42 +11,50 @@ const getPendingTask = async (req, res) => {
     if (!user?.id) {
       return httpError(res, 400, "Invalid user");
     }
-  
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = 20;
+    const offset = (page - 1) * limit;
+
     // Today’s date at 00:00
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const pendingTasks = await task.findAll({
+    const { count, rows: pendingTasks } = await task.findAndCountAll({
       where: {
         staffId: user.id,
         finishBy: { [Op.lt]: today },
-       stage: { [Op.in]: [0, 1, 2, 3] }, },
+        stage: { [Op.in]: [0, 1, 2, 3] },
+      },
       include: [
         {
-          model: contacts, // contacts model
+          model: contacts,
           as: "customer",
           attributes: ["id", "name", "email", "phone", "amount", "source"],
         },
         {
-          model: signup, // your staff model (or User model)
-          as: "staff", // alias must match your association
-          attributes: ["id", "name", "email"], // choose what you need
+          model: signup,
+          as: "staff",
+          attributes: ["id", "name", "email"],
         },
       ],
       order: [["finishBy", "ASC"]],
+      limit,
+      offset,
     });
 
-    return httpSuccess(
-      res,
-      200,
-      "Pending tasks fetched successfully",
-      pendingTasks
-    );
+    return httpSuccess(res, 200, "Pending tasks fetched successfully", {
+      tasks: pendingTasks,
+      total: count,
+      currentPage: page,
+      totalPages: Math.ceil(count / limit),
+    });
   } catch (error) {
     console.error("Error in getPending:", error);
     return httpError(res, 500, "Server error", error.message || error);
   }
 };
+
 
 
 const getStaffPendingTask = async (req, res) => {
@@ -56,41 +64,49 @@ const getStaffPendingTask = async (req, res) => {
     if (!admin) {
       return httpError(res, 403, "Access denied");
     }
+
+    // Pagination setup
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+
     // Today’s date at 00:00
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const pendingTasks = await task.findAll({
+    const { count, rows: pendingTasks } = await task.findAndCountAll({
       where: {
-         finishBy: { [Op.lt]: today },
-         stage: { [Op.in]: [0, 1, 2, 3] }, },
+        finishBy: { [Op.lt]: today },
+        stage: { [Op.in]: [0, 1, 2, 3] },
+      },
       include: [
         {
-          model: contacts, // contacts model
+          model: contacts,
           as: "customer",
           attributes: ["id", "name", "email", "phone", "amount", "source"],
         },
         {
-          model: signup, // your staff model (or User model)
-          as: "staff", // alias must match your association
-          attributes: ["id", "name", "email"], // choose what you need
+          model: signup,
+          as: "staff",
+          attributes: ["id", "name", "email"],
         },
       ],
       order: [["finishBy", "ASC"]],
+      limit,
+      offset,
     });
 
-    console.log('pendingTasks',pendingTasks)
-
-    return httpSuccess(
-      res,
-      200,
-      "Pending tasks fetched successfully",
-      pendingTasks
-    );
+    return httpSuccess(res, 200, "Pending tasks fetched successfully", {
+      data: pendingTasks,
+      currentPage: page,
+      totalPages: Math.ceil(count / limit),
+      totalItems: count,
+    });
   } catch (error) {
     console.error("Error in getting staff Pending:", error);
     return httpError(res, 500, "Server error", error.message || error);
   }
 };
+
 
 module.exports = { getPendingTask, getStaffPendingTask };

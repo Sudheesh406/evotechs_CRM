@@ -8,8 +8,8 @@ const {messageNotification} = require('../../utils/v1/messageNotification')
 const createMessages = async (data, io) => {
   try {
     const { senderId, receiverId, message } = data;
-    console.log("data", data);
 
+    
     if (!senderId || !receiverId || !message) {
       throw new Error("Missing required fields");
     }
@@ -47,8 +47,8 @@ const createMessages = async (data, io) => {
     messageNotification(io, receiverId, senderDetails.name);
   }
 
-    console.log("✅ Message created successfully:", newMessage.dataValues);
-    return newMessage;
+
+  return newMessage;
   } catch (error) {
     console.error("❌ Error in createMessages:", error);
     throw error;

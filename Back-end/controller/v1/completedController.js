@@ -9,34 +9,46 @@ const roleChecker = require("../../utils/v1/roleChecker");
 
 const getResolvedTask = async (req, res) => {
   try {
-    const user = req.user; // make sure req.user is available
-    const access = roleChecker(user.id);
+    const user = req.user;
+    const access = await roleChecker(user.id);
 
     if (!access) {
       return httpError(res, 403, "Access denied. Admins only.");
     }
 
-    // Fetch all tasks where stage is "4" (completed)
-    const completedTasks = await task.findAll({
-      where: { stage: "3", softDelete: false , rework : false},
-      order: [["updatedAt", "DESC"]],
-         include: [
+    // Pagination setup
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+
+    // Fetch all resolved tasks (stage 3)
+    const { count, rows: completedTasks } = await task.findAndCountAll({
+      where: { stage: "3", softDelete: false, rework: false },
+      include: [
         {
-          model: contacts, // contacts model
+          model: contacts,
           as: "customer",
           attributes: ["id", "name", "email", "phone", "amount", "source"],
         },
         {
-          model: signup, // your staff model (or User model)
-          as: "staff", // alias must match your association
-          attributes: ["id", "name", "email"], // choose what you need
+          model: signup,
+          as: "staff",
+          attributes: ["id", "name", "email"],
         },
-      ], // optional: latest completed first
+      ],
+      order: [["updatedAt", "DESC"]],
+      limit,
+      offset,
     });
 
     return res.status(200).json({
       success: true,
-      data: completedTasks,
+      data: {
+        data: completedTasks,
+        totalItems: count,
+        currentPage: page,
+        totalPages: Math.ceil(count / limit),
+      },
     });
   } catch (error) {
     console.error("Error in getting completed task details for admin:", error);
@@ -45,73 +57,98 @@ const getResolvedTask = async (req, res) => {
 };
 
 
-const getCompletedTask = async(req,res)=>{
-try {
-    const user = req.user; // make sure req.user is available
+
+const getCompletedTask = async (req, res) => {
+  try {
+    const user = req.user; // ensure req.user is available
     const access = roleChecker(user.id);
 
     if (!access) {
       return httpError(res, 403, "Access denied. Admins only.");
     }
 
-    const completedTasks = await task.findAll({
+    // --- Pagination setup ---
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+
+    const { count, rows: completedTasks } = await task.findAndCountAll({
       where: { stage: "4", softDelete: false },
       order: [["updatedAt", "DESC"]],
-         include: [
+      include: [
         {
-          model: contacts, // contacts model
+          model: contacts,
           as: "customer",
           attributes: ["id", "name", "email", "phone", "amount", "source"],
         },
         {
-          model: signup, // your staff model (or User model)
-          as: "staff", // alias must match your association
-          attributes: ["id", "name", "email"], // choose what you need
+          model: signup,
+          as: "staff",
+          attributes: ["id", "name", "email"],
         },
-      ], // optional: latest completed first
+      ],
+      limit,
+      offset,
     });
 
     return res.status(200).json({
       success: true,
       data: completedTasks,
+      pagination: {
+        total: count,
+        totalPages: Math.ceil(count / limit),
+        currentPage: page,
+        limit,
+      },
     });
+  } catch (error) {
+    console.error("Error in getting completed task details for admin:", error);
+    return httpError(res, 500, "Server error", error.message || error);
+  }
+};
 
-} catch (error) {
-   console.error("Error in getting completed task details for admin:", error);
-  return httpError(res, 500, "Server error", error.message || error);
-}
-}
 
 
 const getRework = async (req, res) => {
   try {
-    const user = req.user; // make sure req.user is available
+    const user = req.user;
     const access = roleChecker(user.id);
 
     if (!access) {
       return httpError(res, 403, "Access denied. Admins only.");
     }
 
-    // Fetch all tasks where stage is "4" (completed)
-    const completedTasks = await task.findAll({
-      where: { softDelete: false , rework : true},
+    // ✅ Extract page and limit (default limit = 20)
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+
+    // ✅ Fetch paginated tasks
+    const { count, rows: completedTasks } = await task.findAndCountAll({
+      where: { softDelete: false, rework: true },
       order: [["updatedAt", "DESC"]],
-         include: [
+      include: [
         {
-          model: contacts, // contacts model
+          model: contacts,
           as: "customer",
           attributes: ["id", "name", "email", "phone", "amount", "source"],
         },
         {
-          model: signup, // your staff model (or User model)
-          as: "staff", // alias must match your association
-          attributes: ["id", "name", "email"], // choose what you need
+          model: signup,
+          as: "staff",
+          attributes: ["id", "name", "email"],
         },
-      ], // optional: latest completed first
+      ],
+      limit,
+      offset,
     });
 
+    // ✅ Return data + pagination info
     return res.status(200).json({
       success: true,
+      totalItems: count,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page,
       data: completedTasks,
     });
   } catch (error) {
@@ -119,42 +156,63 @@ const getRework = async (req, res) => {
     return httpError(res, 500, "Server error", error.message || error);
   }
 };
+
 
 
 const getStaffRework = async (req, res) => {
   try {
-    const user = req.user; // make sure req.user is available
+    const user = req.user; // Ensure req.user is available
+    const page = parseInt(req.query.page) || 1; // page number from frontend
+    const limit = parseInt(req.query.limit) || 20; // number of items per page
+    const offset = (page - 1) * limit;
 
-    // Fetch all tasks where stage is "4" (completed)
+    // Count total records for pagination info
+    const totalCount = await task.count({
+      where: { softDelete: false, rework: true, staffId: user.id },
+    });
+
+    // Fetch paginated results
     const completedTasks = await task.findAll({
-      where: { softDelete: false , rework : true, staffId : user.id},
+      where: { softDelete: false, rework: true, staffId: user.id },
       order: [["updatedAt", "DESC"]],
-         include: [
+      offset,
+      limit,
+      include: [
         {
-          model: contacts, // contacts model
+          model: contacts,
           as: "customer",
           attributes: ["id", "name", "email", "phone", "amount", "source"],
         },
         {
-          model: signup, // your staff model (or User model)
-          as: "staff", // alias must match your association
-          attributes: ["id", "name", "email"], // choose what you need
+          model: signup,
+          as: "staff",
+          attributes: ["id", "name", "email"],
         },
-      ], // optional: latest completed first
+      ],
     });
 
     return res.status(200).json({
       success: true,
       data: completedTasks,
+      pagination: {
+        totalCount,
+        currentPage: page,
+        totalPages: Math.ceil(totalCount / limit),
+      },
     });
   } catch (error) {
     console.error("Error in getting completed task details for admin:", error);
-    return httpError(res, 500, "Server error", error.message || error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message || error,
+    });
   }
 };
 
-const getCompletedTaskForStaff = async(req,res)=>{
-try {
+
+const getCompletedTaskForStaff = async (req, res) => {
+  try {
     const user = req.user; // make sure req.user is available
     const access = roleChecker(user.id);
 
@@ -162,28 +220,44 @@ try {
       return httpError(res, 403, "Access denied. Admins only.");
     }
 
-    const completedTasks = await task.findAll({
-      where: { stage: "4", softDelete: false , staffId : user.id},
+    // 🧭 Pagination setup
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10; // default 10 per page
+    const offset = (page - 1) * limit;
+
+    // 🧩 Fetch paginated completed tasks
+    const { count, rows: completedTasks } = await task.findAndCountAll({
+      where: { stage: "4", softDelete: false, staffId: user.id },
       order: [["updatedAt", "DESC"]],
-         include: [
+      include: [
         {
-          model: contacts, // contacts model
+          model: contacts,
           as: "customer",
           attributes: ["id", "name", "email", "phone", "amount", "source"],
         },
-      ], // optional: latest completed first
+      ],
+      limit,
+      offset,
     });
+
+    const totalPages = Math.ceil(count / limit);
 
     return res.status(200).json({
       success: true,
       data: completedTasks,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems: count,
+      },
     });
 
-} catch (error) {
-   console.error("Error in getting completed task details for admin:", error);
-  return httpError(res, 500, "Server error", error.message || error);
-}
-}
+  } catch (error) {
+    console.error("Error in getting completed task details for admin:", error);
+    return httpError(res, 500, "Server error", error.message || error);
+  }
+};
+
 
 
 
