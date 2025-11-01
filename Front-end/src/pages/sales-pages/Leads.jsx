@@ -3,6 +3,8 @@ import { ChevronDown, Phone, X, Edit, Trash, CheckCircle } from "lucide-react";
 import DataTable from "../../components/Table2";
 import axios from "../../instance/Axios";
 import Swal from "sweetalert2";
+import toast from "react-hot-toast";
+
 
 const Leads = () => {
   const [leads, setLeads] = useState([]);
@@ -169,7 +171,7 @@ const Leads = () => {
 
     try {
       if (editingId) {
-        await axios.put(`/customer/lead/update/${editingId}`, formData);
+       const response = await axios.put(`/customer/lead/update/${editingId}`, formData);
         // ✅ SweetAlert after successful edit
         Swal.fire({
           title: "Updated!",
@@ -177,6 +179,10 @@ const Leads = () => {
           icon: "success",
           confirmButtonColor: "#3085d6",
         });
+        if(response?.data?.data?.value){
+          toast.success('Client added to Contact');
+        }
+
       } else {
         await axios.post("/customer/lead/create", formData);
 

@@ -26,6 +26,9 @@ export default function TaskDetail() {
   const navigate = useNavigate();
   const { data } = useParams();
 
+  const [rework, setRework] = useState(false)
+  const [newupdate, setNewUpdate] = useState(true)
+
   // Safety check for URL data parsing
   let parsed = null;
   let taskId = null;
@@ -117,6 +120,10 @@ export default function TaskDetail() {
       // NOTE: The parsed object is sent directly here as per the original code.
       const response = await axios.post("task/team/details/get", { parsed });
       const apiData = response.data?.data || {};
+      console.log(apiData?.taskDetails[0])
+
+      setRework(apiData?.taskDetails[0]?.rework)
+      setNewUpdate(apiData?.taskDetails[0]?.newUpdate)
   
       setCustomer(apiData.customerDetails || null);
       setCalls(apiData.callDetails || []);
@@ -137,6 +144,7 @@ export default function TaskDetail() {
       );
     }
   };
+  
 
   useEffect(() => {
     fetchCustomerDetails();
@@ -228,6 +236,29 @@ export default function TaskDetail() {
     }
   };
 
+
+  const updateWork = async ()=>{
+    try {
+    const taskId = taskDetails[0]?.id;
+    if (!taskId) {
+      Swal.fire("Error", "Task ID not found. Cannot save.", "error");
+      return;
+    }
+     const response = await axios.patch("/task/rework/finish", { id });
+     if(response){
+       fetchCustomerDetails()
+     }
+
+    } catch (error) {
+      console.error("Error found in update stage and notes", error);
+      Swal.fire(
+        "Error",
+        "Failed to update stages and notes. Please try again.",
+        "error"
+      );
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8 space-y-6">
       <div className="max-w-7xl mx-auto">
@@ -261,6 +292,12 @@ export default function TaskDetail() {
                 <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
                   <span className="text-indigo-600">Task</span> Details
                 </h1>
+                {rework && !newupdate && !action && <button
+                  className="px-5 py-2 text-white text-sm font-semibold rounded-lg shadow-lg hover:shadow-xl transition duration-150 bg-blue-600 hover:bg-blue-700"
+                    onClick={updateWork}                  >
+                  Mark as Complete
+                </button>
+              }
               </div>
 
               {/* Personal Details Grid */}

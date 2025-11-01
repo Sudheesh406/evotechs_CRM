@@ -184,6 +184,8 @@ const Sidebar = ({ closeSidebar }) => {
           path: "/activities/task/self",
           icon: CheckSquare,
         },
+        { title: "Work list", path: "/operations/personalize", icon: Shield },
+
         {
           title: "Subtask Removed",
           path: "/activities/tasks/subtask/removed",
@@ -304,7 +306,7 @@ const Sidebar = ({ closeSidebar }) => {
           {/* Company Info */}
           <div>
             <h1
-              className="text-xl font-black tracking-widest leading-none"
+              className="text-lg font-black tracking-widest leading-none"
               style={{ color: PRIMARY_BLUE }}
             >
               {company?.companyName || "Company Name"}

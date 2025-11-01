@@ -396,7 +396,7 @@ function Layout() {
           <Route
             path="/operations/personalize"
             element={
-              <ProtectedRoute allowedRoles={["staff"]}>
+              <ProtectedRoute allowedRoles={["staff","admin"]}>
                 <Personalize />
               </ProtectedRoute>
             }

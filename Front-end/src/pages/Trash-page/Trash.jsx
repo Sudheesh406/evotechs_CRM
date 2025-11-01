@@ -43,6 +43,7 @@ function Trash() {
       });
 
       const response = await axios.post("/trash/get", { type, date });
+      console.log(response)
       setData(response.data?.data || []);
       Swal.close();
     } catch (error) {

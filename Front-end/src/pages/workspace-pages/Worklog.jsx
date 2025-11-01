@@ -354,6 +354,19 @@ const Worklog = () => {
     return formatMinutes(totalMinutes);
   })();
 
+  const totalAttendanceMinutes = attendance.reduce((sum, entry) => {
+    if (!entry) return sum;
+    const match = entry.match(/(\d+)h\s*(\d+)m/);
+    if (match) {
+      const hours = parseInt(match[1], 10);
+      const minutes = parseInt(match[2], 10);
+      return sum + hours * 60 + minutes;
+    }
+    return sum;
+  }, 0);
+
+  const attendanceTotal = formatMinutes(totalAttendanceMinutes);
+
   // month navigation
   const goToPreviousMonth = () => {
     if (currentMonth === 0) {
@@ -568,10 +581,12 @@ const Worklog = () => {
                   {total}
                 </td>
               ))}
-              <td className="p-3 text-sm text-gray-700 whitespace-nowrap border-r border-gray-300">
+              <td className="p-3 text-sm text-blue-700 whitespace-nowrap border-r border-gray-300">
                 {grandTotal}
               </td>
-              <td className="p-3 text-sm text-gray-700 whitespace-nowrap border-r border-gray-300"></td>
+              <td className="p-3 text-sm text-blue-700 whitespace-nowrap border-r border-gray-300">
+                {attendanceTotal}
+              </td>
             </tr>
           </tbody>
         </table>
