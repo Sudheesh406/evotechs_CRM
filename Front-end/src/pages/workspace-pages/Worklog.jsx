@@ -475,7 +475,7 @@ const Worklog = () => {
 
           {showToast && (
             <div className="absolute top-full mt-2 right-0 w-[170px] bg-green-500 text-white text-sm px-4 py-3 rounded shadow-md animate-slideDown z-50">
-              Changes saved
+              Changes Not Saved
             </div>
           )}
         </div>
@@ -614,7 +614,7 @@ const Worklog = () => {
                 onClick={handleSaveComment}
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
               >
-                Save
+                Set Comment
               </button>
             </div>
           </div>
