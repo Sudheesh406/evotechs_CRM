@@ -54,11 +54,13 @@ const Worklog = () => {
     const generatedDates = [];
     for (let day = 1; day <= daysInMonth; day++) {
       const dateObj = new Date(currentYear, currentMonth, day);
-      const weekday = dateObj.toLocaleDateString(undefined, {
-        weekday: "short",
-      });
-      const dayNum = String(dateObj.getDate()).padStart(2, "0");
-      generatedDates.push(`${weekday} ${dayNum}`);
+      generatedDates.push(
+        dateObj.toLocaleDateString(undefined, {
+          weekday: "short",
+          day: "2-digit",
+          month: "short",
+        })
+      );
     }
     setDates(generatedDates);
 
