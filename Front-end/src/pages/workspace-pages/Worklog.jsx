@@ -10,7 +10,7 @@ const Worklog = () => {
   const [showToast, setShowToast] = useState(false);
   const saveButtonRef = useRef(null);
 
-  const numColumns = 15;
+  const numColumns = 30;
 
   // month/year state
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());

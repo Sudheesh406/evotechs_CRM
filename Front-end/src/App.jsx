@@ -68,6 +68,7 @@ import CompletedPersonalTask from './pages/operation-pages/CompletedPersonalTask
 import DetailMyTask from './pages/activity-pages/admin_activity/DetailMyTask';
 import RejectedWorks from './pages/rejection/RejectedWorks';
 import AdminRejectedWork from './pages/rejection/adminRejectedWork/AdminRejectedWork';
+import WorklogDetail from "./pages/workspace-pages/admin_workspace_side/WorklogDetail";
 import SubTaskForAdmin from './pages/activity-pages/admin_activity/SubTaskForAdmin';
 
 import ProtectedRoute from "./components/Routes/ProtectedRoute";
@@ -555,6 +556,14 @@ function Layout() {
             element={
               <ProtectedRoute allowedRoles={["staff"]}>
                 <Worklog />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/workspace/work/staff/assign"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <WorklogDetail />
               </ProtectedRoute>
             }
           />

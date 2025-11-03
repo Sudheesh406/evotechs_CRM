@@ -84,6 +84,7 @@ const createWorklog = async (req, res) => {
   }
 };
 
+
 const getWorklog = async (req, res) => {
   const user = req.user; // staff info
   const { month, year } = req.body; // month: 1–12
@@ -179,6 +180,7 @@ const getWorklog = async (req, res) => {
     return httpError(res, 500, "Internal Server Error");
   }
 };
+
 
 const getStaffWork = async (req, res) => {
   try {
@@ -289,4 +291,102 @@ const getStaffWork = async (req, res) => {
   }
 };
 
-module.exports = { createWorklog, getWorklog, getStaffWork };
+
+const getWorklogAdmin = async (req, res) => {
+  const user = req.user; // staff info
+  const { month, year, staffId} = req.body; // month: 1–12
+
+  if (!month || !year ||!staffId) {
+    return res.status(400).json({ message: "Month and year are required" });
+  }
+
+  try {
+    // Build start and end dates for the month
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59);
+
+    // Fetch worklogs
+    const worklogs = await worklog.findAll({
+      where: {
+        staffId: staffId,
+        date: {
+          [Op.between]: [startDate, endDate],
+        },
+      },
+      order: [["date", "ASC"]],
+    });
+
+    // Fetch attendance records
+    const attendanceRecords = await attendance.findAll({
+      where: {
+        staffId: staffId,
+        attendanceDate: {
+          [Op.between]: [startDate, endDate],
+        },
+        softDelete: 0,
+      },
+      order: [
+        ["attendanceDate", "ASC"],
+        ["time", "ASC"],
+      ],
+    });
+
+    // Group attendance by date
+    const groupedByDate = {};
+    attendanceRecords.forEach((rec) => {
+      // Make sure attendanceDate is a Date object
+      const dateObj = new Date(rec.attendanceDate);
+      const date = dateObj.toISOString().split("T")[0];
+
+      if (!groupedByDate[date]) groupedByDate[date] = [];
+      groupedByDate[date].push(rec);
+    });
+
+    // Calculate daily work hours
+    const dailyWorkHours = Object.entries(groupedByDate).map(
+      ([date, records]) => {
+        let totalMinutes = 0;
+        let entryTime = null;
+
+        records.forEach((rec) => {
+          if (rec.type === "entry") {
+            entryTime = rec.time;
+          } else if (rec.type === "exit" && entryTime) {
+            const [entryH, entryM, entryS] = entryTime.split(":").map(Number);
+            const [exitH, exitM, exitS] = rec.time.split(":").map(Number);
+
+            const entryDate = new Date(date);
+            entryDate.setHours(entryH, entryM, entryS);
+
+            const exitDate = new Date(date);
+            exitDate.setHours(exitH, exitM, exitS);
+
+            totalMinutes += (exitDate - entryDate) / (1000 * 60);
+            entryTime = null;
+          }
+        });
+
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = Math.floor(totalMinutes % 60);
+
+        return {
+          date,
+          workTime: `${hours}:${minutes.toString().padStart(2, "0")}`, // HH:MM format
+          totalHours: hours,
+          totalMinutes: minutes,
+        };
+      }
+    );
+
+    return httpSuccess(res, 200, "Worklogs fetched successfully", {
+      worklogs,
+      dailyWorkHours,
+    });
+  } catch (error) {
+    console.error("Error in getting worklog:", error);
+    return httpError(res, 500, "Internal Server Error");
+  }
+};
+
+
+module.exports = { createWorklog, getWorklog, getStaffWork, getWorklogAdmin };

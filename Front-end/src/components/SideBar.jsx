@@ -242,6 +242,11 @@ const Sidebar = ({ closeSidebar }) => {
           path: "/workspace/AdminWorklog",
           icon: FolderKanban,
         },
+        {
+          title: "Work Log Detail",
+          path: "/workspace/work/staff/assign",
+          icon: FolderKanban,
+        },
       ],
     },
     { title: "Trash", icon: Trash2, path: "/trash" },
