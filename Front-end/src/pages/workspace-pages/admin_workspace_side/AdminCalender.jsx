@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import axios from "../../../instance/Axios";
+import Swal from "sweetalert2";
 
 /* Helpers to convert between YYYY-MM-DD (input) and DD/MM/YYYY (display/storage) */
 const formatDateObjToDDMMYYYY = (date) => {
@@ -77,7 +78,11 @@ export default function AdminCalendarManager() {
     }
   };
 
-  const monthStartDayIndex = new Date(displayedYear, displayedMonth, 1).getDay();
+  const monthStartDayIndex = new Date(
+    displayedYear,
+    displayedMonth,
+    1
+  ).getDay();
   const daysInMonth = new Date(displayedYear, displayedMonth + 1, 0).getDate();
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -123,7 +128,11 @@ export default function AdminCalendarManager() {
   /** Create or Update */
   const upsertHoliday = async () => {
     if (!dateInput || !description.trim()) {
-      alert("Please select a date and provide a description.");
+      Swal.fire(
+        "Warning",
+        "Please select a date and provide a description.",
+        "warning"
+      );
       return;
     }
     const formatted = formatInputToDDMMYYYY(dateInput);
@@ -136,6 +145,7 @@ export default function AdminCalendarManager() {
           prev.map((h) => (h.id === editingId ? { ...h, ...payload } : h))
         );
         resetForm();
+
       } catch (err) {
         console.error("Update failed", err);
       }
@@ -153,6 +163,7 @@ export default function AdminCalendarManager() {
           [...prev, createdHoliday].sort((a, b) => (a.date > b.date ? 1 : -1))
         );
         resetForm();
+        fetchHolidays(displayedYear, displayedMonth + 1);
       } catch (err) {
         console.error("Create failed", err);
       }
@@ -166,16 +177,44 @@ export default function AdminCalendarManager() {
     setType(item.type || "holiday");
   };
 
+  
   const deleteHoliday = async (id) => {
-    if (!window.confirm("Delete this holiday/maintenance entry?")) return;
-    try {
-      await axios.delete(`/calendar/delete/${id}`);
-      setHolidays((prev) => prev.filter((h) => h.id !== id));
-      if (editingId === id) resetForm();
-    } catch (err) {
-      console.error("Delete failed", err);
-    }
-  };
+  const result = await Swal.fire({
+    title: "Are you sure?",
+    text: "Do you want to delete this holiday/maintenance entry?",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#d33",
+    cancelButtonColor: "#3085d6",
+    confirmButtonText: "Yes, delete it",
+    cancelButtonText: "Cancel",
+  });
+
+  if (!result.isConfirmed) return;
+
+  try {
+    await axios.delete(`/calendar/delete/${id}`);
+    setHolidays((prev) => prev.filter((h) => h.id !== id));
+    if (editingId === id) resetForm();
+
+    Swal.fire({
+      icon: "success",
+      title: "Deleted!",
+      text: "The holiday/maintenance entry has been removed.",
+      confirmButtonColor: "#3085d6",
+    });
+  } catch (err) {
+    console.error("Delete failed", err);
+
+    Swal.fire({
+      icon: "error",
+      title: "Failed!",
+      text: "Could not delete the entry. Please try again.",
+      confirmButtonColor: "#d33",
+    });
+  }
+};
+
 
   const onDayClick = (day) => {
     if (day.holidayItem) {
@@ -196,7 +235,7 @@ export default function AdminCalendarManager() {
       );
     } catch (err) {
       console.error("Failed to update status", err);
-      alert("Failed to update status");
+      Swal.fire("Error", "Failed to update status", "error");
     }
   };
 

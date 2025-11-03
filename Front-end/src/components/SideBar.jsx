@@ -26,6 +26,8 @@ import {
   Trash,
   Globe,
   ChevronRight,
+  XCircle ,
+  CircleSlash,
   Loader, // For a cleaner loading icon
 } from "lucide-react";
 
@@ -60,9 +62,9 @@ const Sidebar = ({ closeSidebar }) => {
       subMenu: [
         { title: "Leads", path: "/operations/leads", icon: UserPlus },
         { title: "Highlights", path: "/operations/deals", icon: ClipboardList },
-        { title: "Completed", path: "/sales/completed", icon: CheckSquare },
+        { title: "Client", path: "/sales/completed", icon: CheckSquare },
         { title: "Pending", path: "/sales/pendings", icon: Hourglass },
-        { title: "Rejected", path: "/sales/rejected", icon: Trash },
+        { title: "Not A Client", path: "/sales/rejected", icon: Trash },
       ],
     },
     {
@@ -70,7 +72,7 @@ const Sidebar = ({ closeSidebar }) => {
       icon: ClipboardList,
       subMenu: [
         { title: "Contacts", path: "/operations/contacts", icon: Users },
-        { title: "Work list", path: "/operations/personalize", icon: Shield },
+        { title: "Check list", path: "/operations/personalize", icon: Shield },
         { title: "Pending", path: "/operations/pendings", icon: Hourglass },
         { title: "Rework", path: "/operations/reworks", icon: RotateCcw },
         {
@@ -92,6 +94,13 @@ const Sidebar = ({ closeSidebar }) => {
           path: "/activities/tasks/subtask/removed",
           icon: CheckSquare,
         },
+      ],
+    },
+     {
+      title: "Rejections",
+      icon: XCircle,
+      subMenu: [
+        { title: "Disapproved", path: "/rejections/disapproved", icon: XCircle },
       ],
     },
     {
@@ -133,27 +142,27 @@ const Sidebar = ({ closeSidebar }) => {
       subMenu: [
         { title: "Leads", path: "/global/leads", icon: UserPlus },
         {
-          title: "Completed",
+          title: "Client",
           path: "/global/completed/leads",
           icon: CheckSquare,
         },
         { title: "Pending", path: "/global/pending/leads", icon: Hourglass },
-        { title: "Rejected", path: "/global/rejected/leads", icon: Trash },
+        { title: "Not A Client", path: "/global/rejected/leads", icon: Trash },
         { title: "Contacts", path: "/global/contacts", icon: Users },
       ],
     },
     {
-      title: "Sales",
+      title: "My Sales",
       icon: Briefcase,
       subMenu: [
         { title: "Leads", path: "/operations/leads", icon: UserPlus },
-        { title: "Completed", path: "/sales/completed", icon: CheckSquare },
+        { title: "Client", path: "/sales/completed", icon: CheckSquare },
         {
           title: "Pending",
           path: "/sales/pendings",
           icon: Hourglass,
         },
-        { title: "Rejected", path: "/sales/rejected", icon: Trash },
+        { title: "Not A Client", path: "/sales/rejected", icon: Trash },
         { title: "Contacts", path: "/operations/contacts", icon: Users },
       ],
     },
@@ -163,6 +172,7 @@ const Sidebar = ({ closeSidebar }) => {
       subMenu: [
         { title: "Highlights", path: "/operations/deals", icon: Briefcase },
         { title: "Assignment", path: "/workspace/todo", icon: ClipboardList },
+        { title: "Tasks", path: "/activities/task/port", icon: ClipboardList },
 
         { title: "Pending", path: "/operations/pending/task", icon: Hourglass },
         {
@@ -178,19 +188,25 @@ const Sidebar = ({ closeSidebar }) => {
       title: "Activities",
       icon: Calendar,
       subMenu: [
-        { title: "Tasks", path: "/activities/task/port", icon: ClipboardList },
         {
           title: "My Task",
           path: "/activities/task/self",
           icon: CheckSquare,
         },
-        { title: "Work list", path: "/operations/personalize", icon: Shield },
+        { title: "Check list", path: "/operations/personalize", icon: Shield },
 
         {
           title: "Subtask Removed",
           path: "/activities/tasks/subtask/removed",
           icon: CheckSquare,
         },
+      ],
+    },
+      {
+      title: "Rejections",
+      icon: XCircle,
+      subMenu: [
+        { title: "Disapproved", path: "/admin/rejections/disapproved", icon: XCircle },
       ],
     },
     {

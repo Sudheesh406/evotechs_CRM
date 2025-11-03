@@ -23,6 +23,7 @@ export default function CompletedPersonalTask() {
     { key: "priority", label: "Priority" },
     { key: "source", label: "Source" },
     { key: "status", label: "Status" },
+    { key: "action", label: "Action" }, 
   ];
 
  const getCompletedTask = async () => {
@@ -43,6 +44,7 @@ export default function CompletedPersonalTask() {
       priority: t.priority,
       source: t.customer?.source || "",
       status: t.newUpdate ? "Completed" : "Pending",
+      reject: t.reject
     }));
 
     setReworks(tasks);
@@ -55,10 +57,23 @@ export default function CompletedPersonalTask() {
 };
 
 
+  const handleBankRejection = async(data)=>{
+    try {
+      const id = data.id
+      const response = await axios.patch('/Completed/reject',{id})
+      if(response){
+          getCompletedTask();
+      }
+
+    } catch (error) {
+      console.error('error',error)
+    }
+  }
+
+
  useEffect(() => {
   getCompletedTask();
 }, [currentPage]);
-
 
   const renderCell = (key, row) => {
     if (key === "date") {
@@ -76,6 +91,28 @@ export default function CompletedPersonalTask() {
         </span>
       );
     }
+
+     if (key === "action") {
+    // Hide button if reject = true
+    if (row.reject) {
+      return (
+        <span className="text-red-500 font-semibold">Rejected</span>
+      );
+    }
+
+    return (
+      <button
+        onClick={(e) => {
+          e.stopPropagation(); // prevent triggering row click
+          handleBankRejection(row);
+        }}
+        className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+      >
+        Reject
+      </button>
+    );
+  }
+
     return row[key];
   };
 const role = true

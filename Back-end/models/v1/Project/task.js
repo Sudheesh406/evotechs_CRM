@@ -75,6 +75,10 @@ const task = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    reject: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
     newUpdate: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,

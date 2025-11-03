@@ -14,6 +14,7 @@ const columns = [
   { key: "staffName", label: "Staff Name" },
   { key: "priority", label: "Priority" },
   { key: "source", label: "Source" },
+  { key: "action", label: "Action" }, 
 ];
 
 function CompletedTask() {
@@ -41,6 +42,7 @@ function CompletedTask() {
         staffName: item.staff?.name,
         priority: item.priority,
         source: item?.customer?.source,
+        reject: item.reject,
       }));
 
       setCompletedWorks(mapped);
@@ -52,9 +54,25 @@ function CompletedTask() {
     }
   };
 
+
+  const handleBankRejection = async(data)=>{
+    try {
+      const id = data.id
+      const response = await axios.patch('/Completed/reject',{id})
+      if(response){
+            getCompletedWork(currentPage);
+      }
+
+    } catch (error) {
+      console.error('error',error)
+    }
+  }
+
+
   useEffect(() => {
     getCompletedWork(currentPage);
   }, [currentPage]);
+
 
   const renderCell = (key, row) => {
     if (key === "date") {
@@ -66,8 +84,31 @@ function CompletedTask() {
         </span>
       );
     }
+
+    if (key === "action") {
+    // Hide button if reject = true
+    if (row.reject) {
+      return (
+        <span className="text-red-500 font-semibold">Rejected</span>
+      );
+    }
+
+    return (
+      <button
+        onClick={(e) => {
+          e.stopPropagation(); // prevent triggering row click
+          handleBankRejection(row);
+        }}
+        className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+      >
+        Reject
+      </button>
+    );
+  }
+
     return row[key];
   };
+
 
   const handleRowClick = (row) => {
     const data = {

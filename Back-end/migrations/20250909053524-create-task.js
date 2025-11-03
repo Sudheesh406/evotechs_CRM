@@ -49,6 +49,10 @@ module.exports = {
         allowNull: false,
         defaultValue: '1',
       },
+      reject: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false,
+      },
       softDelete: {
         type: Sequelize.BOOLEAN,
         defaultValue: false,

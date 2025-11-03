@@ -1,11 +1,9 @@
-
 const { Op } = require("sequelize");
 const task = require("../../models/v1/Project/task");
 const contacts = require("../../models/v1/Customer/contacts");
 const signup = require("../../models/v1/Authentication/authModel");
 const { httpSuccess, httpError } = require("../../utils/v1/httpResponse");
 const roleChecker = require("../../utils/v1/roleChecker");
-
 
 const getResolvedTask = async (req, res) => {
   try {
@@ -56,8 +54,6 @@ const getResolvedTask = async (req, res) => {
   }
 };
 
-
-
 const getCompletedTask = async (req, res) => {
   try {
     const user = req.user; // ensure req.user is available
@@ -107,8 +103,6 @@ const getCompletedTask = async (req, res) => {
   }
 };
 
-
-
 const getRework = async (req, res) => {
   try {
     const user = req.user;
@@ -156,8 +150,6 @@ const getRework = async (req, res) => {
     return httpError(res, 500, "Server error", error.message || error);
   }
 };
-
-
 
 const getStaffRework = async (req, res) => {
   try {
@@ -210,14 +202,13 @@ const getStaffRework = async (req, res) => {
   }
 };
 
-
 const getCompletedTaskForStaff = async (req, res) => {
   try {
     const user = req.user; // make sure req.user is available
-    const access = roleChecker(user.id);
+    const access = await roleChecker(user.id);
 
-    if (!access) {
-      return httpError(res, 403, "Access denied. Admins only.");
+    if (access) {
+      return httpError(res, 403, "Access denied. staff only.");
     }
 
     // 🧭 Pagination setup
@@ -251,14 +242,43 @@ const getCompletedTaskForStaff = async (req, res) => {
         totalItems: count,
       },
     });
+  } catch (error) {
+    console.error("Error in getting completed task details for staff:", error);
+    return httpError(res, 500, "Server error", error.message || error);
+  }
+};
+
+
+const rejectUpdate = async (req, res) => {
+  try {
+    const user = req.user;
+    const { id } = req.body;
+    const taskDetails = await task.findOne({ where: { id } });
+
+    if (!taskDetails) {
+      return httpError(res, 401, "No task found with the specified ID.");
+    }
+
+    await taskDetails.update({ reject: true });
+
+    return res.status(200).json({
+      success: true,
+      message: "Task successfully marked as rejected.",
+    });
 
   } catch (error) {
-    console.error("Error in getting completed task details for admin:", error);
+    console.error("Error in reject completed task:", error);
     return httpError(res, 500, "Server error", error.message || error);
   }
 };
 
 
 
-
-module.exports = {getCompletedTask, getResolvedTask, getRework, getStaffRework, getCompletedTaskForStaff}
+module.exports = {
+  getCompletedTask,
+  getResolvedTask,
+  getRework,
+  getStaffRework,
+  getCompletedTaskForStaff,
+  rejectUpdate,
+};

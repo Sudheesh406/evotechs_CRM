@@ -194,7 +194,7 @@ export default function Personalize() {
   return (
     <div className="p-6 bg-gray-50 ">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-xl font-semibold">Requirements</h1>
+        <h1 className="text-xl font-semibold">Work List</h1>
         <button
           onClick={() => setShowModal(true)}
           className="bg-blue-600 text-white px-4 py-2 rounded-md shadow hover:bg-blue-700"
@@ -265,7 +265,7 @@ export default function Personalize() {
           )
         ) : (
           <p className="text-gray-500 col-span-4 text-center">
-            No requirements found
+            No work list found
           </p>
         )}
       </div>

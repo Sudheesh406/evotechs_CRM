@@ -65,7 +65,9 @@ import GlobalContacts from "./pages/global-leads/GlobalContacts";
 import MyTask from './pages/activity-pages/admin_activity/MyTask';
 import Settings from "./pages/settings/Settings";
 import CompletedPersonalTask from './pages/operation-pages/CompletedPersonalTask';
-import DetailMyTask from './pages/activity-pages/admin_activity/DetailMyTask'
+import DetailMyTask from './pages/activity-pages/admin_activity/DetailMyTask';
+import RejectedWorks from './pages/rejection/RejectedWorks';
+import AdminRejectedWork from './pages/rejection/adminRejectedWork/AdminRejectedWork';
 import SubTaskForAdmin from './pages/activity-pages/admin_activity/SubTaskForAdmin';
 
 import ProtectedRoute from "./components/Routes/ProtectedRoute";
@@ -325,6 +327,25 @@ function Layout() {
               </ProtectedRoute>
             }
           />
+
+          <Route
+            path="/rejections/disapproved"
+            element={
+              <ProtectedRoute allowedRoles={['staff']}>
+                <RejectedWorks />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/rejections/disapproved"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminRejectedWork />
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/settings"
             element={
@@ -382,7 +403,6 @@ function Layout() {
               </ProtectedRoute>
             }
           />
-
 
           <Route
             path="/sales/completed"
@@ -457,7 +477,6 @@ function Layout() {
               </ProtectedRoute>
             }
           />
-
           
           <Route
             path="/activities/tasks/team/:data"
