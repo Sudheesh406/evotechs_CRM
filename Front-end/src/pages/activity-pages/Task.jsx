@@ -163,6 +163,7 @@ const Task = () => {
       }
     }
   };
+  
 
   const handleTaskUpdate = async (data, difference) => {
     setStage(difference ? Number(stage) + 1 : Number(stage) - 1);
@@ -178,6 +179,7 @@ const Task = () => {
       });
     }
   };
+
 
   useEffect(() => {
     fetchRequirements();

@@ -150,7 +150,6 @@ const Worklog = () => {
       });
 
       const response = await axios.post("/worklog/get", { month, year });
-      console.log(response);
 
       const worklogs = response.data.data.worklogs; // your array of worklogs
       const dailyWorkHours = response.data.data.dailyWorkHours || []; // new attendance array
@@ -299,7 +298,7 @@ const Worklog = () => {
         showConfirmButton: false,
       });
 
-      triggerToast();
+      
     } catch (error) {
       console.error("Error saving data:", error);
       Swal.close();
@@ -474,8 +473,8 @@ const Worklog = () => {
           </div>
 
           {showToast && (
-            <div className="absolute top-full mt-2 right-0 w-[170px] bg-green-500 text-white text-sm px-4 py-3 rounded shadow-md animate-slideDown z-50">
-              Changes Not Saved
+            <div className="absolute top-full mt-2 right-0 w-[170px] bg-red-500 text-black font-bold text-sm px-4 py-3 rounded shadow-md animate-slideDown z-50">
+             ⚠️ Don’t forget to click the Save button after making changes.
             </div>
           )}
         </div>
@@ -483,7 +482,7 @@ const Worklog = () => {
 
       {/* TABLE */}
       <div className="flex-1 overflow-auto">
-        <table className="min-w-[3000px] divide-y divide-gray-200 border-collapse">
+        <table className="min-w-[5000px] divide-y divide-gray-200 border-collapse">
           <thead className="bg-gray-100">
             <tr>
               <th className="sticky left-0 bg-gray-100 p-3 text-left text-sm font-semibold text-gray-600 border-r border-gray-200 z-20">

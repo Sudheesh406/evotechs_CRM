@@ -26,8 +26,8 @@ export default function TaskDetail() {
   const navigate = useNavigate();
   const { data } = useParams();
 
-  const [rework, setRework] = useState(false)
-  const [newupdate, setNewUpdate] = useState(true)
+  const [rework, setRework] = useState(false);
+  const [newupdate, setNewUpdate] = useState(true);
 
   // Safety check for URL data parsing
   let parsed = null;
@@ -120,16 +120,16 @@ export default function TaskDetail() {
       // NOTE: The parsed object is sent directly here as per the original code.
       const response = await axios.post("task/team/details/get", { parsed });
       const apiData = response.data?.data || {};
-      console.log(apiData?.taskDetails[0])
+      console.log(apiData?.taskDetails[0]);
 
-      setRework(apiData?.taskDetails[0]?.rework)
-      setNewUpdate(apiData?.taskDetails[0]?.newUpdate)
-  
+      setRework(apiData?.taskDetails[0]?.rework);
+      setNewUpdate(apiData?.taskDetails[0]?.newUpdate);
+
       setCustomer(apiData.customerDetails || null);
       setCalls(apiData.callDetails || []);
       setMeetings(apiData.meetingDetails || []);
       setTaskDetails(apiData.taskDetails || []);
-      setAttachments(apiData.documents[0] || '');
+      setAttachments(apiData.documents[0] || "");
       setNotes(apiData.taskDetails?.[0]?.notes || "");
       setTeamWorkDetails(apiData.taskDetails?.[0]?.teamWork || "");
 
@@ -144,7 +144,6 @@ export default function TaskDetail() {
       );
     }
   };
-  
 
   useEffect(() => {
     fetchCustomerDetails();
@@ -236,19 +235,17 @@ export default function TaskDetail() {
     }
   };
 
-
-  const updateWork = async ()=>{
+  const updateWork = async () => {
     try {
-    const taskId = taskDetails[0]?.id;
-    if (!taskId) {
-      Swal.fire("Error", "Task ID not found. Cannot save.", "error");
-      return;
-    }
-     const response = await axios.patch("/task/rework/finish", { id });
-     if(response){
-       fetchCustomerDetails()
-     }
-
+      const taskId = taskDetails[0]?.id;
+      if (!taskId) {
+        Swal.fire("Error", "Task ID not found. Cannot save.", "error");
+        return;
+      }
+      const response = await axios.patch("/task/rework/finish", { id });
+      if (response) {
+        fetchCustomerDetails();
+      }
     } catch (error) {
       console.error("Error found in update stage and notes", error);
       Swal.fire(
@@ -257,7 +254,7 @@ export default function TaskDetail() {
         "error"
       );
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8 space-y-6">
@@ -292,12 +289,14 @@ export default function TaskDetail() {
                 <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
                   <span className="text-indigo-600">Task</span> Details
                 </h1>
-                {rework && !newupdate && !action && <button
-                  className="px-5 py-2 text-white text-sm font-semibold rounded-lg shadow-lg hover:shadow-xl transition duration-150 bg-blue-600 hover:bg-blue-700"
-                    onClick={updateWork}                  >
-                  Mark as Complete
-                </button>
-              }
+                {rework && !newupdate && !action && (
+                  <button
+                    className="px-5 py-2 text-white text-sm font-semibold rounded-lg shadow-lg hover:shadow-xl transition duration-150 bg-blue-600 hover:bg-blue-700"
+                    onClick={updateWork}
+                  >
+                    Mark as Complete
+                  </button>
+                )}
               </div>
 
               {/* Personal Details Grid */}
@@ -473,247 +472,251 @@ export default function TaskDetail() {
                     </div>
                   )}
                 </div>
-                 {!attachments ||
-              (Array.isArray(attachments)
-                ? attachments.length === 0
-                : Object.keys(attachments).length === 0) ? (
-                <div className="p-4 text-center text-sm text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                  No attachments found.
-                </div>
-              ) : (
-                <div className="p-4 bg-white rounded-lg shadow">
-                  {(Array.isArray(attachments)
-                    ? attachments
-                    : [attachments]
-                  ).map((item, index) => (
-                    <div
-                      key={index}
-                      className="border-b border-gray-200 pb-3 mb-3 last:border-none last:pb-0 last:mb-0"
-                    >
-                      <p className="text-sm font-medium text-gray-700">
-                        <span className="font-semibold text-gray-900">
-                          Description:
-                        </span>{" "}
-                        {item.description || "—"}
-                      </p>
+                {!attachments ||
+                (Array.isArray(attachments)
+                  ? attachments.length === 0
+                  : Object.keys(attachments).length === 0) ? (
+                  <div className="p-4 text-center text-sm text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                    No attachments found.
+                  </div>
+                ) : (
+                  <div className="p-4 bg-white rounded-lg shadow">
+                    {(Array.isArray(attachments)
+                      ? attachments
+                      : [attachments]
+                    ).map((item, index) => (
+                      <div
+                        key={index}
+                        className="border-b border-gray-200 pb-3 mb-3 last:border-none last:pb-0 last:mb-0"
+                      >
+                        <p className="text-sm font-medium text-gray-700">
+                          <span className="font-semibold text-gray-900">
+                            Description:
+                          </span>{" "}
+                          {item.description || "—"}
+                        </p>
 
-                      <div className="text-sm text-gray-700 mt-1">
-                        <span className="font-semibold text-gray-900">
-                          Requirements:
-                        </span>
-                        {item.requirements && item.requirements.length > 0 ? (
-                          <div className="mt-1 space-y-1">
-                            {item.requirements.map((req, i) => (
-                              <label
-                                key={i}
-                                className="flex items-center space-x-2"
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked
-                                  readOnly
-                                  className="w-4 h-4 text-blue-600 border-gray-300 rounded"
-                                />
-                                <span>{req}</span>
-                              </label>
-                            ))}
-                          </div>
-                        ) : (
-                          <span> — </span>
-                        )}
+                        <div className="text-sm text-gray-700 mt-1">
+                          <span className="font-semibold text-gray-900">
+                            Requirements:
+                          </span>
+                          {item.requirements && item.requirements.length > 0 ? (
+                            <div className="mt-1 space-y-1">
+                              {item.requirements.map((req, i) => (
+                                <label
+                                  key={i}
+                                  className="flex items-center space-x-2"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked
+                                    readOnly
+                                    className="w-4 h-4 text-blue-600 border-gray-300 rounded"
+                                  />
+                                  <span>{req}</span>
+                                </label>
+                              ))}
+                            </div>
+                          ) : (
+                            <span> — </span>
+                          )}
+                        </div>
+
+                        <p className="text-sm font-medium text-gray-700">
+                          <span className="font-semibold text-gray-900">
+                            URL:
+                          </span>{" "}
+                          {item.url ? (
+                            <a
+                              href={item.url} // external URL
+                              target="_blank" // open in new tab
+                              rel="noopener noreferrer" // security
+                              className="text-blue-600 hover:underline"
+                              onClick={(e) => e.stopPropagation()} // important!
+                            >
+                              Open File
+                            </a>
+                          ) : (
+                            "—"
+                          )}
+                        </p>
                       </div>
-
-                      <p className="text-sm font-medium text-gray-700">
-                        <span className="font-semibold text-gray-900">
-                          URL:
-                        </span>{" "}
-                        {item.url ? (
-                          <a
-                            href={item.url} // external URL
-                            target="_blank" // open in new tab
-                            rel="noopener noreferrer" // security
-                            className="text-blue-600 hover:underline"
-                            onClick={(e) => e.stopPropagation()} // important!
-                          >
-                            Open File
-                          </a>
-                        ) : (
-                          "—"
-                        )}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
               </section>
 
               {/* Calls Section */}
-            <section>
-              <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-3">
-                <Phone className="w-5 h-5 text-purple-600" /> Call Logs
-              </h3>
+              <section>
+                <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-3">
+                  <Phone className="w-5 h-5 text-purple-600" /> Call Logs
+                </h3>
 
-              {/* 🔹 Pending Calls */}
-              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-3">
-                Pending
-              </h3>
-              {calls.filter((c) => c.status.toLowerCase() === "pending")
-                .length === 0 ? (
-                <div className="p-4 text-center text-sm text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                  No pending calls.
-                </div>
-              ) : (
-                <CustomTable
-                  columns={[
-                    { key: "date", label: "Date" },
-                    { key: "subject", label: "Subject" },
-                    { key: "status", label: "Status" },
-                  ]}
-                  data={calls
-                    .filter((c) => c.status.toLowerCase() === "pending")
-                    .map((c) => ({
-                      date: `${c.date} ${c.time}`,
-                      subject: c.subject,
-                      status: (
-                        <span
-                          className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                            c.status === "Completed"
-                              ? "bg-green-100 text-green-800"
-                              : c.status === "Cancelled"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-yellow-100 text-yellow-800"
-                          }`}
-                        >
-                          {c.status}
-                        </span>
-                      ),
-                    }))}
-                />
-              )}
+                {/* 🔹 Pending Calls */}
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-3">
+                  Pending
+                </h3>
+                {calls.filter((c) => c.status.toLowerCase() === "pending")
+                  .length === 0 ? (
+                  <div className="p-4 text-center text-sm text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                    No pending calls.
+                  </div>
+                ) : (
+                  <CustomTable
+                    columns={[
+                      { key: "date", label: "Date" },
+                      { key: "subject", label: "Subject" },
+                      { key: "status", label: "Status" },
+                    ]}
+                    data={calls
+                      .filter((c) => c.status.toLowerCase() === "pending")
+                      .map((c) => ({
+                        date: `${c.date} ${c.time}`,
+                        subject: c.subject,
+                        status: (
+                          <span
+                            className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                              c.status === "Completed"
+                                ? "bg-green-100 text-green-800"
+                                : c.status === "Cancelled"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
+                            {c.status}
+                          </span>
+                        ),
+                      }))}
+                  />
+                )}
 
-              {/* 🔹 History Calls (Completed or Cancelled) */}
-              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-3">
-                History
-              </h3>
-              {calls.filter((c) =>
-                ["completed", "cancelled"].includes(c.status.toLowerCase())
-              ).length === 0 ? (
-                <div className="p-4 text-center text-sm text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                  No completed or cancelled calls.
-                </div>
-              ) : (
-                <CustomTable
-                  columns={[
-                    { key: "date", label: "Date" },
-                    { key: "subject", label: "Subject" },
-                    { key: "status", label: "Status" },
-                  ]}
-                  data={calls
-                    .filter((c) =>
-                      ["completed", "cancelled"].includes(
-                        c.status.toLowerCase()
+                {/* 🔹 History Calls (Completed or Cancelled) */}
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-3">
+                  History
+                </h3>
+                {calls.filter((c) =>
+                  ["completed", "cancelled"].includes(c.status.toLowerCase())
+                ).length === 0 ? (
+                  <div className="p-4 text-center text-sm text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                    No completed or cancelled calls.
+                  </div>
+                ) : (
+                  <CustomTable
+                    columns={[
+                      { key: "date", label: "Date" },
+                      { key: "subject", label: "Subject" },
+                      { key: "status", label: "Status" },
+                    ]}
+                    data={calls
+                      .filter((c) =>
+                        ["completed", "cancelled"].includes(
+                          c.status.toLowerCase()
+                        )
                       )
-                    )
-                    .map((c) => ({
-                      date: `${c.date} ${c.time}`,
-                      subject: c.subject,
-                      status: (
-                        <span
-                          className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                            c.status === "Completed"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {c.status}
-                        </span>
-                      ),
-                    }))}
-                />
-              )}
-            </section>
+                      .map((c) => ({
+                        date: `${c.date} ${c.time}`,
+                        subject: c.subject,
+                        status: (
+                          <span
+                            className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                              c.status === "Completed"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {c.status}
+                          </span>
+                        ),
+                      }))}
+                  />
+                )}
+              </section>
 
-            {/* Meetings Section */}
-            <section>
-              <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-3">
-                <Users className="w-5 h-5 text-orange-600" /> Meetings
-              </h3>
+              {/* Meetings Section */}
+              <section>
+                <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-3">
+                  <Users className="w-5 h-5 text-orange-600" /> Meetings
+                </h3>
 
-              {/* 🔹 Pending Meetings */}
-              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-3">
-                Pending
-              </h3>
-              {meetings.filter((m) => m.status?.toLowerCase() === "pending")
-                .length === 0 ? (
-                <div className="p-4 text-center text-sm text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                  No pending meetings.
-                </div>
-              ) : (
-                <CustomTable
-                  columns={[
-                    { key: "date", label: "Date" },
-                    { key: "subject", label: "Subject" },
-                    { key: "host", label: "Host" },
-                    { key: "status", label: "Status" },
-                  ]}
-                  data={meetings
-                    .filter((m) => m.status?.toLowerCase() === "pending")
-                    .map((m) => ({
-                      date: `${m.meetingDate} ${m.startTime} - ${m.endTime}`,
-                      subject: m.subject,
-                      host: m.name || "N/A",
-                      status: (
-                        <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
-                          {m.status}
-                        </span>
-                      ),
-                    }))}
-                />
-              )}
+                {/* 🔹 Pending Meetings */}
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-3">
+                  Pending
+                </h3>
+                {meetings.filter((m) => m.status?.toLowerCase() === "pending")
+                  .length === 0 ? (
+                  <div className="p-4 text-center text-sm text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                    No pending meetings.
+                  </div>
+                ) : (
+                  <CustomTable
+                    columns={[
+                      { key: "date", label: "Date" },
+                      { key: "subject", label: "Subject" },
+                      { key: "host", label: "Host" },
+                      { key: "status", label: "Status" },
+                      { key: "type", label: "Type" },
+                    ]}
+                    data={meetings
+                      .filter((m) => m.status?.toLowerCase() === "pending")
+                      .map((m) => ({
+                        date: `${m.meetingDate} ${m.startTime} - ${m.endTime}`,
+                        subject: m.subject,
+                        host: m.name || "N/A",
+                        status: (
+                          <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+                            {m.status}
+                          </span>
+                        ),
+                        type: m.type || "N/A",
+                      }))}
+                  />
+                )}
 
-              {/* 🔹 History Meetings */}
-              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-3">
-                History
-              </h3>
-              {meetings.filter((m) =>
-                ["completed", "cancelled"].includes(m.status?.toLowerCase())
-              ).length === 0 ? (
-                <div className="p-4 text-center text-sm text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                  No completed or cancelled meetings.
-                </div>
-              ) : (
-                <CustomTable
-                  columns={[
-                    { key: "date", label: "Date" },
-                    { key: "subject", label: "Subject" },
-                    { key: "host", label: "Host" },
-                    { key: "status", label: "Status" },
-                  ]}
-                  data={meetings
-                    .filter((m) =>
-                      ["completed", "cancelled"].includes(
-                        m.status?.toLowerCase()
+                {/* 🔹 History Meetings */}
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-3">
+                  History
+                </h3>
+                {meetings.filter((m) =>
+                  ["completed", "cancelled"].includes(m.status?.toLowerCase())
+                ).length === 0 ? (
+                  <div className="p-4 text-center text-sm text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                    No completed or cancelled meetings.
+                  </div>
+                ) : (
+                  <CustomTable
+                    columns={[
+                      { key: "date", label: "Date" },
+                      { key: "subject", label: "Subject" },
+                      { key: "host", label: "Host" },
+                      { key: "status", label: "Status" },
+                      { key: "type", label: "Type" },
+                    ]}
+                    data={meetings
+                      .filter((m) =>
+                        ["completed", "cancelled"].includes(
+                          m.status?.toLowerCase()
+                        )
                       )
-                    )
-                    .map((m) => ({
-                      date: `${m.meetingDate} ${m.startTime} - ${m.endTime}`,
-                      subject: m.subject,
-                      host: m.name || "N/A",
-                      status: (
-                        <span
-                          className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                            m.status?.toLowerCase() === "completed"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {m.status}
-                        </span>
-                      ),
-                    }))}
-                />
-              )}
-            </section>
+                      .map((m) => ({
+                        date: `${m.meetingDate} ${m.startTime} - ${m.endTime}`,
+                        subject: m.subject,
+                        host: m.name || "N/A",
+                        status: (
+                          <span
+                            className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                              m.status?.toLowerCase() === "completed"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {m.status}
+                          </span>
+                        ),
+                        type: m.type || "N/A",
+                      }))}
+                  />
+                )}
+              </section>
 
               {/* Connected Records / Team Work */}
               <section>
@@ -764,10 +767,10 @@ export default function TaskDetail() {
           onSubmitSuccess={fetchCustomerDetails}
         />
       )}
-       {showDocumentModal && (
+      {showDocumentModal && (
         <DocumentModal
           onClose={() => setShowDocumentModal(false)}
-          taskId={documentTaskId} 
+          taskId={documentTaskId}
           setRefresh={setRefresh}
           refresh={refresh}
         />

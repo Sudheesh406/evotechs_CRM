@@ -10,6 +10,11 @@ const trash = require("../../models/v1/Trash/trash");
 const document = require("../../models/v1/Project/documents");
 const workAssign = require("../../models/v1/Work_space/workAssign");
 
+const { getIo } = require("../../utils/v1/socket");
+const {
+  createNotification,
+} = require("../../controller/v1/notificationController");
+
 const { Op, Sequelize } = require("sequelize");
 
 const createTask = async (req, res) => {
@@ -23,7 +28,7 @@ const createTask = async (req, res) => {
 
     // Check if contact exists for given phone & staff
     const customer = await contacts.findOne({
-      where: { phone: data.phone, staffId : user.id },
+      where: { phone: data.phone, staffId: user.id },
     });
 
     if (!customer) {
@@ -48,7 +53,6 @@ const createTask = async (req, res) => {
   }
 };
 
-
 const getTask = async (req, res) => {
   const user = req.user;
   try {
@@ -70,7 +74,6 @@ const getTask = async (req, res) => {
     return httpError(res, 500, "Server error", error.message || error);
   }
 };
-
 
 const getTaskByStatus = async (req, res) => {
   try {
@@ -116,7 +119,6 @@ const getTaskByStatus = async (req, res) => {
   }
 };
 
-
 const getTaskByStage = async (req, res) => {
   const user = req.user;
   const data = req.params.data;
@@ -154,7 +156,6 @@ const getTaskByStage = async (req, res) => {
     return httpError(res, 500, "Server error", error.message || error);
   }
 };
-
 
 const editTask = async (req, res) => {
   try {
@@ -217,6 +218,8 @@ const taskStageUpdate = async (req, res) => {
     const taskId = req.params.id;
     const data = req.body;
 
+    const allAdmins = await signup.findAll({ where: { role: "admin" } });
+
     const existingTask = await task.findOne({
       where: { id: taskId, staffId: user.id },
     });
@@ -242,6 +245,29 @@ const taskStageUpdate = async (req, res) => {
       }
     }
 
+    if (data.data == 3) {
+      const io = getIo();
+
+      const value = {};
+      if (allAdmins && allAdmins.length > 0) {
+        allAdmins.forEach((admin) => {
+          io.to(`notify_${admin.id}`).emit("receive_notification", {
+            title: "Task For Review",
+            message: "There is a new Task for Review.",
+            type: "Task",
+            timestamp: new Date(),
+          });
+
+          value.title = "Task For Review";
+          value.description = "There is a new Task for Review.";
+          value.receiverId = admin.id;
+          value.senderId = user.id;
+
+          createNotification(value);
+        });
+      }
+    }
+
     await existingTask.update({ stage: data.data });
     return httpSuccess(
       res,
@@ -254,7 +280,6 @@ const taskStageUpdate = async (req, res) => {
     return httpError(res, 500, "Server error", error.message || error);
   }
 };
-
 
 const getTaskDetails = async (req, res) => {
   try {
@@ -315,11 +340,11 @@ const getTaskDetails = async (req, res) => {
   }
 };
 
-
 const updateStagesAndNotes = async (req, res) => {
   try {
     const { data } = req.body;
     const user = req.user;
+    const allAdmins = await signup.findAll({ where: { role: "admin" } });
 
     const existingTask = await task.findOne({
       where: { id: data.id, staffId: user.id },
@@ -349,6 +374,29 @@ const updateStagesAndNotes = async (req, res) => {
       }
     }
 
+    if (data.stages == 3) {
+      const io = getIo();
+
+      const value = {};
+      if (allAdmins && allAdmins.length > 0) {
+        allAdmins.forEach((admin) => {
+          io.to(`notify_${admin.id}`).emit("receive_notification", {
+            title: "Task For Review",
+            message: "There is a new Task for Review.",
+            type: "Task",
+            timestamp: new Date(),
+          });
+
+          value.title = "Task For Review";
+          value.description = "There is a new Task for Review.";
+          value.receiverId = admin.id;
+          value.senderId = user.id;
+
+          createNotification(value);
+        });
+      }
+    }
+
     await existingTask.update({
       stage: data.stages,
       notes: data.notes,
@@ -368,7 +416,6 @@ const updateStagesAndNotes = async (req, res) => {
     });
   }
 };
-
 
 const getTeamTaskDetails = async (req, res) => {
   try {
@@ -432,12 +479,12 @@ const getTeamTaskDetails = async (req, res) => {
   }
 };
 
-
 const updateTeamStagesAndNotes = async (req, res) => {
   try {
     const { data } = req.body;
     const user = req.user;
     // console.log("Input data:", data);
+    const allAdmins = await signup.findAll({ where: { role: "admin" } });
 
     const existingTask = await task.findOne({ where: { id: data.id } });
     if (!existingTask) return httpError(res, 404, "Task not found");
@@ -503,6 +550,29 @@ const updateTeamStagesAndNotes = async (req, res) => {
         notes: data.notes,
         teamWork: updatedTeamWork,
       });
+
+      if (data.stages == 3) {
+        const io = getIo();
+
+       const value = {};
+       if (allAdmins && allAdmins.length > 0) {
+        allAdmins.forEach((admin) => {
+          io.to(`notify_${admin.id}`).emit("receive_notification", {
+            title: "Task For Review",
+            message: "There is a new Task for Review.",
+            type: "Task",
+            timestamp: new Date(),
+          });
+
+          value.title = "Task For Review";
+          value.description = "There is a new Task for Review.";
+          value.receiverId = admin.id;
+          value.senderId = user.id;
+
+          createNotification(value);
+        });
+       }
+      }
     }
 
     await existingTask.reload(); // ensure response has updated data
@@ -618,7 +688,6 @@ const getTaskDetailForAdmin = async (req, res) => {
   }
 };
 
-
 const updateStagesByAdmin = async (req, res) => {
   try {
     const data = req.body;
@@ -650,6 +719,22 @@ const updateStagesByAdmin = async (req, res) => {
       });
     }
 
+           const io = getIo();
+      io.to(`notify_${existingTask.staffId}`).emit("receive_notification", {
+        title: "Stage Update",
+        message: 'Your task stage has been updated by admin',
+        type: "Task",
+        timestamp: new Date(),
+      });
+
+      const value = {};
+      value.title = "Stage Update";
+      value.description = "Your task stage has been updated by admin";
+      value.receiverId = existingTask.staffId;
+      value.senderId = user.id;
+
+      createNotification(data);
+
     return res.status(200).json({
       success: true,
       message: "Task stage and notes updated successfully",
@@ -664,7 +749,6 @@ const updateStagesByAdmin = async (req, res) => {
     });
   }
 };
-
 
 const reworkUpdate = async (req, res) => {
   try {
@@ -687,6 +771,24 @@ const reworkUpdate = async (req, res) => {
         message: "Task not found",
       });
     }
+
+
+        const io = getIo();
+      io.to(`notify_${existing.staffId}`).emit("receive_notification", {
+        title: "Rework Assigned",
+        message: 'You got a rework from management',
+        type: "Task",
+        timestamp: new Date(),
+      });
+
+      const data = {};
+      data.title = "Rework Assigned";
+      data.description = "You got a rework from management";
+      data.receiverId = existing.staffId;
+      data.senderId = user.id;
+
+      createNotification(data);
+
 
     // determine new rework value
     const newRework = !existing.rework;
@@ -741,6 +843,23 @@ const againReworkUpdate = async (req, res) => {
       });
     }
 
+
+      const io = getIo();
+      io.to(`notify_${existing.staffId}`).emit("receive_notification", {
+        title: " Again Rework Assigned",
+        message: 'You got again rework from management',
+        type: "Task",
+        timestamp: new Date(),
+      });
+
+      const data = {};
+      data.title = "Again Rework Assigned";
+      data.description = "You got again rework from management";
+      data.receiverId = existing.staffId;
+      data.senderId = user.id;
+
+      createNotification(data);
+
     // Update the task
     await existing.update({
       newUpdate: false,
@@ -761,13 +880,13 @@ const againReworkUpdate = async (req, res) => {
   }
 };
 
-
 const newUpdate = async (req, res) => {
   try {
     const { id } = req.body;
     const user = req.user;
+    const allAdmins = await signup.findAll({ where: { role: "admin" } });
 
-    const existing = await task.findOne({ where: { id} });
+    const existing = await task.findOne({ where: { id } });
     if (!existing) {
       return res.status(404).json({
         success: false,
@@ -775,17 +894,39 @@ const newUpdate = async (req, res) => {
       });
     }
 
-      const updatedTask = await existing.update({
-        newUpdate: !existing.newUpdate,
-      });
-      // Toggle the new update flag
+    const updatedTask = await existing.update({
+      newUpdate: !existing.newUpdate,
+    });
 
-      return res.status(200).json({
-        success: true,
-        message: `new update set to ${updatedTask.rework}`,
-        data: updatedTask,
-      });
-  
+    const io = getIo();
+
+      const value = {};
+      if (allAdmins && allAdmins.length > 0) {
+        allAdmins.forEach((admin) => {
+          io.to(`notify_${admin.id}`).emit("receive_notification", {
+            title: "Rework Completed",
+            message: "There is a notification for Rework Completed.",
+            type: "Task",
+            timestamp: new Date(),
+          });
+
+          value.title = "Rework Completed";
+          value.description = "There is a notification for Rework Completed.";
+          value.receiverId = admin.id;
+          value.senderId = user.id;
+
+          createNotification(value);
+        });
+      }
+
+
+    // Toggle the new update flag
+
+    return res.status(200).json({
+      success: true,
+      message: `new update set to ${updatedTask.rework}`,
+      data: updatedTask,
+    });
   } catch (error) {
     console.error("Error in updating new Update:", error);
     return res.status(500).json({
@@ -795,7 +936,6 @@ const newUpdate = async (req, res) => {
     });
   }
 };
-
 
 const getTaskForAdmin = async (req, res) => {
   try {
@@ -815,13 +955,13 @@ const getTaskForAdmin = async (req, res) => {
       where: { softDelete: false },
       include: [
         {
-          model: contacts, // replace with your contact model
-          as: "customer", // make sure your association alias matches
+          model: contacts,
+          as: "customer",
           attributes: ["name", "phone", "email", "amount"],
         },
         {
-          model: signup, // replace with your staff model
-          as: "staff", // make sure your association alias matches
+          model: signup,
+          as: "staff",
           attributes: ["name", "email"],
         },
       ],
@@ -840,7 +980,6 @@ const getTaskForAdmin = async (req, res) => {
     });
   }
 };
-
 
 const getAdminTask = async (req, res) => {
   try {
@@ -885,7 +1024,6 @@ const getAdminTask = async (req, res) => {
     });
   }
 };
-
 
 module.exports = {
   createTask,

@@ -298,7 +298,6 @@ export default function AdvancedTodoCRM() {
         return;
       }
     }
-
     const payload = {
       ...formTask,
       assignedName: formTask.assignedTo.name,

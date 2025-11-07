@@ -65,6 +65,11 @@ module.exports = {
         allowNull: false,
         defaultValue: 'pending',
       },
+       type: {
+        type: Sequelize.ENUM("offline", "online"),
+        allowNull: false,
+        defaultValue: 'offline',
+      },
       createdAt: {
         type: Sequelize.DATE,
         allowNull: false,

@@ -23,6 +23,7 @@ const Meetings = () => {
     endTime: "",
     phoneNumber: "",
     description: "",
+    type: "offline",
     status: "pending", // ✅ default status
   });
 
@@ -48,6 +49,7 @@ const Meetings = () => {
     { label: "To", key: "endTime" },
     { label: "Phone Number", key: "phoneNumber" },
     { label: "Status", key: "status" },
+    { label: "Type", key: "type" },
     { label: "Actions", key: "actions" },
   ];
 
@@ -230,6 +232,7 @@ const Meetings = () => {
       endTime: "",
       phoneNumber: "",
       description: "",
+      type: "",
       status: "pending",
     });
     setIsEditing(false);
@@ -246,6 +249,7 @@ const Meetings = () => {
       endTime: formatTo12Hour(row.endTime),
       phoneNumber: row.phoneNumber || "",
       description: row.description || "",
+      type: row.type || "",
       status: row.status || "pending",
     };
     setFormData(editData);
@@ -270,6 +274,7 @@ const Meetings = () => {
         filter: selectedFilter,
       });
 
+
       console.log(response);
       const data = Array.isArray(response.data.data) ? response.data.data : [];
       setMeetings(data);
@@ -291,58 +296,57 @@ const Meetings = () => {
     }
   };
 
- const handleDelete = async (id) => {
-  try {
-    // Show confirmation dialog
-    const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "This meeting will be deleted permanently!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
-      confirmButtonText: "Yes, delete it!",
-    });
-
-    if (result.isConfirmed) {
-      // Show loading while deleting
-      Swal.fire({
-        title: "Deleting...",
-        allowOutsideClick: false,
-        didOpen: () => {
-          Swal.showLoading();
-        },
+  const handleDelete = async (id) => {
+    try {
+      // Show confirmation dialog
+      const result = await Swal.fire({
+        title: "Are you sure?",
+        text: "This meeting will be deleted permanently!",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#3085d6",
+        confirmButtonText: "Yes, delete it!",
       });
 
-      const response = await axios.delete(`/meetings/delete/${id}`);
-      Swal.close(); // close loading
+      if (result.isConfirmed) {
+        // Show loading while deleting
+        Swal.fire({
+          title: "Deleting...",
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          },
+        });
 
-      // Show success message with OK button
+        const response = await axios.delete(`/meetings/delete/${id}`);
+        Swal.close(); // close loading
+
+        // Show success message with OK button
+        Swal.fire({
+          icon: "success",
+          title: "Deleted!",
+          text: "The meeting has been deleted successfully.",
+          confirmButtonText: "OK", // this will show the OK button
+          showConfirmButton: true, // ensure it's visible
+        }).then(() => {
+          getMeetings(filter); // refresh data after modal is closed
+        });
+      }
+    } catch (error) {
+      Swal.close(); // close loading if error
+
       Swal.fire({
-        icon: "success",
-        title: "Deleted!",
-        text: "The meeting has been deleted successfully.",
-        confirmButtonText: "OK", // this will show the OK button
-        showConfirmButton: true, // ensure it's visible
-      }).then(() => {
-        getMeetings(filter); // refresh data after modal is closed
+        icon: "error",
+        title: "Failed to delete",
+        text:
+          error.response?.data?.message ||
+          "Something went wrong. Please try again.",
       });
+
+      console.log("error found delete", error);
     }
-  } catch (error) {
-    Swal.close(); // close loading if error
-
-    Swal.fire({
-      icon: "error",
-      title: "Failed to delete",
-      text:
-        error.response?.data?.message ||
-        "Something went wrong. Please try again.",
-    });
-
-    console.log("error found delete", error);
-  }
-};
-
+  };
 
   useEffect(() => {
     getMeetings(filter);
@@ -642,6 +646,26 @@ const Meetings = () => {
                   )}
                 </div>
               )}
+
+              <div className="flex flex-col">
+                <label className="block text-sm font-medium mb-1">
+                  Meeting Type
+                </label>
+                <select
+                  name="type"
+                  value={formData.type || "offline"} // default to offline
+                  onChange={handleChange}
+                  className={`w-full border rounded px-3 py-2 ${
+                    errors.type ? "border-red-500" : "border-gray-300"
+                  }`}
+                >
+                  <option value="offline">Offline</option>
+                  <option value="online">Online</option>
+                </select>
+                {errors.type && (
+                  <p className="text-red-500 text-sm">{errors.type}</p>
+                )}
+              </div>
 
               {/* Description */}
               <div className="flex flex-col md:col-span-2">

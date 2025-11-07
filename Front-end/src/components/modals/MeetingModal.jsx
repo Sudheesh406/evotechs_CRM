@@ -16,6 +16,7 @@ export default function MeetingModal({
     startTime: "",
     endTime: "",
     description: "",
+    type: "offline", 
   });
 
   const [errors, setErrors] = useState({});
@@ -182,6 +183,22 @@ export default function MeetingModal({
               {timeOptions.map((t) => <option key={t} value={t} />)}
             </datalist>
             {errors.endTime && <p className="text-red-500 text-sm">{errors.endTime}</p>}
+          </div>
+
+            <div className="flex flex-col md:col-span-2">
+            <label className="block text-sm font-medium mb-1">Meeting Type</label>
+            <select
+              name="type"
+              value={formData.type}
+              onChange={handleChange}
+              className={`w-full border rounded px-3 py-2 ${errors.type ? "border-red-500" : "border-gray-300"}`}
+              disabled={loading}
+            >
+              <option value="">Select Type</option>
+              <option value="offline">Offline</option>
+              <option value="online">Online</option>
+            </select>
+            {errors.type && <p className="text-red-500 text-sm">{errors.type}</p>}
           </div>
 
           {/* Description */}

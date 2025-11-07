@@ -81,8 +81,6 @@ const WorklogDetail = () => {
         staffId: selectedStaffId,
       });
 
-      console.log(response);
-
       const worklogs = response.data.data.worklogs;
       const dailyWorkHours = response.data.data.dailyWorkHours || [];
 
@@ -286,7 +284,7 @@ const WorklogDetail = () => {
       {/* Table Section */}
       {staffId ? (
         <div className="flex-1 overflow-auto">
-          <table className="min-w-[3000px] divide-y divide-gray-200 border-collapse">
+          <table className="min-w-[5000px] divide-y divide-gray-200 border-collapse">
             <thead className="bg-gray-100">
               <tr>
                 <th className="sticky left-0 bg-gray-100 p-3 text-left text-sm font-semibold text-gray-600 border-r border-gray-200 z-20">

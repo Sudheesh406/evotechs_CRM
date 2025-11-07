@@ -625,6 +625,22 @@ const contactReassign = async (req, res) => {
       return httpError(res, 404, "Contact not found.");
     }
 
+      const io = getIo();
+      io.to(`notify_${existing.staffId}`).emit("receive_notification", {
+        title: "Contact Reassign",
+        message: 'A team member reassign a contact',
+        type: "contact",
+        timestamp: new Date(),
+      });
+
+      const data = {};
+      data.title = "Contact Reassign";
+      data.description = "A team member reassign a contact";
+      data.receiverId = existing.staffId;
+      data.senderId = user.id;
+
+      createNotification(data);
+
     // Reassign the contact
     existing.staffId = user.id;
     await existing.save(); // Save the change in DB

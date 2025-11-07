@@ -40,6 +40,15 @@ function isValidTime(value) {
   return /^(0?[1-9]|1[0-2]):[0-5][0-9]\s?(AM|PM)$/i.test(value.trim());
 }
 
+// Converts 12-hour time (e.g., "09:30 AM") to minutes since midnight
+function timeToMinutes(timeStr) {
+  const [time, modifier] = timeStr.trim().split(" ");
+  let [hours, minutes] = time.split(":").map(Number);
+  if (modifier.toUpperCase() === "PM" && hours !== 12) hours += 12;
+  if (modifier.toUpperCase() === "AM" && hours === 12) hours = 0;
+  return hours * 60 + minutes;
+}
+
 // ====================================================================================
 // TIME DROPDOWN COMPONENT (Monochromatic Styling)
 // ====================================================================================
@@ -52,9 +61,10 @@ const TimeDropdown = ({
 }) => {
   if (!isVisible) return null;
 
-  const colorClass = iconColor === 'indigo'
-    ? { text: 'text-blue-700', hoverBg: 'hover:bg-blue-50' }
-    : { text: 'text-red-700', hoverBg: 'hover:bg-red-50' };
+  const colorClass =
+    iconColor === "indigo"
+      ? { text: "text-blue-700", hoverBg: "hover:bg-blue-50" }
+      : { text: "text-red-700", hoverBg: "hover:bg-red-50" };
 
   return (
     <ul className="absolute z-30 bg-white border border-gray-300 rounded-lg shadow-lg mt-2 w-full max-h-56 overflow-y-auto text-sm opacity-100 transform translate-y-0 transition-all duration-300 ease-in-out">
@@ -105,7 +115,10 @@ export default function Attendance() {
         setShowEntryDropdown(false);
       if (exitRef.current && !exitRef.current.contains(event.target))
         setShowExitDropdown(false);
-      if (modalEntryRef.current && !modalEntryRef.current.contains(event.target))
+      if (
+        modalEntryRef.current &&
+        !modalEntryRef.current.contains(event.target)
+      )
         setShowModalEntryDropdown(false);
       if (modalExitRef.current && !modalExitRef.current.contains(event.target))
         setShowModalExitDropdown(false);
@@ -126,7 +139,6 @@ export default function Attendance() {
 
     try {
       const response = await axios.get("/attendance/get");
-
       const grouped = {};
       response.data.data.forEach((record) => {
         const date = record.attendanceDate;
@@ -172,8 +184,7 @@ export default function Attendance() {
     });
 
     try {
-    await axios.post("/attendance/register", data);
-
+      await axios.post("/attendance/register", data);
       // Close loading
       Swal.close();
 
@@ -192,7 +203,6 @@ export default function Attendance() {
 
       // Close loading in case of error
       Swal.close();
-
       // Show error alert
       Swal.fire({
         icon: "error",
@@ -226,7 +236,23 @@ export default function Attendance() {
       });
       return;
     }
+
+    // Get today's entry if it exists
     const today = new Date().toISOString().split("T")[0];
+    const todayRecord = attendanceList.find((r) => r.date === today);
+    if (todayRecord?.entry) {
+      const entryMins = timeToMinutes(todayRecord.entry);
+      const exitMins = timeToMinutes(exitTime);
+      if (exitMins <= entryMins) {
+        Swal.fire({
+          icon: "error",
+          title: "Invalid Exit Time",
+          text: "Exit time must be later than entry time.",
+        });
+        return;
+      }
+    }
+
     handleAttendance({ date: today, exitTime, shedule: "exit" });
     setExitTime("");
     setShowExitDropdown(false);
@@ -282,7 +308,10 @@ export default function Attendance() {
         Swal.close(); // Ensure loading is closed
         const errorText =
           error.response?.data?.message || "Please try again later.";
-        const title = error.response?.status === 403 ? "Permission Denied" : "Failed to Delete";
+        const title =
+          error.response?.status === 403
+            ? "Permission Denied"
+            : "Failed to Delete";
         Swal.fire({
           icon: "error",
           title: title,
@@ -309,6 +338,17 @@ export default function Attendance() {
     }
     if (hasExitChanged && !isValidTime(editExit)) {
       setErrorMessage("Invalid new exit time format (e.g., 05:00 PM).");
+      return;
+    }
+
+    const entryMins = editEntry
+      ? timeToMinutes(editEntry)
+      : timeToMinutes(editRecord.entry);
+    const exitMins = editExit
+      ? timeToMinutes(editExit)
+      : timeToMinutes(editRecord.exit);
+    if (editExit && editEntry && exitMins <= entryMins) {
+      setErrorMessage("Exit time must be later than entry time.");
       return;
     }
 
@@ -350,17 +390,20 @@ export default function Attendance() {
     } catch (error) {
       Swal.close(); // Close loading
       console.error("Error updating attendance:", error);
-      setErrorMessage(error.response?.data?.message || "Failed to update attendance.");
+      setErrorMessage(
+        error.response?.data?.message || "Failed to update attendance."
+      );
     }
   };
+  
 
   return (
     // Clean, light gray background
     <div className="min-h-screen bg-gray-50 p-4 sm:p-8 space-y-12">
       <h1 className="text-3xl font-bold text-gray-800 text-center mb-10 mt-4 tracking-wide border-b pb-4">
-       Attendance <span className="text-blue-600">Management</span>  
+        Attendance <span className="text-blue-600">Management</span>
       </h1>
-      
+
       <div className="max-w-5xl mx-auto space-y-12">
         {/* Attendance Form Card (Clean white card with subtle shadow) */}
         <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 border border-gray-200">
@@ -368,7 +411,6 @@ export default function Attendance() {
             Daily Check In/Out
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
-            
             {/* Entry */}
             <div className="relative" ref={entryRef}>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -434,7 +476,7 @@ export default function Attendance() {
             </div>
           </div>
         </div>
-        
+
         {/* Attendance Records Table */}
         <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 border border-gray-200 overflow-x-auto">
           <h2 className="text-xl font-semibold text-gray-700 mb-6 border-b pb-3">
@@ -448,10 +490,12 @@ export default function Attendance() {
                     <Calendar className="inline w-4 h-4 mr-2" /> Date
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    <LogIn className="inline w-4 h-4 mr-2 text-blue-500" /> Entry Time
+                    <LogIn className="inline w-4 h-4 mr-2 text-blue-500" />{" "}
+                    Entry Time
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    <LogOut className="inline w-4 h-4 mr-2 text-red-500" /> Exit Time
+                    <LogOut className="inline w-4 h-4 mr-2 text-red-500" /> Exit
+                    Time
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
                     Action
@@ -463,19 +507,23 @@ export default function Attendance() {
                   attendanceList.map((record, index) => {
                     const today = new Date().toISOString().split("T")[0];
                     const isToday = record.date === today;
-                    const rowBgClass = isToday ? "bg-blue-50/50" : index % 2 === 1 ? "bg-gray-50 hover:bg-gray-100" : "bg-white hover:bg-gray-100";
-                    
+                    const rowBgClass = isToday
+                      ? "bg-blue-50/50"
+                      : index % 2 === 1
+                      ? "bg-gray-50 hover:bg-gray-100"
+                      : "bg-white hover:bg-gray-100";
+
                     return (
                       <tr
                         key={record.id}
                         className={`transition-colors duration-150 ${rowBgClass}`}
                       >
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {new Date(record.date).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric',
-                            })}
+                          {new Date(record.date).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })}
                           {isToday && (
                             <span className="ml-2 px-2 py-0.5 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full">
                               TODAY
@@ -524,7 +572,9 @@ export default function Attendance() {
                               }`}
                               disabled={!isToday}
                               onClick={() => handleAttendanceDelete(record)}
-                              title={isToday ? "Delete Record" : "Cannot Delete"}
+                              title={
+                                isToday ? "Delete Record" : "Cannot Delete"
+                              }
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -539,8 +589,12 @@ export default function Attendance() {
                       colSpan="4"
                       className="text-center p-10 text-sm text-gray-500 italic bg-gray-50"
                     >
-                      <p className="font-medium">No attendance records found.</p>
-                      <p className="text-xs mt-1">Mark your entry above to start tracking.</p>
+                      <p className="font-medium">
+                        No attendance records found.
+                      </p>
+                      <p className="text-xs mt-1">
+                        Mark your entry above to start tracking.
+                      </p>
                     </td>
                   </tr>
                 )}
@@ -564,7 +618,10 @@ export default function Attendance() {
               Edit Attendance
             </h3>
             <p className="text-sm text-gray-500 mb-6">
-              Date: <span className="font-semibold text-gray-700">{editRecord.date}</span>
+              Date:{" "}
+              <span className="font-semibold text-gray-700">
+                {editRecord.date}
+              </span>
             </p>
 
             <div className="space-y-5">
@@ -631,7 +688,7 @@ export default function Attendance() {
               onClick={handleModalSubmit}
               className="mt-8 w-full bg-blue-600 text-white font-semibold py-2.5 rounded-lg hover:bg-blue-700 transition duration-300 shadow-md flex items-center justify-center space-x-2"
             >
-              <Edit className="w-4 h-4"/>
+              <Edit className="w-4 h-4" />
               <span>Save Changes</span>
             </button>
           </div>

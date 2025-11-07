@@ -61,9 +61,9 @@ export default function TaskDetailDemo() {
           parseInt(response.data.data.taskDetails?.[0]?.stage, 10) || 0
         );
       }
-     if(isResolve){
-      setCompleteUpdate(false)
-     }
+      if (isResolve) {
+        setCompleteUpdate(false);
+      }
     } catch (error) {
       console.error("Error in get task details", error);
     } finally {
@@ -95,119 +95,118 @@ export default function TaskDetailDemo() {
   const meetings = taskData.meetingDetails || [];
 
   const handleStageChange = async (stageNum) => {
-  // Only allow manual change for the "Completed" stage (stage 4)
-  if (stageNum !== 4) return;
+    // Only allow manual change for the "Completed" stage (stage 4)
+    if (stageNum !== 4) return;
 
-  // Toggle logic for stage 4: 4 -> 3, or non-4 -> 4
-  const newStage = currentStage === 4 ? 3 : 4;
-  const oldStage = currentStage;
+    // Toggle logic for stage 4: 4 -> 3, or non-4 -> 4
+    const newStage = currentStage === 4 ? 3 : 4;
+    const oldStage = currentStage;
 
-  // Optimistically update the UI
-  setCurrentStage(newStage);
+    // Optimistically update the UI
+    setCurrentStage(newStage);
 
-  try {
-    const response = await axios.post("/task/stage/update", {
-      taskId: taskDetails.id,
-      stage: newStage,
-    });
-
-    if (response?.data?.success) {
-      // Successful update, re-fetch data to sync all component state (like isCompleted)
-      getTaskDetails();
-      Swal.fire({
-        icon: "success",
-        title: "Stage Updated!",
-        text: "Task stage updated successfully.",
-        timer: 1500,
-        showConfirmButton: false,
+    try {
+      const response = await axios.post("/task/stage/update", {
+        taskId: taskDetails.id,
+        stage: newStage,
       });
-    } else {
-      throw new Error(response?.data?.message || "Failed to update stage");
-    }
-  } catch (err) {
-    console.error("Failed to update stage:", err);
-    Swal.fire({
-      icon: "error",
-      title: "Failed to update stage",
-      text: err.message,
-    });
-    // Revert UI change on failure
-    setCurrentStage(oldStage);
-  }
-};
 
-const reworkUpdate = async () => {
-  try {
-    const id = taskDetails.id;
-    if (!id) {
-      Swal.fire({
-        icon: "warning",
-        title: "Task ID not found",
-      });
-      return;
-    }
-
-    const actionText = isPending ? "Restore" : "Rework";
-
-    // Call the API to toggle rework
-    const response = await axios.patch("/task/rework/update", { id });
-
-    if (response?.data?.success) {
-      Swal.fire({
-        icon: "success",
-        title: `${actionText} Updated!`,
-        text: `${actionText} updated successfully!`,
-        confirmButtonText: "OK",
-      }).then(() => navigate(-1));
-    } else {
-      console.warn(
-        `Failed to update ${actionText}:`,
-        response?.data?.message
-      );
+      if (response?.data?.success) {
+        // Successful update, re-fetch data to sync all component state (like isCompleted)
+        getTaskDetails();
+        Swal.fire({
+          icon: "success",
+          title: "Stage Updated!",
+          text: "Task stage updated successfully.",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      } else {
+        throw new Error(response?.data?.message || "Failed to update stage");
+      }
+    } catch (err) {
+      console.error("Failed to update stage:", err);
       Swal.fire({
         icon: "error",
-        title: `Failed to update ${actionText}`,
-        text: response?.data?.message || "Unknown error",
+        title: "Failed to update stage",
+        text: err.message,
       });
+      // Revert UI change on failure
+      setCurrentStage(oldStage);
     }
-  } catch (error) {
-    console.error("Failed to process rework/restore:", error);
-    Swal.fire({
-      icon: "error",
-      title: "Unexpected Error",
-      text: "An unexpected error occurred while updating rework status.",
-    });
-  }
-};
+  };
 
-const reworkAgain = async () => {
-  try {
-    const id = taskDetails.id;
-    const response = await axios.patch("/task/rework/update/direct", { id });
-    if (response) {
-      Swal.fire({
-        icon: "success",
-        title: "Rework Updated!",
-        text: "Rework status updated successfully.",
-        confirmButtonText: "OK",
-      }).then(() => navigate(-1));
-    } else {
+  const reworkUpdate = async () => {
+    try {
+      const id = taskDetails.id;
+      if (!id) {
+        Swal.fire({
+          icon: "warning",
+          title: "Task ID not found",
+        });
+        return;
+      }
+
+      const actionText = isPending ? "Restore" : "Rework";
+
+      // Call the API to toggle rework
+      const response = await axios.patch("/task/rework/update", { id });
+
+      if (response?.data?.success) {
+        Swal.fire({
+          icon: "success",
+          title: `${actionText} Updated!`,
+          text: `${actionText} updated successfully!`,
+          confirmButtonText: "OK",
+        }).then(() => navigate(-1));
+      } else {
+        console.warn(
+          `Failed to update ${actionText}:`,
+          response?.data?.message
+        );
+        Swal.fire({
+          icon: "error",
+          title: `Failed to update ${actionText}`,
+          text: response?.data?.message || "Unknown error",
+        });
+      }
+    } catch (error) {
+      console.error("Failed to process rework/restore:", error);
       Swal.fire({
         icon: "error",
-        title: "Failed!",
-        text: "Failed to update.",
+        title: "Unexpected Error",
+        text: "An unexpected error occurred while updating rework status.",
       });
     }
-  } catch (error) {
-    console.error("Failed to process rework/restore:", error);
-    Swal.fire({
-      icon: "error",
-      title: "Unexpected Error",
-      text: "An unexpected error occurred while updating rework status.",
-    });
-  }
-};
+  };
 
+  const reworkAgain = async () => {
+    try {
+      const id = taskDetails.id;
+      const response = await axios.patch("/task/rework/update/direct", { id });
+      if (response) {
+        Swal.fire({
+          icon: "success",
+          title: "Rework Updated!",
+          text: "Rework status updated successfully.",
+          confirmButtonText: "OK",
+        }).then(() => navigate(-1));
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Failed!",
+          text: "Failed to update.",
+        });
+      }
+    } catch (error) {
+      console.error("Failed to process rework/restore:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Unexpected Error",
+        text: "An unexpected error occurred while updating rework status.",
+      });
+    }
+  };
 
   // Helper to determine Rework button styling/text
   const reworkButton = (() => {
@@ -251,7 +250,6 @@ const reworkAgain = async () => {
       );
     }
   })();
-
 
   return (
     <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8 space-y-6">
@@ -515,6 +513,7 @@ const reworkAgain = async () => {
                       { key: "subject", label: "Subject" },
                       { key: "host", label: "Host" },
                       { key: "status", label: "Status" },
+                      { key: "type", label: "Type" },
                     ]}
                     data={meetings
                       .filter((m) => m.status?.toLowerCase() === "pending")
@@ -527,6 +526,7 @@ const reworkAgain = async () => {
                             {m.status}
                           </span>
                         ),
+                        type: m.type || "N/A",
                       }))}
                   />
                 )}
@@ -548,6 +548,7 @@ const reworkAgain = async () => {
                       { key: "subject", label: "Subject" },
                       { key: "host", label: "Host" },
                       { key: "status", label: "Status" },
+                      { key: "type", label: "Type" },
                     ]}
                     data={meetings
                       .filter((m) =>
@@ -570,6 +571,7 @@ const reworkAgain = async () => {
                             {m.status}
                           </span>
                         ),
+                        type: m.type || "N/A",
                       }))}
                   />
                 )}

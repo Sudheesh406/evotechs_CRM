@@ -21,9 +21,8 @@ const createMeetings = async (req, res) => {
       phoneNumber,
       contactId,
       description,
+      type
     } = req.body.data;
-
-  
 
     // Validate required fields
     if (
@@ -81,6 +80,7 @@ const createMeetings = async (req, res) => {
       endTime: formattedEndTime,
       phoneNumber,
       description,
+      type,
       staffId,
       contactId: customer ? customer.id : null,
     });
@@ -91,6 +91,7 @@ const createMeetings = async (req, res) => {
     return httpError(res, 500, "Server error", error.message);
   }
 };
+
 
 const getMeetings = async (req, res) => {
   const user = req.user;
@@ -157,12 +158,14 @@ const getMeetings = async (req, res) => {
       order: [["meetingDate", "ASC"]],
     });
 
+
     return httpSuccess(res, 200, "meetings getted successfully", result);
   } catch (error) {
     console.error("Error fetching meetings:", error);
     return httpError(res, 500, "Server error", error.message);
   }
 };
+
 
 const editMeetings = async (req, res) => {
   const user = req.user;
@@ -194,6 +197,7 @@ const editMeetings = async (req, res) => {
       "endTime",
       "phoneNumber",
       "description",
+      "type"
     ];
     for (const field of requiredFields) {
       if (
@@ -325,6 +329,7 @@ const createMeetingFromTask = async (req, res) => {
       phoneNumber,
       contactId,
       description,
+      type
     } = req.body.data;
 
     // Validate required fields
@@ -367,6 +372,7 @@ const createMeetingFromTask = async (req, res) => {
       endTime: formattedEndTime,
       phoneNumber,
       description,
+      type,
       staffId,
       contactId,
     });
@@ -391,6 +397,7 @@ const createTeamMeetingFromTask = async (req, res) => {
       contactId,
       staffId,
       description,
+      type
     } = req.body.data;
 
     // Validate required fields
@@ -437,6 +444,7 @@ const createTeamMeetingFromTask = async (req, res) => {
       endTime: formattedEndTime,
       phoneNumber,
       description,
+      type,
       staffId,
       contactId,
       TeamStaffId,

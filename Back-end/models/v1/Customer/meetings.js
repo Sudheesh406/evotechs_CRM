@@ -82,6 +82,11 @@ const meetings = sequelize.define(
       allowNull: false,
       defaultValue: "pending",
     },
+    type: {
+      type: DataTypes.ENUM("offline", "online"),
+      allowNull: false,
+      defaultValue: "offline",
+    },
   },
   {
     tableName: "meetings",

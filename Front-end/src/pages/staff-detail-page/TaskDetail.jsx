@@ -104,7 +104,6 @@ export default function TaskDetail() {
       setTaskDetails(apiData.taskDetails || []);
       setAttachments(apiData.documents[0]); // Still empty as per your comment
       setNotes(apiData.taskDetails?.[0]?.notes || "");
-
     } catch (error) {
       Swal.fire("Error", "Failed to get customer details.", "error");
       console.log("error found in fetching customer details", error);
@@ -644,6 +643,7 @@ export default function TaskDetail() {
                     { key: "subject", label: "Subject" },
                     { key: "host", label: "Host" },
                     { key: "status", label: "Status" },
+                    { key: "type", label: "Type" },
                   ]}
                   data={meetings
                     .filter((m) => m.status?.toLowerCase() === "pending")
@@ -656,6 +656,7 @@ export default function TaskDetail() {
                           {m.status}
                         </span>
                       ),
+                      type: m.type || "N/A",
                     }))}
                 />
               )}
@@ -677,6 +678,7 @@ export default function TaskDetail() {
                     { key: "subject", label: "Subject" },
                     { key: "host", label: "Host" },
                     { key: "status", label: "Status" },
+                    { key: "type", label: "Type" },
                   ]}
                   data={meetings
                     .filter((m) =>
@@ -699,6 +701,7 @@ export default function TaskDetail() {
                           {m.status}
                         </span>
                       ),
+                      type: m.type || "N/A",
                     }))}
                 />
               )}

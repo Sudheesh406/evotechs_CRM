@@ -77,7 +77,7 @@ const createTodo = async (req, res) => {
       const io = getIo();
       io.to(`notify_${staffDetails.id}`).emit("receive_notification", {
         title: "New Work Assigned",
-        message: `You have been assigned new work: ${title}`,
+        message: 'You have been assigned new work',
         type: "work",
         timestamp: new Date(),
       });
@@ -89,6 +89,31 @@ const createTodo = async (req, res) => {
       data.senderId = user.id;
 
       createNotification(data);
+
+      if(teamId){
+        const isTeam = await team.findOne({where:{id:teamId}})
+        const teamDetails = isTeam.staffIds
+          const io = getIo();
+
+      const value = {};
+      if (teamDetails && teamDetails.length > 0) {
+        teamDetails.forEach((item) => {
+          io.to(`notify_${item}`).emit("receive_notification", {
+            title: "New Work Assigned",
+            message: "You have been assigned new work.",
+            type: "work",
+            timestamp: new Date(),
+          });
+
+          value.title = "New Work Assigned";
+          value.description = "You have been assigned new work..";
+          value.receiverId = item;
+          value.senderId = user.id;
+
+          createNotification(value);
+        });
+      }
+      }
 
       return httpSuccess(res, 201, "Work assigned successfully", newTask);
     }
@@ -160,7 +185,7 @@ const updateTodo = async (req, res) => {
       const io = getIo();
       io.to(`notify_${staffDetails.id}`).emit("receive_notification", {
         title: "Work Assigned",
-        message: `Work assign has a change you have been assigned a work: ${title}`,
+        message: 'Work assign has a change you have been assigned a work',
         type: "work",
         timestamp: new Date(),
       });
@@ -397,11 +422,12 @@ const getAssignedWork = async (req, res) => {
   }
 };
 
+
 const stageUpdate = async (req, res) => {
   try {
     const user = req.user; // currently logged-in user
     const { id } = req.params;
-
+    const allAdmins = await signup.findAll({ where: { role: "admin" } });
     // console.log("Updating work with ID:", id);
 
     const existing = await workAssign.findOne({ where: { id } });
@@ -418,6 +444,28 @@ const stageUpdate = async (req, res) => {
       newStatus = "Progress";
     } else if (existing.workUpdate === "Progress") {
       newStatus = "Completed";
+      
+      const io = getIo();
+
+      const value = {};
+      if (allAdmins && allAdmins.length > 0) {
+        allAdmins.forEach((admin) => {
+          io.to(`notify_${admin.id}`).emit("receive_notification", {
+            title: "Assigned Work Completed",
+            message: "Notification for Assigned Work Completed.",
+            type: "Assignment",
+            timestamp: new Date(),
+          });
+
+          value.title = "Assigned Work Completed";
+          value.description = "Notification for Assigned Work Completed.";
+          value.receiverId = admin.id;
+          value.senderId = user.id;
+
+          createNotification(value);
+        });
+      }
+
     } else {
       // Already completed
       return res
