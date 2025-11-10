@@ -2,7 +2,7 @@ const express = require("express");
 const Router = express.Router();
 const {createLeads, getLeads, updateLeads, deleteLeads, approveLeads,
     deleteContact, updateContact, getContact, createContact, getPendingLeads,
-    getRejectLeads, getGlobalLeads, getGlobalPendingLeads, getGlobalRejectLeads, getGlobalContact
+    getRejectLeads, getGlobalLeads, getGlobalPendingLeads, getGlobalRejectLeads, getGlobalContact, assignContact
 } = require('../../controller/v1/customerController')
 
 const {getCompletedLeads, getGlobalCompletedLeads} = require('../../controller/v1/CompletedLeads')
@@ -31,6 +31,7 @@ Router.post("/contact/create",authenticate, createContact);
 Router.put("/contact/update/:id",authenticate, updateContact);
 Router.delete("/contact/delete/:id",authenticate, deleteContact);
 Router.get("/contact/get",authenticate, getContact);
+Router.post("/contact/assign",authenticate, assignContact);
 
 
 Router.get("/contact/global/get",authenticate, getGlobalContact);

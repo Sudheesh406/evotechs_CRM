@@ -53,12 +53,12 @@ const createTeamWork = async (req, res) => {
       allIds.forEach((id) => {
         io.to(`notify_${id}`).emit("receive_notification", {
           title: "Team Notification",
-          message: "There is a new Team Created.",
+          message: `A new team has been created: ${data.teamName}`,
           type: "Team",
           timestamp: new Date(),
         });
         value.title = "Team Notification";
-        value.description = "There is a new Team Created.";
+        value.description = `A new team has been created: ${data.teamName}`;
         value.receiverId = id;
         value.senderId = user.id;
 
@@ -461,11 +461,10 @@ const getProjects = async (req, res) => {
   }
 };
 
-
 const getLeads = async (req, res) => {
   try {
     const user = req.user;
-    const { page , limit } = req.query; // default 10 per page
+    const { page, limit } = req.query; // default 10 per page
     const offset = (page - 1) * limit;
 
     // Find all teams that include the current user
@@ -477,7 +476,9 @@ const getLeads = async (req, res) => {
     const allStaffIds = [...new Set(allTeams.flatMap((t) => t.staffIds || []))];
 
     if (!allStaffIds.length) {
-      return res.status(200).json({ leads: [], totalPages: 0, currentPage: 1, userId: user.id });
+      return res
+        .status(200)
+        .json({ leads: [], totalPages: 0, currentPage: 1, userId: user.id });
     }
 
     // Count total leads for pagination
@@ -526,11 +527,10 @@ const getLeads = async (req, res) => {
   }
 };
 
-
 const getContacts = async (req, res) => {
   try {
     const user = req.user;
-    const { page , limit} = req.query; // Default values
+    const { page, limit } = req.query; // Default values
     const offset = (page - 1) * limit;
 
     // Find all teams that include the current user
@@ -604,7 +604,6 @@ const getContacts = async (req, res) => {
   }
 };
 
-
 const contactReassign = async (req, res) => {
   try {
     const user = req.user; // Logged-in user
@@ -625,21 +624,26 @@ const contactReassign = async (req, res) => {
       return httpError(res, 404, "Contact not found.");
     }
 
-      const io = getIo();
-      io.to(`notify_${existing.staffId}`).emit("receive_notification", {
-        title: "Contact Reassign",
-        message: 'A team member reassign a contact',
-        type: "contact",
-        timestamp: new Date(),
-      });
+    const teamMember = await signup.findOne({ where: { id: user.id } });
+    if (!teamMember) {
+      return httpError(res, 404, "Team member not found.");
+    }
 
-      const data = {};
-      data.title = "Contact Reassign";
-      data.description = "A team member reassign a contact";
-      data.receiverId = existing.staffId;
-      data.senderId = user.id;
+    const io = getIo();
+    io.to(`notify_${existing.staffId}`).emit("receive_notification", {
+      title: "Contact Reassign",
+      message: `A contact has been reassigned by a team member: ${teamMember.name}`,
+      type: "contact",
+      timestamp: new Date(),
+    });
 
-      createNotification(data);
+    const data = {};
+    data.title = "Contact Reassign";
+    data.description = `A contact has been reassigned by a team member: ${teamMember.name}`;
+    data.receiverId = existing.staffId;
+    data.senderId = user.id;
+
+    createNotification(data);
 
     // Reassign the contact
     existing.staffId = user.id;
@@ -656,7 +660,6 @@ const contactReassign = async (req, res) => {
   }
 };
 
-
 const getSearchContacts = async (req, res) => {
   try {
     const { name, phone } = req.body;
@@ -671,7 +674,9 @@ const getSearchContacts = async (req, res) => {
     const allStaffIds = [...new Set(allTeams.flatMap((t) => t.staffIds || []))];
 
     if (!allStaffIds.length) {
-      return res.status(200).json({ contacts: [], totalCount: 0, userId: user.id });
+      return res
+        .status(200)
+        .json({ contacts: [], totalCount: 0, userId: user.id });
     }
 
     // Step 3: Build where condition
@@ -717,7 +722,6 @@ const getSearchContacts = async (req, res) => {
       totalCount: allContacts.length,
       userId: user.id,
     });
-
   } catch (err) {
     console.error("Search contacts error:", err);
     res.status(500).json({ error: "Server error" });
@@ -737,5 +741,5 @@ module.exports = {
   getLeads,
   getContacts,
   contactReassign,
-  getSearchContacts
+  getSearchContacts,
 };

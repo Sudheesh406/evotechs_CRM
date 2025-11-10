@@ -7,6 +7,13 @@ const { httpSuccess, httpError } = require("../../utils/v1/httpResponse");
 const { Op } = require("sequelize");
 const roleChecker = require("../../utils/v1/roleChecker");
 
+const { getIo } = require("../../utils/v1/socket");
+const {
+  createNotification,
+} = require("../../controller/v1/notificationController");
+
+
+
 //leads
 const createLeads = async (req, res) => {
   try {
@@ -790,6 +797,115 @@ const getGlobalContact = async (req, res) => {
 };
 
 
+const assignContact = async (req, res) => {
+  try {
+    const user = req.user;
+    const {
+      name,
+      description,
+      email,
+      phone,
+      source,
+      priority,
+      amount,
+      location,
+      purpose,
+      assignedUser,
+    } = req.body;
+
+    // Validate required fields
+    const requiredFields = [
+      "name",
+      "description",
+      "phone",
+      "source",
+      "priority",
+      "amount",
+      "location",
+      "purpose",
+      "assignedUser",
+    ];
+    for (const field of requiredFields) {
+      if (!req.body[field]) {
+        return httpError(res, 400, `Missing required field: ${field}`);
+      }
+    }
+
+    // Access control
+    const access = await roleChecker(user.id);
+    if (!access) {
+      return httpError(res, 403, "Access denied. Admins only.");
+    }
+
+    // Check duplicates in assigned staff contacts
+    const existingStaff = await Contacts.findOne({
+      where: { phone, staffId: assignedUser },
+    });
+    if (existingStaff) {
+      return httpError(
+        res,
+        409,
+        "A contact with this phone number already exists in that staff’s contacts"
+      );
+    }
+
+    // Check duplicates in admin’s own contacts
+    const existingAdmin = await Contacts.findOne({
+      where: { phone, staffId: user.id },
+    });
+    if (existingAdmin) {
+      return httpError(
+        res,
+        409,
+        "A contact with this phone number already exists in your contacts"
+      );
+    }
+
+    // Create contacts for both admin and assigned staff
+    const contactData = {
+      name,
+      description,
+      email,
+      phone,
+      source,
+      priority,
+      amount,
+      location,
+      purpose,
+    };
+
+    await Contacts.bulkCreate([
+      { ...contactData, staffId: user.id },
+      { ...contactData, staffId: assignedUser },
+    ]);
+    
+
+       const io = getIo();
+      io.to(`notify_${assignedUser}`).emit("receive_notification", {
+        title: "Admin Assigned A Contact",
+        message: `A new contact, ${name}, has been assigned to you by the Admin.`,
+        type: "Contact Assignment",
+        timestamp: new Date(),
+      });
+
+      const value = {};
+      value.title = "Admin Assigned A Contact";
+      value.description = `A new contact, ${name}, has been assigned to you by the Admin.`;
+      value.receiverId = assignedUser;
+      value.senderId = user.id;
+
+      createNotification(value);
+
+
+    return httpSuccess(res, 201, "Contact created successfully for both admin and staff");
+  } catch (error) {
+    console.error("Error in assigning contact:", error);
+    return httpError(res, 500, "Internal Server Error", error);
+  }
+};
+
+
+
 module.exports = {
   createLeads,
   getLeads,
@@ -806,4 +922,5 @@ module.exports = {
   getGlobalPendingLeads,
   getGlobalRejectLeads,
   getGlobalContact,
+  assignContact
 };

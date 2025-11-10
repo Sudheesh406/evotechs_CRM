@@ -49,7 +49,6 @@ export default function ProtectedRoute({ allowedRoles, children }) {
     };
     getRole();
   }, []);
-  
 
   const clearNotification = async (id) => {
     try {
@@ -57,7 +56,7 @@ export default function ProtectedRoute({ allowedRoles, children }) {
         const response = await axios.delete(`/notification/clear/${id}`);
         if (response) console.log("response", response);
       } else {
-        const response = await axios.delete('/notification/clear');
+        const response = await axios.delete("/notification/clear");
         if (response) console.log("response", response);
       }
     } catch (error) {
@@ -154,7 +153,7 @@ export default function ProtectedRoute({ allowedRoles, children }) {
                     >
                       <div>
                         <p className="font-medium text-gray-800">{n.title}</p>
-                        <p className="text-sm text-gray-600">{n.message}</p>
+                        <p className="text-sm text-gray-600">{n.description}</p>
                         <p className="text-xs text-gray-400 mt-1">{n.time}</p>
                       </div>
                       <button

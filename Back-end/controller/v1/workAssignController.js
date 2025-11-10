@@ -77,14 +77,14 @@ const createTodo = async (req, res) => {
       const io = getIo();
       io.to(`notify_${staffDetails.id}`).emit("receive_notification", {
         title: "New Work Assigned",
-        message: 'You have been assigned new work',
+        message: `You’ve been assigned a new task: ${title}`,
         type: "work",
         timestamp: new Date(),
       });
 
       const data = {};
       data.title = "New Work Assigned";
-      data.description = "You have been assigned a new work";
+      data.description = `You’ve been assigned a new task: ${title}`;
       data.receiverId = staffDetails.id;
       data.senderId = user.id;
 
@@ -100,13 +100,13 @@ const createTodo = async (req, res) => {
         teamDetails.forEach((item) => {
           io.to(`notify_${item}`).emit("receive_notification", {
             title: "New Work Assigned",
-            message: "You have been assigned new work.",
+            message: `You’ve been assigned a new task: ${title}`,
             type: "work",
             timestamp: new Date(),
           });
 
           value.title = "New Work Assigned";
-          value.description = "You have been assigned new work..";
+          value.description = `You’ve been assigned a new task: ${title}`;
           value.receiverId = item;
           value.senderId = user.id;
 
@@ -185,14 +185,14 @@ const updateTodo = async (req, res) => {
       const io = getIo();
       io.to(`notify_${staffDetails.id}`).emit("receive_notification", {
         title: "Work Assigned",
-        message: 'Work assign has a change you have been assigned a work',
+        message: `A change has been made to assignments — you’ve been assigned new work: ${title}`,
         type: "work",
         timestamp: new Date(),
       });
 
       const value = {};
       value.title = "New Work Assigned";
-      value.description = "You have been assigned a new work";
+      value.description = `A change has been made to assignments — you’ve been assigned new work: ${title}`;
       value.receiverId = staffDetails.id;
       value.senderId = user.id;
 
@@ -452,13 +452,13 @@ const stageUpdate = async (req, res) => {
         allAdmins.forEach((admin) => {
           io.to(`notify_${admin.id}`).emit("receive_notification", {
             title: "Assigned Work Completed",
-            message: "Notification for Assigned Work Completed.",
+            message: `The assigned work "${existing.title}" has been completed.`,
             type: "Assignment",
             timestamp: new Date(),
           });
 
           value.title = "Assigned Work Completed";
-          value.description = "Notification for Assigned Work Completed.";
+          value.description = `The assigned work "${existing.title}" has been completed.`;
           value.receiverId = admin.id;
           value.senderId = user.id;
 
