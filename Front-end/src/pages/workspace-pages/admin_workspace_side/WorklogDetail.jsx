@@ -211,6 +211,24 @@ const WorklogDetail = () => {
     } else setCurrentMonth((prev) => prev + 1);
   };
 
+
+// -----------------------------
+// Handle cell double click
+// -----------------------------
+const handleCellDoubleClick = (rowIndex, cellIndex) => {
+  const comment = tableData[rowIndex][cellIndex]?.comment || "";
+
+  if (comment) {
+    Swal.fire({
+      title: "Comment",
+      text: comment,
+      confirmButtonText: "Close",
+      confirmButtonColor: "#4F46E5", // indigo tone
+    });
+  }
+};
+
+
   // -----------------------------
   // UI
   // -----------------------------

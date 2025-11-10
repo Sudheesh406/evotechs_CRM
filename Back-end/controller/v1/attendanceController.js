@@ -98,34 +98,54 @@ const attendanceRegister = async (req, res) => {
       );
     }
 
+    // ✅ Get this month's leaves for this specific staff
     const allLeaves = await getThisMonthLeaves();
-    const value = getTodayLeaves(allLeaves);
-    
-    if (value && value.length > 0) {
 
-    if (value[0].leaveType == "fullday" && value[0].status == "Approve") {
-      return httpError(res, 401, "leave is registered");
-    }
+    // ✅ Filter only this user's leaves
+    const userLeaves = allLeaves.filter((leave) => leave.staffId === user.id);
 
-    if (
-      (value[0].leaveType == "morning" && value[0].status == "Approve") ||
-      (value[0].leaveType == "afternoon" && value[0].status == "Approve")
-    ) {
-      if (details.shedule === "exit") {
-        const todaysAttentence = await Attendance.findOne({
-          where: { staffId: user.id, attendanceDate: details.date },
-        });
-        const difference = calculateHours(
-          todaysAttentence.time,
-          details.exitTime
-        );
-        if (difference != "4") {
-          return httpError(res, 401, "Half day only can add 4 hours working");
+    // ✅ Get today's leaves for this user
+    const todaysLeaves = getTodayLeaves(userLeaves);
+
+    if (todaysLeaves && todaysLeaves.length > 0) {
+      const todayLeave = todaysLeaves[0];
+
+      if (todayLeave.status === "Approve") {
+        if (todayLeave.leaveType === "fullday") {
+          return httpError(res, 401, "Full day leave is registered");
+        }
+
+        if (
+          todayLeave.leaveType === "morning" ||
+          todayLeave.leaveType === "afternoon"
+        ) {
+          if (details.shedule === "exit") {
+            const todaysAttendance = await Attendance.findOne({
+              where: { staffId: user.id, attendanceDate: details.date },
+            });
+
+            if (!todaysAttendance) {
+              return httpError(res, 400, "Entry time not found for today");
+            }
+
+            const difference = calculateHours(
+              todaysAttendance.time,
+              details.exitTime
+            );
+
+            if (difference != "4") {
+              return httpError(
+                res,
+                401,
+                "Half day leave allows only 4 hours of work"
+              );
+            }
+          }
         }
       }
     }
-  }
 
+    // Determine which time field to use
     let timeValue;
     if (details.shedule === "entry") {
       timeValue = details.entryTime;
@@ -142,7 +162,7 @@ const attendanceRegister = async (req, res) => {
       staffId: user.id,
       attendanceDate: details.date,
       type: details.shedule,
-      time: time24, // Save in railway time
+      time: time24,
     });
 
     if (!newAttendance) {
@@ -160,6 +180,7 @@ const attendanceRegister = async (req, res) => {
     return httpError(res, 500, "Internal Server Error");
   }
 };
+
 
 // Helper to convert 12-hour to 24-hour format
 function convertTo24Hour(time12h) {
