@@ -42,6 +42,7 @@ export default function Calendar() {
   const [displayedYear, setDisplayedYear] = useState(now.getFullYear());
   const [holidays, setHolidays] = useState([]);
   const [leaves, setLeaves] = useState([]);
+  const [refresh, setRefresh] = useState(false);
 
   const [showModal, setShowModal] = useState(false);
   const [editingLeave, setEditingLeave] = useState(null);
@@ -85,6 +86,7 @@ export default function Calendar() {
         reason: item.description,
         category: item.category,
         status: item.status || "Pending",
+        HalfTime: item.HalfTime,
       }));
       setLeaves(leavesArray);
     } catch (error) {
@@ -95,7 +97,7 @@ export default function Calendar() {
   useEffect(() => {
     fetchHolidays(displayedYear, displayedMonth + 1);
     fetchLeaves(displayedYear, displayedMonth + 1);
-  }, [displayedMonth, displayedYear, fetchHolidays, fetchLeaves]);
+  }, [displayedMonth, displayedYear, fetchHolidays, fetchLeaves, refresh]);
 
   const handlePrevMonth = () => {
     if (displayedMonth === 0) {
@@ -213,6 +215,7 @@ export default function Calendar() {
         endDate: formDataToSubmit.endDate,
         description: formDataToSubmit.reason,
         status: formDataToSubmit.status,
+        HalfTime: formDataToSubmit.HalfTime,
       };
 
       let res;
@@ -237,6 +240,7 @@ export default function Calendar() {
         reason: res.data.description || formDataToSubmit.reason,
         category: res.data.category || formDataToSubmit.category,
         status: res.data.status || formDataToSubmit.status,
+        HalfTime: res.data.HalfTime || formDataToSubmit.HalfTime,
       };
 
       setLeaves((prev) => {
@@ -261,6 +265,12 @@ export default function Calendar() {
         timer: 2000,
         showConfirmButton: false,
       });
+
+      if (refresh) {
+        setRefresh(false);
+      } else {
+        setRefresh(true);
+      }
     } catch (err) {
       const status = err.response?.status;
       if (status === 406) {
@@ -269,13 +279,13 @@ export default function Calendar() {
           title: "Failed",
           text: "End date cannot be before start date",
         });
-      } else if(status === 405){
-         Swal.fire({
+      } else if (status === 405) {
+        Swal.fire({
           icon: "error",
           title: "Failed",
-          text: "You can request only one leave on the same date.",
+          text: "Allready requested on the same date.",
         });
-      }else {
+      } else {
         console.error("Failed to save leave", err);
         Swal.fire({
           icon: "error",
@@ -343,22 +353,44 @@ export default function Calendar() {
 
           {/* Days */}
           <div className="grid grid-cols-7 gap-2">
+            {" "}
             {Array.from({
               length: new Date(displayedYear, displayedMonth, 1).getDay(),
             }).map((_, i) => (
               <div key={"empty-" + i} className="h-16" />
             ))}
-
+            {" "}
             {daysArray.map((d) => {
               const isSunday = d.dateObj.getDay() === 0;
               const isMaintenance =
                 d.holidayItem && d.holidayItem.type === "maintenance";
               const isHoliday = !!d.holidayItem;
               const hasApprovedLeave = d.approvedLeaves.length > 0;
-              // FIX 2: Ensure tooltip is shown for holidays AND approved leaves
+              
+              // NEW: Check for WFH with HalfTime leave (excluding Offline)
+              const hasWFHAndTrueHalfTimeLeave = d.approvedLeaves.some(
+                (l) =>
+                  l.category &&
+                  l.category.toUpperCase() === "WFH" &&
+                  l.HalfTime &&
+                  l.HalfTime !== "Offline" // <--- KEY CHANGE: Exclude "Offline" from the yellow condition
+              );
+
+              // Existing: Check for WFH
+              const hasWFHCategory = d.approvedLeaves.some(
+                (l) => l.category && l.category.toUpperCase() === "WFH"
+              ); 
+              
+              // New: Check for any non-WFH leaves
+              const hasOtherLeaves = d.approvedLeaves.some(
+                  (l) => !l.category || l.category.toUpperCase() !== "WFH"
+              );
+              
               const showTooltip = isHoliday || hasApprovedLeave || isSunday;
 
               let cellClass = "bg-white border-gray-200 hover:bg-gray-50";
+              
+              // Holiday/Maintenance Priority
               if (isSunday || isHoliday)
                 cellClass = "bg-red-500 border-red-300 text-white";
               if (isMaintenance)
@@ -370,14 +402,26 @@ export default function Calendar() {
                 !isHoliday &&
                 !isMaintenance
               ) {
-                const hasFullDay = d.approvedLeaves.some(
-                  (l) => l.leaveType === "Full Day" || l.leaveType === "fullday"
-                );
-                cellClass = hasFullDay
-                  ? "bg-blue-800 border-blue-500 text-white"
-                  : "bg-orange-500 border-orange-300 text-white";
+                // 1. Prioritize WFH & TRUE HalfTime (Yellow)
+                if (hasWFHAndTrueHalfTimeLeave) {
+                  cellClass = "bg-yellow-300 border-yellow-500 text-gray-900";
+                } 
+                // 2. WFH Only (Gray) - This includes WFH HalfTime 'Offline' since it didn't meet the Yellow condition
+                else if (!hasOtherLeaves && hasWFHCategory) {
+                  cellClass = "bg-gray-500 border-gray-400 text-white";
+                } 
+                // 3. Full/Half Day Leave (Blue/Orange)
+                else {
+                  const hasFullDay = d.approvedLeaves.some(
+                    (l) =>
+                      l.leaveType === "Full Day" || l.leaveType === "fullday"
+                  );
+                  cellClass = hasFullDay
+                    ? "bg-blue-800 border-blue-500 text-white"
+                    : "bg-orange-500 border-orange-300 text-white";
+                }
               }
-
+              
               let tooltipContent = "Sunday";
               if (d.holidayItem) {
                 // FIX 3: Updated holiday tooltip content
@@ -399,7 +443,7 @@ export default function Calendar() {
                 tooltipContent = (
                   <div className="p-2 space-y-1">
                     <div className="font-bold text-blue-500">
-                      Approved Leave(s)
+                      Approved Request
                     </div>
                     {d.approvedLeaves.map((l, index) => (
                       <div
@@ -409,6 +453,11 @@ export default function Calendar() {
                         <span className="font-medium">
                           {l.leaveType} ({l.category})
                         </span>
+                        {l.HalfTime && (
+                           <div className="text-[12px] text-gray-500">
+                            Half Time: {l.HalfTime === "Offline" ? "Offline work" : l.HalfTime}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -472,6 +521,14 @@ export default function Calendar() {
             <div className="flex items-center gap-2">
               <span className="w-4 h-4 bg-orange-500 rounded-sm border"></span>
               Half Day Leave
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-4 h-4 bg-gray-500 rounded-sm border"></span>
+              Work From Home
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-4 h-4 bg-yellow-300 rounded-sm border"></span>
+              WFH & Leave
             </div>
           </div>
         </div>

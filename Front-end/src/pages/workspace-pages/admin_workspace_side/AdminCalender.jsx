@@ -71,6 +71,7 @@ export default function AdminCalendarManager() {
         reason: item.description,
         category: item.category,
         status: item.status || "Pending",
+        HalfTime: item.HalfTime,
       }));
       setLeaves(leavesArray);
     } catch (error) {
@@ -145,7 +146,6 @@ export default function AdminCalendarManager() {
           prev.map((h) => (h.id === editingId ? { ...h, ...payload } : h))
         );
         resetForm();
-
       } catch (err) {
         console.error("Update failed", err);
       }
@@ -177,44 +177,42 @@ export default function AdminCalendarManager() {
     setType(item.type || "holiday");
   };
 
-  
   const deleteHoliday = async (id) => {
-  const result = await Swal.fire({
-    title: "Are you sure?",
-    text: "Do you want to delete this holiday/maintenance entry?",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonColor: "#d33",
-    cancelButtonColor: "#3085d6",
-    confirmButtonText: "Yes, delete it",
-    cancelButtonText: "Cancel",
-  });
-
-  if (!result.isConfirmed) return;
-
-  try {
-    await axios.delete(`/calendar/delete/${id}`);
-    setHolidays((prev) => prev.filter((h) => h.id !== id));
-    if (editingId === id) resetForm();
-
-    Swal.fire({
-      icon: "success",
-      title: "Deleted!",
-      text: "The holiday/maintenance entry has been removed.",
-      confirmButtonColor: "#3085d6",
-    });
-  } catch (err) {
-    console.error("Delete failed", err);
-
-    Swal.fire({
-      icon: "error",
-      title: "Failed!",
-      text: "Could not delete the entry. Please try again.",
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "Do you want to delete this holiday/maintenance entry?",
+      icon: "warning",
+      showCancelButton: true,
       confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it",
+      cancelButtonText: "Cancel",
     });
-  }
-};
 
+    if (!result.isConfirmed) return;
+
+    try {
+      await axios.delete(`/calendar/delete/${id}`);
+      setHolidays((prev) => prev.filter((h) => h.id !== id));
+      if (editingId === id) resetForm();
+
+      Swal.fire({
+        icon: "success",
+        title: "Deleted!",
+        text: "The holiday/maintenance entry has been removed.",
+        confirmButtonColor: "#3085d6",
+      });
+    } catch (err) {
+      console.error("Delete failed", err);
+
+      Swal.fire({
+        icon: "error",
+        title: "Failed!",
+        text: "Could not delete the entry. Please try again.",
+        confirmButtonColor: "#d33",
+      });
+    }
+  };
 
   const onDayClick = (day) => {
     if (day.holidayItem) {
@@ -271,7 +269,7 @@ export default function AdminCalendarManager() {
             ))}
           </div>
 
-          {/* Calendar Grid */}
+          {/* Calendar Grid - START OF MODIFIED LOGIC */}
           <div className="grid grid-cols-7 gap-2">
             {Array.from({ length: monthStartDayIndex }).map((_, i) => (
               <div key={"empty-" + i} className="h-16" />
@@ -284,26 +282,55 @@ export default function AdminCalendarManager() {
               const isHoliday = !!d.holidayItem;
 
               let cellClass = "bg-white border-gray-200 hover:bg-gray-50";
+              
+              // Holiday/Maintenance Priority
               if (isSunday || isHoliday)
                 cellClass = "bg-red-500 border-red-300 text-white";
               if (isMaintenance)
                 cellClass = "bg-purple-500 border-purple-300 text-white";
 
+              // Approved Leave Logic (only runs if not Sunday/Holiday/Maintenance)
               if (
                 d.approvedLeaves.length > 0 &&
                 !isSunday &&
                 !isHoliday &&
                 !isMaintenance
               ) {
-                const hasFullDay = d.approvedLeaves.some(
-                  (l) => l.leaveType === "fullday"
-                );
-                cellClass = hasFullDay
-                  ? "bg-blue-800 border-blue-500 text-white"
-                  : "bg-orange-500 border-orange-300 text-white";
-              }
 
-              // Tooltip content logic
+                const hasWFHAndTrueHalfTimeLeave = d.approvedLeaves.some(
+                  (l) =>
+                    l.category &&
+                    l.category.toUpperCase() === "WFH" &&
+                    l.HalfTime &&
+                    l.HalfTime !== "Offline" // <--- KEY CHANGE: Exclude "Offline"
+                );
+                const hasWFHCategory = d.approvedLeaves.some(
+                  (l) => l.category && l.category.toUpperCase() === "WFH"
+                );
+
+                // 3. Check for any non-WFH leaves (Full Day or Half Day)
+                const hasOtherLeaves = d.approvedLeaves.some(
+                    (l) => !l.category || l.category.toUpperCase() !== "WFH"
+                );
+                
+                if (hasWFHAndTrueHalfTimeLeave) {
+                  // YELLOW: WFH + Half Time (e.g., morning/evening leave)
+                  cellClass = "bg-yellow-300 border-yellow-500 text-gray-900"; 
+                } else if (!hasOtherLeaves && hasWFHCategory) {
+                  // GRAY: Day consists ONLY of WFH requests (which includes WFH HalfTime 'Offline' because it's not Yellow)
+                  cellClass = "bg-gray-500 border-gray-400 text-white";
+                } else {
+                  // BLUE/ORANGE: Standard Leave (Handles mixed days or non-WFH leaves)
+                  const hasFullDay = d.approvedLeaves.some(
+                    (l) => l.leaveType === "Full Day" || l.leaveType === "fullday"
+                  );
+                  cellClass = hasFullDay
+                    ? "bg-blue-800 border-blue-500 text-white"
+                    : "bg-orange-500 border-orange-300 text-white";
+                }
+              }
+              
+              // Tooltip content logic (updated to include HalfTime in detail)
               let tooltipText = "";
               if (isSunday) tooltipText = "Sunday";
               else if (isHoliday)
@@ -311,8 +338,10 @@ export default function AdminCalendarManager() {
               else if (d.approvedLeaves.length > 0)
                 tooltipText = d.approvedLeaves
                   .map(
-                    (l) =>
-                      `${l.employee} (${l.category} - ${l.leaveType}, ${l.status})`
+                    (l) => {
+                        const halfTimeInfo = l.HalfTime ? ` (Half Time: ${l.HalfTime === "Offline" ? "Offline work" : l.HalfTime})` : '';
+                        return `${l.employee} (${l.category} - ${l.leaveType}, ${l.status}${halfTimeInfo})`
+                    }
                   )
                   .join("\n");
 
@@ -349,8 +378,10 @@ export default function AdminCalendarManager() {
               );
             })}
           </div>
+        {/* Calendar Grid - END OF MODIFIED LOGIC */}
 
-          {/* Color Legend */}
+
+          {/* Color Legend - UPDATED */}
           <div className="mt-4 flex flex-wrap gap-4 items-center text-sm">
             <div className="flex items-center gap-2">
               <span className="w-4 h-4 bg-red-500 rounded-sm border"></span>
@@ -368,11 +399,19 @@ export default function AdminCalendarManager() {
               <span className="w-4 h-4 bg-orange-500 rounded-sm border"></span>
               Half Day Leave
             </div>
+            <div className="flex items-center gap-2">
+              <span className="w-4 h-4 bg-gray-500 rounded-sm border"></span>
+              Work From Home
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-4 h-4 bg-yellow-300 rounded-sm border"></span>
+              WFH & Leave
+            </div>
           </div>
         </div>
 
         {/* Leave Requests Table */}
-        <div className="md:col-span-8 bg-white rounded-xl shadow p-6 overflow-x-auto">
+        <div className="md:col-span-9 bg-white rounded-xl shadow p-6 overflow-x-auto">
           <h3 className="text-lg font-semibold mb-4">Leave Requests List</h3>
           <table className="min-w-full divide-y divide-gray-200">
             <thead>
@@ -383,13 +422,14 @@ export default function AdminCalendarManager() {
                 <th className="px-3 py-2">End</th>
                 <th className="px-3 py-2">Reason</th>
                 <th className="px-3 py-2">Category</th>
+                <th className="px-3 py-2">HalfTime</th>
                 <th className="px-3 py-2">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {leaves.length === 0 && (
                 <tr>
-                  <td colSpan="7" className="text-center py-4 text-gray-500">
+                  <td colSpan="9" className="text-center py-4 text-gray-500">
                     No leave requests found.
                   </td>
                 </tr>
@@ -402,6 +442,15 @@ export default function AdminCalendarManager() {
                   <td className="px-3 py-2">{leave.endDate}</td>
                   <td className="px-3 py-2">{leave.reason}</td>
                   <td className="px-3 py-2">{leave.category}</td>
+
+                  <td className="px-3 py-2">
+                    {!leave.HalfTime
+                      ? "Nill"
+                      : leave.HalfTime == "Offline"
+                      ? "Offline work"
+                      : leave.HalfTime}
+                  </td>
+
                   <td className="px-3 py-2 flex flex-col gap-2">
                     <select
                       value={leave.status}
@@ -422,7 +471,7 @@ export default function AdminCalendarManager() {
         </div>
 
         {/* Create / Edit panel */}
-        <div className="md:col-span-4 bg-white rounded-xl shadow p-6 flex flex-col gap-4">
+        <div className="md:col-span-3 bg-white rounded-xl shadow p-6 flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-800">
               {editingId ? "Edit Entry" : "Create Entry"}

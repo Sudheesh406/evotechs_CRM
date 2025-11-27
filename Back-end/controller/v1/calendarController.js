@@ -213,6 +213,7 @@ const getLeaveRequest = async (req, res) => {
   }
 };
 
+
 const leaveRequestUpdate = async (req, res) => {
   try {
     const { id } = req.params;
@@ -319,7 +320,9 @@ const getLeaves = async (req, res) => {
 
 const createLeave = async (req, res) => {
   const user = req.user; // Assuming req.user is set via authentication middleware
-  const { leaveType, category, leaveDate, endDate, description } = req.body;
+  const { leaveType, category, leaveDate, endDate, description, HalfTime } = req.body;
+
+  console.log("Request Body:", req.body); // Debugging line
 
   try {
     const allAdmins = await signup.findAll({ where: { role: "admin" } });
@@ -371,15 +374,15 @@ const createLeave = async (req, res) => {
       });
     }
     
-    // 3. Create leave entry
     const newLeave = await Leaves.create({
-      staffId: user.id,
-      leaveType,
-      category,
-      leaveDate: start,
-      endDate: end,
-      description,
-    });
+        staffId: user.id,
+        leaveType,
+        category,
+        leaveDate: start,
+        endDate: end,
+        description,
+        HalfTime
+      });
 
     const io = getIo();
 
@@ -387,14 +390,14 @@ const createLeave = async (req, res) => {
     if (allAdmins && allAdmins.length > 0) {
       allAdmins.forEach((admin) => {
         io.to(`notify_${admin.id}`).emit("receive_notification", {
-          title: "Leave Notification",
-          message: "There is a new leave request.",
+          title: "Leave/WFH Notification",
+          message: "There is a new leave/WFH request.",
           type: "Calendar",
           timestamp: new Date(),
         });
 
-        value.title = "Leave Assigned";
-        value.description = "There is a new leave request";
+        value.title = "leave/WFH Assigned";
+        value.description = "There is a new leave/WFH request";
         value.receiverId = admin.id;
         value.senderId = user.id;
 
@@ -404,11 +407,11 @@ const createLeave = async (req, res) => {
 
     // 4. Return success response
     return res.status(201).json({
-      message: "Leave request created successfully",
+      message: "leave/WFH request created successfully",
       data: newLeave,
     });
   } catch (error) {
-    console.error("Error creating leave:", error);
+    console.error("Error creating leave/WFH:", error);
     return httpError(res, 500, "Server error", error.message || error);
   }
 };
@@ -418,7 +421,7 @@ const updateLeave = async (req, res) => {
   try {
     const user = req.user;
     const { id } = req.params;
-    const { leaveType, category, leaveDate, endDate, description } = req.body;
+    const { leaveType, category, leaveDate, endDate, description, HalfTime } = req.body;
 
     // 1. Find leave by ID
     const leave = await Leaves.findByPk(id);
@@ -454,12 +457,44 @@ const updateLeave = async (req, res) => {
       return httpError(res, 406, "End date cannot be before start date");
     }
 
-    // 6. Update leave fields (status cannot be edited)
+    // 6. Check for overlapping leave (EXCLUDE CURRENT LEAVE)
+    const existingLeave = await Leaves.findOne({
+      where: {
+        staffId: user.id,
+        id: { [Op.ne]: id }, // important!
+        [Op.or]: [
+          {
+            leaveDate: { [Op.between]: [start, end] },
+          },
+          {
+            endDate: { [Op.between]: [start, end] },
+          },
+          {
+            [Op.and]: [
+              { leaveDate: { [Op.lte]: start } },
+              { endDate: { [Op.gte]: end } },
+            ],
+          },
+        ],
+      },
+    });
+
+    if (existingLeave) {
+      return res.status(405).json({
+        message: "You already have another leave that overlaps with this date range.",
+      });
+    }
+
+    // 7. Update leave fields
     leave.leaveType = leaveType;
     leave.category = category;
     leave.leaveDate = start;
     leave.endDate = end;
     leave.description = description;
+
+    if (HalfTime !== undefined) {
+      leave.HalfTime = HalfTime; // Only set if provided
+    }
 
     await leave.save();
 
@@ -472,6 +507,7 @@ const updateLeave = async (req, res) => {
     return httpError(res, 500, "Server error", error.message || error);
   }
 };
+
 
 
 const deleteLeave = async (req, res) => {
@@ -512,6 +548,7 @@ module.exports = {
   getCalender,
   editCalendar,
   deleteCalendar,
+  
   getLeaveRequest,
   leaveRequestUpdate,
   getLeaves,

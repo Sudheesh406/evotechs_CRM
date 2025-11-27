@@ -28,7 +28,7 @@ module.exports = {
         allowNull: false,
       },
       description: {
-       type: Sequelize.ENUM('Personal', 'Family', 'Medical', 'Emergency', 'Vacation'),
+       type: Sequelize.ENUM('Personal', 'Family', 'Medical', 'Emergency'),
         allowNull: true,
       },
       status: {
@@ -37,9 +37,13 @@ module.exports = {
         defaultValue: 'Pending',
       },
       category: {
-        type: Sequelize.ENUM('Casual', 'Medical', 'unpaid'),
+        type: Sequelize.ENUM('Leave', 'WFH'),
         allowNull: false,
-        defaultValue: 'Casual',
+        defaultValue: 'Leave',
+      },
+      HalfTime: {
+        type: Sequelize.ENUM('Offline', 'Leave'),
+        allowNull: true,
       },
       softDelete: {
         type: Sequelize.BOOLEAN,

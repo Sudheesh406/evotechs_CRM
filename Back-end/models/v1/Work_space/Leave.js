@@ -38,7 +38,6 @@ const leaves = sequelize.define(
         "Family",
         "Medical",
         "Emergency",
-        "Vacation"
       ),
       allowNull: true,
     },
@@ -48,9 +47,13 @@ const leaves = sequelize.define(
       defaultValue: "Pending",
     },
     category: {
-      type: DataTypes.ENUM("Casual", "Medical", "unpaid"),
+      type: DataTypes.ENUM("Leave", "WFH"),
       allowNull: false,
-      defaultValue: "Casual",
+      defaultValue: "Leave",
+    },
+    HalfTime: {
+      type: DataTypes.ENUM("Offline", "Leave"),
+      allowNull: true,
     },
     softDelete: {
       type: DataTypes.BOOLEAN,

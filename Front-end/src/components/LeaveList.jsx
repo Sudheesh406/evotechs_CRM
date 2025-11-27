@@ -1,28 +1,42 @@
 // src/components/LeaveList.jsx
 
-export default function LeaveList({ leaves, handleCreateLeave, handleEditLeave, handleDeleteLeave }) {
+export default function LeaveList({
+  leaves,
+  handleCreateLeave,
+  handleEditLeave,
+  handleDeleteLeave,
+})
+
+
+{
+  console.log('leaves',leaves)
   return (
     <div className="mt-6 bg-white rounded-xl shadow p-6">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold text-gray-800">Leaves</h3>
+        <h3 className="text-lg font-semibold text-gray-800">
+          Leaves & Work from home
+        </h3>
         {/* CREATE LEAVE BUTTON */}
         <button
           onClick={handleCreateLeave}
           className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition font-medium text-sm"
         >
-          Create Leave Request
+          Create Request
         </button>
       </div>
 
       {leaves.length === 0 ? (
-        <p className="text-gray-500 text-sm">No leaves for this month.</p>
+        <p className="text-gray-500 text-sm">
+          No leaves and work from home for this month.
+        </p>
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
             <thead>
               <tr className="bg-gray-50">
-                <th className="px-4 py-2 text-left">Leave Type</th>
+                <th className="px-4 py-2 text-left">Type</th>
                 <th className="px-4 py-2 text-left">Category</th>
+                <th className="px-4 py-2 text-left">Half Time</th>
                 <th className="px-4 py-2 text-left">Start Date</th>
                 <th className="px-4 py-2 text-left">End Date</th>
                 <th className="px-4 py-2 text-left">Status</th>
@@ -33,12 +47,20 @@ export default function LeaveList({ leaves, handleCreateLeave, handleEditLeave, 
             <tbody className="divide-y divide-gray-200">
               {leaves.map((l) => {
                 // Disable actions if leave is approved or rejected
-                const isLocked = l.status === "Approve" || l.status === "Reject";
+                const isLocked =
+                  l.status === "Approve" || l.status === "Reject";
 
                 return (
                   <tr key={l.id}>
                     <td className="px-4 py-2">{l.leaveType}</td>
                     <td className="px-4 py-2">{l.category}</td>
+                    <td className="px-4 py-2">
+                      {!l.HalfTime
+                        ? "Nill"
+                        : l.HalfTime == "Offline"
+                        ? "Offline work"
+                        : l.HalfTime}
+                    </td>
                     <td className="px-4 py-2">{l.startDate}</td>
                     <td className="px-4 py-2">{l.endDate}</td>
                     <td className="px-4 py-2 font-medium">

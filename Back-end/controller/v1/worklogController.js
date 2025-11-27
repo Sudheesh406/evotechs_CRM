@@ -64,16 +64,6 @@ const createWorklog = async (req, res) => {
         savedWorklogs.push(entry);
       }
 
-      // 5. Handle Attendance for days with no tasks but defined attendance
-      // We need a way to save attendance even if no tasks exist.
-      // If tasks array was empty but attendance was provided, we save a separate record
-      // for attendance only, or update a dummy/control record if your DB schema supports it.
-
-      // OPTIONAL: If your DB schema has a single attendance record per day/staff (e.g., separate 'DailyLog' table)
-      // You should update that separate table here using 'date' and 'user.id'.
-      // Since you are updating worklog entries, we'll assume attendance is saved with the task entries,
-      // and the final attendance value written will be the one from the last task of the day.
-      // This is generally acceptable if all tasks for a day share the same attendance value.
     }
 
     // 6. Return success response
