@@ -116,8 +116,8 @@ const attendanceRegister = async (req, res) => {
         }
 
         if (
-          todayLeave.leaveType === "morning" ||
-          todayLeave.leaveType === "afternoon"
+          todayLeave.leaveType === "morning" && !todayLeave.HalfTime || todayLeave.leaveType === "morning" && todayLeave.HalfTime === "Leave" ||
+          todayLeave.leaveType === "afternoon" && !todayLeave.HalfTime || todayLeave.leaveType === "afternoon" && todayLeave.HalfTime === "Leave"
         ) {
           if (details.shedule === "exit") {
             const todaysAttendance = await Attendance.findOne({

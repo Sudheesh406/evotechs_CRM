@@ -71,6 +71,8 @@ import AdminRejectedWork from './pages/rejection/adminRejectedWork/AdminRejected
 import WorklogDetail from "./pages/workspace-pages/admin_workspace_side/WorklogDetail";
 import SubTaskForAdmin from './pages/activity-pages/admin_activity/SubTaskForAdmin';
 
+import DayBook from "./pages/Accounts-pages/DayBook";
+
 import ProtectedRoute from "./components/Routes/ProtectedRoute";
 import Sidebar from "./components/SideBar";
 
@@ -588,6 +590,14 @@ function Layout() {
             element={
               <ProtectedRoute allowedRoles={["staff","admin"]}>
                 <TeamSubtask />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/accounts/day-book"
+            element={
+              <ProtectedRoute allowedRoles={["staff", "admin"]}>
+                <DayBook />
               </ProtectedRoute>
             }
           />

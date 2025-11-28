@@ -28,6 +28,9 @@ import {
   ChevronRight,
   XCircle ,
   CircleSlash,
+  Receipt ,
+  Banknote,
+  ReceiptText ,
   Loader, // For a cleaner loading icon
 } from "lucide-react";
 
@@ -128,6 +131,17 @@ const Sidebar = ({ closeSidebar }) => {
           title: "Work Log",
           path: "/workspace/work/assign",
           icon: FolderKanban,
+        },
+      ],
+    },
+    {
+      title: "Accounts",
+      icon: ReceiptText,
+      subMenu: [
+        {
+          title: "Day Book",
+          path: "/accounts/day-book",
+          icon: Receipt,
         },
       ],
     },
@@ -249,6 +263,17 @@ const Sidebar = ({ closeSidebar }) => {
         },
       ],
     },
+      {
+      title: "Accounts",
+      icon: ReceiptText ,
+      subMenu: [
+        {
+          title: "Day Book",
+          path: "/accounts/day-book",
+          icon: Receipt,
+        },
+      ],
+    },
     { title: "Trash", icon: Trash2, path: "/trash" },
     { title: "Settings", path: "/settings", icon: Settings },
   ];
@@ -316,7 +341,7 @@ const Sidebar = ({ closeSidebar }) => {
       {/* Top + Menu Scrollable */}
       <div className="flex flex-col overflow-y-auto flex-1 custom-scrollbar">
         {/* Logo */}
-        <div className="p-6 border-b border-gray-200 flex items-center gap-4">
+        <div className="p-6 border-b border-gray-200 flex items-center gap-4 bg-white sticky top-0 z-20">
           {/* Company Logo */}
           <img
             src={company?.logoUrl || DefaultLog} // <-- default image
@@ -339,6 +364,7 @@ const Sidebar = ({ closeSidebar }) => {
         </div>
 
         {/* Menu */}
+        <div className="flex flex-col overflow-y-auto flex-1 custom-scrollbar">
         <nav className="space-y-1.5 p-4">
           {menuItems?.map((item, i) => {
             const Icon = item.icon;
@@ -433,6 +459,7 @@ const Sidebar = ({ closeSidebar }) => {
             );
           })}
         </nav>
+        </div>
       </div>
 
       {/* --- Logout Button --- */}
