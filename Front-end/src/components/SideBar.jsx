@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "../instance/Axios";
 import { NavLink, useNavigate } from "react-router-dom";
-import DefaultLog from '../assets/images/logo1.png'
+import DefaultLog from "../assets/images/logo1.png";
 import {
   Home,
   ClipboardList,
@@ -26,11 +26,12 @@ import {
   Trash,
   Globe,
   ChevronRight,
-  XCircle ,
+  XCircle,
   CircleSlash,
-  Receipt ,
+  Receipt,
   Banknote,
-  ReceiptText ,
+  Wallet,
+  ReceiptText,
   Loader, // For a cleaner loading icon
 } from "lucide-react";
 
@@ -45,6 +46,7 @@ const Sidebar = ({ closeSidebar }) => {
   const [menuItems, setMenuItems] = useState();
   const [company, setCompany] = useState("company");
   const [loading, setLoading] = useState(true);
+  const [view, setView] = useState(false)
   const navigate = useNavigate();
 
   const toggleMenu = (index) => {
@@ -99,11 +101,15 @@ const Sidebar = ({ closeSidebar }) => {
         },
       ],
     },
-     {
+    {
       title: "Rejections",
       icon: XCircle,
       subMenu: [
-        { title: "Disapproved", path: "/rejections/disapproved", icon: XCircle },
+        {
+          title: "Disapproved",
+          path: "/rejections/disapproved",
+          icon: XCircle,
+        },
       ],
     },
     {
@@ -142,6 +148,11 @@ const Sidebar = ({ closeSidebar }) => {
           title: "Day Book",
           path: "/accounts/day-book",
           icon: Receipt,
+        },
+        {
+          title: "Income Sheet",
+          path: "/accounts/income-sheet",
+          icon: Wallet,
         },
       ],
     },
@@ -216,11 +227,15 @@ const Sidebar = ({ closeSidebar }) => {
         },
       ],
     },
-      {
+    {
       title: "Rejections",
       icon: XCircle,
       subMenu: [
-        { title: "Disapproved", path: "/admin/rejections/disapproved", icon: XCircle },
+        {
+          title: "Disapproved",
+          path: "/admin/rejections/disapproved",
+          icon: XCircle,
+        },
       ],
     },
     {
@@ -263,14 +278,19 @@ const Sidebar = ({ closeSidebar }) => {
         },
       ],
     },
-      {
+    {
       title: "Accounts",
-      icon: ReceiptText ,
+      icon: ReceiptText,
       subMenu: [
         {
           title: "Day Book",
           path: "/accounts/day-book",
           icon: Receipt,
+        },
+        {
+          title: "Income Sheet",
+          path: "/accounts/income-sheet",
+          icon: Wallet,
         },
       ],
     },
@@ -279,31 +299,51 @@ const Sidebar = ({ closeSidebar }) => {
   ];
   // --- End of Menu Data ---
 
-  useEffect(() => {
-    async function initRole() {
-      try {
-        let acess = null;
-        const { data } = await axios.get("/auth/role");
+useEffect(() => {
+  async function initRole() {
+    try {
+      let acess = null;
+      const { data } = await axios.get("/auth/role");
 
-        setCompany(data?.data?.company);
-        if (data?.data?.role) {
-          acess = data?.data?.role;
-        }
+      setCompany(data?.data?.company);
 
-        setLoading(false);
-        // Set menu
-        if (acess === "admin") {
-          setMenuItems(adminItems);
-        } else {
-          setMenuItems(staffItems);
-        }
-      } catch (err) {
-        console.error("Error initializing role:", err);
+      if (data?.data?.role) {
+        acess = data.data.role;
       }
-    }
 
-    initRole();
-  }, []);
+      if (data?.data?.value) {
+        setView(true);
+      }
+
+      console.log(data)
+
+      setLoading(false);
+
+      // Assign menu items
+      if (acess === "admin") {
+        setMenuItems(adminItems);
+      } else {
+        // Staff logic
+        let updated = staffItems;
+
+        // If staff does NOT have "view" permission → remove Accounts
+        if (!data?.data?.value) {
+          updated = staffItems.filter(
+            (item) => item.title !== "Accounts"
+          );
+        }
+
+        setMenuItems(updated);
+      }
+
+    } catch (err) {
+      console.error("Error initializing role:", err);
+    }
+  }
+
+  initRole();
+}, []);
+
 
   const handleLogout = async () => {
     try {
@@ -365,100 +405,100 @@ const Sidebar = ({ closeSidebar }) => {
 
         {/* Menu */}
         <div className="flex flex-col overflow-y-auto flex-1 custom-scrollbar">
-        <nav className="space-y-1.5 p-4">
-          {menuItems?.map((item, i) => {
-            const Icon = item.icon;
-            const hasSubMenu = !!item.subMenu;
+          <nav className="space-y-1.5 p-4">
+            {menuItems?.map((item, i) => {
+              const Icon = item.icon;
+              const hasSubMenu = !!item.subMenu;
 
-            const baseClass = `flex items-center gap-3 px-4 py-3 rounded-lg font-medium tracking-wide transition-all duration-300`;
-            const activeClass = ` text-white shadow-lg shadow-blue-500/50`;
-            const inactiveHoverClass = ` hover:bg-gray-100 hover:text-gray-800`;
-            const subMenuActiveClass = ` font-semibold`;
-            const subMenuInactiveHoverClass = ` hover:bg-gray-100`;
+              const baseClass = `flex items-center gap-3 px-4 py-3 rounded-lg font-medium tracking-wide transition-all duration-300`;
+              const activeClass = ` text-white shadow-lg shadow-blue-500/50`;
+              const inactiveHoverClass = ` hover:bg-gray-100 hover:text-gray-800`;
+              const subMenuActiveClass = ` font-semibold`;
+              const subMenuInactiveHoverClass = ` hover:bg-gray-100`;
 
-            if (!hasSubMenu) {
-              return (
-                <NavLink
-                  key={i}
-                  to={item.path}
-                  onClick={closeSidebar}
-                  className={({ isActive }) =>
-                    `${baseClass} ${
-                      isActive ? activeClass : inactiveHoverClass
-                    }`
-                  }
-                  style={({ isActive }) => ({
-                    backgroundColor: isActive ? PRIMARY_BLUE : "transparent",
-                    color: isActive ? "white" : DARK_TEXT,
-                  })}
-                >
-                  <Icon className="w-5 h-5 flex-shrink-0" />
-                  <span>{item.title}</span>
-                </NavLink>
-              );
-            }
-
-            // Menu with Sub-menu
-            return (
-              <div key={i}>
-                <div
-                  onClick={() => toggleMenu(i)}
-                  className={`${baseClass} cursor-pointer 
-                    ${openMenus[i] ? "bg-gray-100" : inactiveHoverClass}`}
-                  style={{
-                    color: openMenus[i] ? PRIMARY_BLUE : DARK_TEXT,
-                  }}
-                >
-                  <div className="flex items-center gap-3">
+              if (!hasSubMenu) {
+                return (
+                  <NavLink
+                    key={i}
+                    to={item.path}
+                    onClick={closeSidebar}
+                    className={({ isActive }) =>
+                      `${baseClass} ${
+                        isActive ? activeClass : inactiveHoverClass
+                      }`
+                    }
+                    style={({ isActive }) => ({
+                      backgroundColor: isActive ? PRIMARY_BLUE : "transparent",
+                      color: isActive ? "white" : DARK_TEXT,
+                    })}
+                  >
                     <Icon className="w-5 h-5 flex-shrink-0" />
                     <span>{item.title}</span>
-                  </div>
-                  <ChevronRight
-                    className={`w-4 h-4 transform transition-transform duration-300 flex-shrink-0 ${
-                      openMenus[i] ? "rotate-90" : "text-gray-400"
-                    }`}
-                    style={{
-                      color: openMenus[i] ? PRIMARY_BLUE : "currentColor",
-                    }}
-                  />
-                </div>
+                  </NavLink>
+                );
+              }
 
-                {/* Sub Menu Container */}
-                {openMenus[i] && (
-                  <div className="ml-5 mt-1 space-y-0.5 border-l-2 border-gray-300/50 pl-3 transition-all duration-300 ease-out">
-                    {item.subMenu.map((sub, idx) => {
-                      const SubIcon = sub.icon;
-                      return (
-                        <NavLink
-                          key={idx}
-                          to={sub.path}
-                          onClick={closeSidebar}
-                          className={({ isActive }) =>
-                            `flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-300
+              // Menu with Sub-menu
+              return (
+                <div key={i}>
+                  <div
+                    onClick={() => toggleMenu(i)}
+                    className={`${baseClass} cursor-pointer 
+                    ${openMenus[i] ? "bg-gray-100" : inactiveHoverClass}`}
+                    style={{
+                      color: openMenus[i] ? PRIMARY_BLUE : DARK_TEXT,
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Icon className="w-5 h-5 flex-shrink-0" />
+                      <span>{item.title}</span>
+                    </div>
+                    <ChevronRight
+                      className={`w-4 h-4 transform transition-transform duration-300 flex-shrink-0 ${
+                        openMenus[i] ? "rotate-90" : "text-gray-400"
+                      }`}
+                      style={{
+                        color: openMenus[i] ? PRIMARY_BLUE : "currentColor",
+                      }}
+                    />
+                  </div>
+
+                  {/* Sub Menu Container */}
+                  {openMenus[i] && (
+                    <div className="ml-5 mt-1 space-y-0.5 border-l-2 border-gray-300/50 pl-3 transition-all duration-300 ease-out">
+                      {item.subMenu.map((sub, idx) => {
+                        const SubIcon = sub.icon;
+                        return (
+                          <NavLink
+                            key={idx}
+                            to={sub.path}
+                            onClick={closeSidebar}
+                            className={({ isActive }) =>
+                              `flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-300
                               ${
                                 isActive
                                   ? subMenuActiveClass
                                   : subMenuInactiveHoverClass
                               }`
-                          }
-                          style={({ isActive }) => ({
-                            backgroundColor: isActive
-                              ? ACCENT_BG
-                              : "transparent",
-                            color: isActive ? PRIMARY_BLUE : DARK_TEXT,
-                          })}
-                        >
-                          <SubIcon className="w-3.5 h-3.5 flex-shrink-0" />
-                          {sub.title}
-                        </NavLink>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </nav>
+                            }
+                            style={({ isActive }) => ({
+                              backgroundColor: isActive
+                                ? ACCENT_BG
+                                : "transparent",
+                              color: isActive ? PRIMARY_BLUE : DARK_TEXT,
+                            })}
+                          >
+                            <SubIcon className="w-3.5 h-3.5 flex-shrink-0" />
+                            {sub.title}
+                          </NavLink>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </nav>
         </div>
       </div>
 

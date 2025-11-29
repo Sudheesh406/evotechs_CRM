@@ -5,8 +5,10 @@ const signup = require("../../models/v1/Authentication/authModel");
 const secretCode = require("../../models/v1/Authentication/secreatCode");
 const { httpSuccess, httpError } = require("../../utils/v1/httpResponse");
 const Signup = require("../../models/v1/Authentication/authModel");
-const company = require('../../models/v1/company/company');
-const notifications = require('../../models/v1/Work_space/notification')
+const company = require("../../models/v1/company/company");
+const notifications = require("../../models/v1/Work_space/notification");
+const team = require("../../models/v1/Team_work/team");
+const { Op, fn, col, literal, Sequelize } = require("sequelize");
 
 const handleSignup = async (req, res) => {
   try {
@@ -18,7 +20,9 @@ const handleSignup = async (req, res) => {
       return httpError(res, 400, "All fields are required");
     }
 
-    const verified = await secretCode.findOne({ where: { code: AuthorisationCode } });
+    const verified = await secretCode.findOne({
+      where: { code: AuthorisationCode },
+    });
     if (!verified) {
       return httpError(res, 400, "Signup code is not correct");
     }
@@ -73,7 +77,6 @@ const handleSignup = async (req, res) => {
     return httpError(res, 500, "Server error", err.message);
   }
 };
-
 
 const handleLogin = async (req, res) => {
   try {
@@ -141,7 +144,6 @@ const handleLogin = async (req, res) => {
   }
 };
 
-
 const logout = async (req, res) => {
   const user = req.user;
   try {
@@ -160,7 +162,6 @@ const logout = async (req, res) => {
   }
 };
 
-
 const roleChecker = async (req, res) => {
   try {
     const user = req.user;
@@ -168,18 +169,49 @@ const roleChecker = async (req, res) => {
     if (!userDetails) {
       return httpError(res, 404, "User not found");
     }
-        const companyDetails = await company.findOne({})
+    const companyDetails = await company.findOne({});
+
+       const teamsDetails = await team.findAll({
+      where: {
+        softDelete: true,
+        [Sequelize.Op.and]: Sequelize.where(
+          Sequelize.fn(
+            "JSON_CONTAINS",
+            Sequelize.col("staffIds"),
+            JSON.stringify([user.id])
+          ),
+          1
+        ),
+      },
+    });
+
+    let financeTeam = teamsDetails.find(
+      (t) => t.teamName?.toLowerCase() === "Finance"
+    );
+
+    if (!financeTeam) {
+      financeTeam = teamsDetails.find(
+        (t) => t.teamName?.toLowerCase() === "finance"
+      );
+    }
+    
+    let value = false
+    if(financeTeam){
+      value = true
+    }
+
+    console.log(value)
 
     return httpSuccess(res, 200, "Role fetched successfully", {
       role: userDetails.role,
-      company: companyDetails
+      company: companyDetails,
+      value
     });
   } catch (error) {
     console.log("error found  in role checker", error);
     return httpError(res, 500, "Server error", err.message);
   }
 };
-
 
 const getRole = async (req, res) => {
   try {
@@ -189,20 +221,25 @@ const getRole = async (req, res) => {
       return httpError(res, 404, "User not found");
     }
 
-    const id = user.id
-    const role = userDetails.role
-    const allNotifications = await notifications.findAll({where:{receiverId : user.id}})
+    const id = user.id;
+    const role = userDetails.role;
+    const allNotifications = await notifications.findAll({
+      where: { receiverId: user.id },
+    });
+
 
     return httpSuccess(res, 200, "Role fetched successfully", {
-      id,role,allNotifications
+      id,
+      role,
+      allNotifications,
     });
+
+    
   } catch (error) {
     console.log("error found  in role getting", error);
     return httpError(res, 500, "Server error", err.message);
   }
 };
-
-
 
 const getPin = async (req, res) => {
   const user = req.user;
@@ -236,7 +273,6 @@ const getPin = async (req, res) => {
     return httpError(res, 500, "Server error", err.message);
   }
 };
-
 
 const createPin = async (req, res) => {
   const user = req.user; // logged-in user
@@ -290,7 +326,6 @@ const createPin = async (req, res) => {
   }
 };
 
-
 const acessHandler = async (req, res) => {
   try {
     const user = req.user;
@@ -324,7 +359,6 @@ const acessHandler = async (req, res) => {
   }
 };
 
-
 const deleteUser = async (req, res) => {
   try {
     const user = req.user;
@@ -355,7 +389,6 @@ const deleteUser = async (req, res) => {
     return httpError(res, 500, "Server error", error.message); // ✅ fixed variable
   }
 };
-
 
 const passwordChange = async (req, res) => {
   try {

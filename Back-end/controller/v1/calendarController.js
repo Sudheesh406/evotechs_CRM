@@ -508,8 +508,6 @@ const updateLeave = async (req, res) => {
   }
 };
 
-
-
 const deleteLeave = async (req, res) => {
   try {
     const user = req.user;

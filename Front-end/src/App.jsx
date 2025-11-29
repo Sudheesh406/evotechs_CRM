@@ -72,6 +72,7 @@ import WorklogDetail from "./pages/workspace-pages/admin_workspace_side/WorklogD
 import SubTaskForAdmin from './pages/activity-pages/admin_activity/SubTaskForAdmin';
 
 import DayBook from "./pages/Accounts-pages/DayBook";
+import IncomeSheet from "./pages/Accounts-pages/IncomeSheet";
 
 import ProtectedRoute from "./components/Routes/ProtectedRoute";
 import Sidebar from "./components/SideBar";
@@ -598,6 +599,14 @@ function Layout() {
             element={
               <ProtectedRoute allowedRoles={["staff", "admin"]}>
                 <DayBook />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/accounts/income-sheet"
+            element={
+              <ProtectedRoute allowedRoles={["staff", "admin"]}>
+                <IncomeSheet />
               </ProtectedRoute>
             }
           />

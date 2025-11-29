@@ -31,6 +31,7 @@ const adminRoute = require("./routes/v1/adminTaskRoute");
 const documentRoute = require("./routes/v1/documentRoute");
 const notificationRoute = require('./routes/v1/notificationRoute');
 const rejectRoute = require('./routes/v1/rejectedRoute');
+const accountsRoute = require('./routes/v1/accountsRoute');
 
 app.use(express.json());
 app.use(cookieParser());
@@ -64,6 +65,7 @@ app.use("/api/adminTask", adminRoute);
 app.use("/api/document", documentRoute);
 app.use("/api/notification", notificationRoute);
 app.use("/api/rejected", rejectRoute);
+app.use("/api/account", accountsRoute);
 
 const server = http.createServer(app);
 

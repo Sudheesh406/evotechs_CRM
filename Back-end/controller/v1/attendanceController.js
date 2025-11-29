@@ -502,7 +502,7 @@ const getStaffAttendance = async (req, res) => {
     );
   } catch (error) {
     console.error("error found in get staff attendance", error);
-    return httpError(res, 500, "Internal Server Error");
+    return httpError(res, 500, "Internal Server Error",error);
   }
 };
 
