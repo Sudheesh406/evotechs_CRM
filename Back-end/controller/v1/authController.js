@@ -173,7 +173,7 @@ const roleChecker = async (req, res) => {
 
        const teamsDetails = await team.findAll({
       where: {
-        softDelete: true,
+        softDelete: false,
         [Sequelize.Op.and]: Sequelize.where(
           Sequelize.fn(
             "JSON_CONTAINS",
@@ -184,6 +184,10 @@ const roleChecker = async (req, res) => {
         ),
       },
     });
+
+
+    const allTeams = await team.findAll()
+    console.log('allTeams',allTeams)
 
     let financeTeam = teamsDetails.find(
       (t) => t.teamName === "Finance"
@@ -199,6 +203,8 @@ const roleChecker = async (req, res) => {
         (t) => t.teamName === "FINANCE"
       );
     }
+    console.log('financeTeam',financeTeam)
+    console.log('teamsDetails',teamsDetails)
     
     let value = false
     if(financeTeam){
