@@ -194,6 +194,11 @@ const roleChecker = async (req, res) => {
         (t) => t.teamName?.toLowerCase() === "finance"
       );
     }
+    if (!financeTeam) {
+      financeTeam = teamsDetails.find(
+        (t) => t.teamName?.toLowerCase() === "FINANCE"
+      );
+    }
     
     let value = false
     if(financeTeam){
