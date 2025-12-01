@@ -186,17 +186,17 @@ const roleChecker = async (req, res) => {
     });
 
     let financeTeam = teamsDetails.find(
-      (t) => t.teamName?.toLowerCase() === "Finance"
+      (t) => t.teamName === "Finance"
     );
 
     if (!financeTeam) {
       financeTeam = teamsDetails.find(
-        (t) => t.teamName?.toLowerCase() === "finance"
+        (t) => t.teamName === "finance"
       );
     }
     if (!financeTeam) {
       financeTeam = teamsDetails.find(
-        (t) => t.teamName?.toLowerCase() === "FINANCE"
+        (t) => t.teamName === "FINANCE"
       );
     }
     
