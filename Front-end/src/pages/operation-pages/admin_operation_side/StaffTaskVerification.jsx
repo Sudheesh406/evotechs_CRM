@@ -26,7 +26,6 @@ function StaffTaskVerification() {
   const getCompletedWork = async (page = 1) => {
     try {
       const response = await axios.get(`/completed/resolved/get?page=${page}&limit=20`);
-      console.log("raw response", response);
 
       const mapped = response.data.data.data.map((item) => ({
         id: item.id,

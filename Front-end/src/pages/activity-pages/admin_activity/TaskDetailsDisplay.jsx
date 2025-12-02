@@ -101,7 +101,21 @@ const TaskCard = ({ task, role, navigate }) => {
       role,
     };
     const dataToSend = encodeURIComponent(JSON.stringify(payload));
-    navigate(`/activities/tasks/team/${dataToSend}`);
+    if(task.stage < 3){
+      navigate(`/activities/tasks/team/${dataToSend}`);
+    }else if(task.stage >= 3){
+      console.log('hjhsjs')
+       const data = {
+      taskId: task.id,
+      contactId: task.contactId,
+      staffId: task.staffId,
+      pending: false,
+      completed: true,
+      resolve: true,
+    };
+    const dataToSend = encodeURIComponent(JSON.stringify({ data }));
+    navigate(`/activities/task/port/${dataToSend}`);
+    }
   };
 
   return (

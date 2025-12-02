@@ -171,7 +171,7 @@ const roleChecker = async (req, res) => {
     }
     const companyDetails = await company.findOne({});
 
-       const teamsDetails = await team.findAll({
+    const teamsDetails = await team.findAll({
       where: {
         softDelete: false,
         [Sequelize.Op.and]: Sequelize.where(
@@ -185,38 +185,19 @@ const roleChecker = async (req, res) => {
       },
     });
 
-
-    const allTeams = await team.findAll()
-    console.log('allTeams',allTeams)
-
-    let financeTeam = teamsDetails.find(
-      (t) => t.teamName === "Finance"
+    const financeTeam = teamsDetails.find(
+      (t) => t.teamName?.toLowerCase() === "finance"
     );
 
-    if (!financeTeam) {
-      financeTeam = teamsDetails.find(
-        (t) => t.teamName === "finance"
-      );
+    let value = false;
+    if (financeTeam) {
+      value = true;
     }
-    if (!financeTeam) {
-      financeTeam = teamsDetails.find(
-        (t) => t.teamName === "FINANCE"
-      );
-    }
-    console.log('financeTeam',financeTeam)
-    console.log('teamsDetails',teamsDetails)
-    
-    let value = false
-    if(financeTeam){
-      value = true
-    }
-
-    console.log(value)
 
     return httpSuccess(res, 200, "Role fetched successfully", {
       role: userDetails.role,
       company: companyDetails,
-      value
+      value,
     });
   } catch (error) {
     console.log("error found  in role checker", error);
@@ -238,14 +219,11 @@ const getRole = async (req, res) => {
       where: { receiverId: user.id },
     });
 
-
     return httpSuccess(res, 200, "Role fetched successfully", {
       id,
       role,
       allNotifications,
     });
-
-    
   } catch (error) {
     console.log("error found  in role getting", error);
     return httpError(res, 500, "Server error", err.message);
