@@ -84,22 +84,70 @@ const getWorklog = async (req, res) => {
   }
 
   try {
-    // Build start and end dates for the month
+    // Build current month date range
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0, 23, 59, 59);
 
-    // Fetch worklogs
-    const worklogs = await worklog.findAll({
+    // ------------------------------
+    // 1. FETCH CURRENT MONTH WORKLOG
+    // ------------------------------
+    let worklogs = await worklog.findAll({
       where: {
         staffId: user.id,
-        date: {
-          [Op.between]: [startDate, endDate],
-        },
+        date: { [Op.between]: [startDate, endDate] },
       },
       order: [["date", "ASC"]],
     });
 
-    // Fetch attendance records
+    // ---------------------------------------------------------
+    // 2. IF NO WORKLOG FOUND → AUTO–COPY PREVIOUS MONTH TASKS
+    // ---------------------------------------------------------
+    if (worklogs.length === 0) {
+
+      // Calculate previous month date range
+      const prevMonth = month === 1 ? 12 : month - 1;
+      const prevYear = month === 1 ? year - 1 : year;
+
+      const prevStart = new Date(prevYear, prevMonth - 1, 1);
+      const prevEnd = new Date(prevYear, prevMonth, 0, 23, 59, 59);
+
+      // Fetch previous month's tasks
+      const prevTasks = await worklog.findAll({
+        where: {
+          staffId: user.id,
+          date: { [Op.between]: [prevStart, prevEnd] },
+        },
+        attributes: ["taskName", "taskNumber"],
+        group: ["taskName", "taskNumber"],
+      });
+
+      if (prevTasks.length > 0) {
+
+        // Create new entries for the 1st day of the month
+        const newEntries = prevTasks.map((t) => ({
+          staffId: user.id,
+          date: startDate,
+          taskName: t.taskName,
+          taskNumber: t.taskNumber,
+          time: "00:00:00",
+        }));
+
+        await worklog.bulkCreate(newEntries);
+
+        // Re-fetch newly created worklogs
+        worklogs = await worklog.findAll({
+          where: {
+            staffId: user.id,
+            date: { [Op.between]: [startDate, endDate] },
+          },
+          order: [["date", "ASC"]],
+        });
+      }
+    }
+
+    // ---------------------------------------------------------
+    // 3. FETCH ATTENDANCE
+    // ---------------------------------------------------------
     const attendanceRecords = await attendance.findAll({
       where: {
         staffId: user.id,
@@ -114,10 +162,9 @@ const getWorklog = async (req, res) => {
       ],
     });
 
-    // Group attendance by date
+    // Group by date
     const groupedByDate = {};
     attendanceRecords.forEach((rec) => {
-      // Make sure attendanceDate is a Date object
       const dateObj = new Date(rec.attendanceDate);
       const date = dateObj.toISOString().split("T")[0];
 
@@ -125,7 +172,7 @@ const getWorklog = async (req, res) => {
       groupedByDate[date].push(rec);
     });
 
-    // Calculate daily work hours
+    // Calculate work hours
     const dailyWorkHours = Object.entries(groupedByDate).map(
       ([date, records]) => {
         let totalMinutes = 0;
@@ -138,13 +185,13 @@ const getWorklog = async (req, res) => {
             const [entryH, entryM, entryS] = entryTime.split(":").map(Number);
             const [exitH, exitM, exitS] = rec.time.split(":").map(Number);
 
-            const entryDate = new Date(date);
-            entryDate.setHours(entryH, entryM, entryS);
+            const entryDateObj = new Date(date);
+            entryDateObj.setHours(entryH, entryM, entryS);
 
-            const exitDate = new Date(date);
-            exitDate.setHours(exitH, exitM, exitS);
+            const exitDateObj = new Date(date);
+            exitDateObj.setHours(exitH, exitM, exitS);
 
-            totalMinutes += (exitDate - entryDate) / (1000 * 60);
+            totalMinutes += (exitDateObj - entryDateObj) / (1000 * 60);
             entryTime = null;
           }
         });
@@ -154,22 +201,26 @@ const getWorklog = async (req, res) => {
 
         return {
           date,
-          workTime: `${hours}:${minutes.toString().padStart(2, "0")}`, // HH:MM format
+          workTime: `${hours}:${minutes.toString().padStart(2, "0")}`,
           totalHours: hours,
           totalMinutes: minutes,
         };
       }
     );
 
+    // -------------------------------------------
+    // 4. FINAL RESPONSE
+    // -------------------------------------------
     return httpSuccess(res, 200, "Worklogs fetched successfully", {
       worklogs,
       dailyWorkHours,
     });
   } catch (error) {
     console.error("Error in getting worklog:", error);
-    return httpError(res, 500, "Internal Server Error");
+    return httpError(res, 500, "Internal Server Error",error);
   }
 };
+
 
 
 const getStaffWork = async (req, res) => {
