@@ -40,9 +40,16 @@ function isValidTime(value) {
   return /^(0?[1-9]|1[0-2]):[0-5][0-9]\s?(AM|PM)$/i.test(value.trim());
 }
 
-// Converts 12-hour time (e.g., "09:30 AM") to minutes since midnight
 function timeToMinutes(timeStr) {
+  if (!timeStr || typeof timeStr !== 'string') return 0; // Return 0 or throw an error based on preference
+
   const [time, modifier] = timeStr.trim().split(" ");
+  console.log('modifier', modifier);
+    if (!modifier) {
+    console.error("Time string is missing AM/PM modifier:", timeStr);
+    return 0; 
+  }
+
   let [hours, minutes] = time.split(":").map(Number);
   if (modifier.toUpperCase() === "PM" && hours !== 12) hours += 12;
   if (modifier.toUpperCase() === "AM" && hours === 12) hours = 0;
