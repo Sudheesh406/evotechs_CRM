@@ -12,7 +12,9 @@ const {
   getLeaves,
   createLeave,
   updateLeave,
-  deleteLeave
+  deleteLeave,
+  CreateLeaveAndWFHRecord,
+  GetLeaveAndWFHRecord
 } = require("../../controller/v1/calendarController");
 
 // Router.post("/create", authenticate, createTask);
@@ -29,5 +31,8 @@ Router.post("/create/leave", authenticate, createLeave);
 Router.put("/update/leave/:id", authenticate, updateLeave);
 Router.delete("/delete/leave/:id", authenticate, deleteLeave);
 
+
+Router.post("/leave-WFH-record", authenticate, CreateLeaveAndWFHRecord);
+Router.get("/leave-WFH-record", authenticate, GetLeaveAndWFHRecord);
 
 module.exports = Router;

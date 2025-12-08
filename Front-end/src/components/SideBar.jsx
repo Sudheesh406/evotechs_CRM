@@ -32,6 +32,7 @@ import {
   Banknote,
   Wallet,
   ReceiptText,
+  UserMinus,
   Loader, // For a cleaner loading icon
 } from "lucide-react";
 
@@ -138,6 +139,7 @@ const Sidebar = ({ closeSidebar }) => {
           path: "/workspace/work/assign",
           icon: FolderKanban,
         },
+        // { title: "Employee Absence", path: "/workspace/employee-absence", icon: UserMinus },
       ],
     },
     {
@@ -276,6 +278,7 @@ const Sidebar = ({ closeSidebar }) => {
           path: "/workspace/work/staff/assign",
           icon: FolderKanban,
         },
+        { title: "Employee Absence", path: "/workspace/employee-absence", icon: UserMinus },
       ],
     },
     {
@@ -398,7 +401,7 @@ useEffect(() => {
               {company?.companyName || "Company Name"}
             </h1>
             <p className="text-xs text-gray-500 mt-1">
-              Client Relationship Management
+              Customer Relationship Management
             </p>
           </div>
         </div>

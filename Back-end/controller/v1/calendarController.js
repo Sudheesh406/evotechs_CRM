@@ -9,6 +9,8 @@ const {
   createNotification,
 } = require("../../controller/v1/notificationController");
 
+const LeaveAndWFH = require("../../models/v1/Work_space/LeaveAndWFHRecord");
+
 const { Op } = require("sequelize");
 
 const getCalender = async (req, res) => {
@@ -340,7 +342,7 @@ const createLeave = async (req, res) => {
       return httpError(res, 406, "End date cannot be before start date");
     }
 
-     // Check for overlapping leave
+    // Check for overlapping leave
     const existingLeave = await Leaves.findOne({
       where: {
         staffId: user.id,
@@ -373,16 +375,16 @@ const createLeave = async (req, res) => {
         message: "You already have a leave that overlaps with this date range.",
       });
     }
-    
+
     const newLeave = await Leaves.create({
-        staffId: user.id,
-        leaveType,
-        category,
-        leaveDate: start,
-        endDate: end,
-        description,
-        HalfTime
-      });
+      staffId: user.id,
+      leaveType,
+      category,
+      leaveDate: start,
+      endDate: end,
+      description,
+      HalfTime
+    });
 
     const io = getIo();
 
@@ -541,16 +543,251 @@ const deleteLeave = async (req, res) => {
   }
 };
 
+
+const CreateLeaveAndWFHRecord = async (req, res) => {
+  try {
+    const data = req.body; // Array of staff objects
+
+    console.log("Incoming Data:", data);
+
+    if (!Array.isArray(data)) {
+      return res.status(400).json({ message: "Invalid data format" });
+    }
+
+    const results = [];
+
+    for (const item of data) {
+      const { staffId, year, changes } = item;
+
+      if (!staffId || !year || !changes) continue;
+
+      // Convert frontend field names to database field names
+      const updateData = {};
+      if (changes.totalAllocationLeave !== undefined) {
+        updateData.totalLeaves = changes.totalAllocationLeave;
+      }
+      if (changes.totalAllocationWfh !== undefined) {
+        updateData.totalWFH = changes.totalAllocationWfh;
+      }
+
+      // Check if record exists
+      const existingRecord = await LeaveAndWFH.findOne({
+        where: { staffId, year, softDelete: false },
+      });
+
+      if (existingRecord) {
+        // UPDATE existing
+        await existingRecord.update(updateData);
+        results.push({ staffId, year, status: "updated", updateData });
+      } else {
+        // CREATE new
+        await LeaveAndWFH.create({
+          staffId,
+          year,
+          totalLeaves: updateData.totalLeaves || 0,
+          totalWFH: updateData.totalWFH || 0,
+        });
+        results.push({ staffId, year, status: "created", updateData });
+      }
+    }
+
+    return res.status(200).json({
+      message: "Leave & WFH allocations processed successfully",
+      results,
+    });
+
+  } catch (error) {
+    console.error("Error in creating record of leave and WFH", error);
+    return res
+      .status(500)
+      .json({ message: "Server error", error: error.message || error });
+  }
+};
+
+
+const GetLeaveAndWFHRecord = async (req, res) => {
+    try {
+
+      const user = req.user;
+      console.log("User Info:", user);  
+
+
+      let allStaff;
+     let isExist = await roleChecker(user.id)
+      if(isExist){
+         allStaff = await signup.findAll({
+            where: { role: 'staff' },
+            attributes: ['id', 'name'],
+            raw: true
+        });
+      }else{
+           allStaff = await signup.findAll({
+            where: { id: user.id },
+            attributes: ['id', 'name'],
+            raw: true
+        });
+      }
+        // 2. Fetch approved leave/WFH records
+        const allApprovedRecords = await Leaves.findAll({
+            where: {
+                softDelete: false,
+                status: 'Approve'
+            },
+            include: [
+                {
+                    model: signup,
+                    as: 'staff',
+                    attributes: ['id', 'name']
+                }
+            ],
+            raw: true
+        });
+
+        // 3. Process records
+        const processedRecords = allApprovedRecords.map(record => {
+            let leaveDays = 0;
+            let wfhDays = 0;
+
+            const isHalfDay = record.leaveType === 'morning' || record.leaveType === 'afternoon';
+            const dayValue = isHalfDay ? 0.5 : 1;
+
+            if (record.category === 'Leave') {
+                leaveDays = dayValue;
+            } else if (record.category === 'WFH') {
+                if (record.leaveType === 'fullday') {
+                    wfhDays = 1;
+                } else if (isHalfDay) {
+                    if (record.HalfTime === 'Leave') {
+                        wfhDays = 0.5;
+                        leaveDays = 0.5;
+                    } else if (record.HalfTime === 'Offline') {
+                        wfhDays = 0.5;
+                    }
+                }
+            }
+
+            const date = new Date(record.leaveDate);
+            const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+            return {
+                staffId: record['staff.id'],
+                staffName: record['staff.name'],
+                monthYear,
+                leaveDays,
+                wfhDays
+            };
+        });
+
+        // 4. Aggregate by staff
+        const staffRecords = processedRecords.reduce((acc, record) => {
+            const staffKey = record.staffId;
+
+            if (!acc[staffKey]) {
+                acc[staffKey] = {
+                    staffId: record.staffId,
+                    staffName: record.staffName,
+                    totalLeave: 0,
+                    totalWFH: 0,
+                    monthlyData: {}
+                };
+            }
+
+            const staff = acc[staffKey];
+
+            staff.totalLeave += record.leaveDays;
+            staff.totalWFH += record.wfhDays;
+
+            if (!staff.monthlyData[record.monthYear]) {
+                staff.monthlyData[record.monthYear] = { leave: 0, wfh: 0 };
+            }
+
+            staff.monthlyData[record.monthYear].leave += record.leaveDays;
+            staff.monthlyData[record.monthYear].wfh += record.wfhDays;
+
+            return acc;
+        }, {});
+
+        // 5. Fetch allocated totals
+        const allocations = await LeaveAndWFH.findAll({
+            where: { softDelete: false },
+            raw: true
+        });
+
+        const allocationMap = {};
+        allocations.forEach(a => {
+            allocationMap[a.staffId] = {
+                allocatedLeaves: a.totalLeaves,
+                allocatedWFH: a.totalWFH,
+                allocationYear: a.year
+            };
+        });
+
+        // 6. Combine ALL STAFF (even if no records found)
+        const finalReport = allStaff.map(staff => {
+            const existing = staffRecords[staff.id];
+
+            const allocation = allocationMap[staff.id] || {
+                allocatedLeaves: 0,
+                allocatedWFH: 0,
+                allocationYear: null
+            };
+
+            if (existing) {
+                // Staff with leave/wfh records
+                return {
+                    staffId: existing.staffId,
+                    staffName: existing.staffName,
+                    allocatedLeaves: allocation.allocatedLeaves,
+                    allocatedWFH: allocation.allocatedWFH,
+                    allocationYear: allocation.allocationYear,
+                    totalLeave: parseFloat(existing.totalLeave.toFixed(1)),
+                    totalWFH: parseFloat(existing.totalWFH.toFixed(1)),
+                    monthlySummary: Object.entries(existing.monthlyData).map(([month, data]) => ({
+                        month,
+                        leave: parseFloat(data.leave.toFixed(1)),
+                        wfh: parseFloat(data.wfh.toFixed(1))
+                    }))
+                };
+            } else {
+                // Staff with NO leave/WFH data
+                return {
+                    staffId: staff.id,
+                    staffName: staff.name,
+                    allocatedLeaves: allocation.allocatedLeaves,
+                    allocatedWFH: allocation.allocatedWFH,
+                    allocationYear: allocation.allocationYear,
+                    totalLeave: 0,
+                    totalWFH: 0,
+                    monthlySummary: []
+                };
+            }
+        });
+
+        return res.status(200).json({
+            message: "Leave, WFH & allocated records fetched successfully",
+            data: finalReport
+        });
+
+    } catch (error) {
+        console.error("Error in getting record of leave and WFH", error);
+        return res.status(500).json({ message: "Server error", error: error.message || error });
+    }
+};
+
+
 module.exports = {
   createCalendar,
   getCalender,
   editCalendar,
   deleteCalendar,
-  
+
   getLeaveRequest,
   leaveRequestUpdate,
   getLeaves,
   createLeave,
   updateLeave,
   deleteLeave,
+
+  CreateLeaveAndWFHRecord,
+  GetLeaveAndWFHRecord
 };

@@ -53,12 +53,12 @@ const createTeamWork = async (req, res) => {
       allIds.forEach((id) => {
         io.to(`notify_${id}`).emit("receive_notification", {
           title: "Team Notification",
-          message: `A new team has been created: ${data.teamName}`,
+          message: `A new team has been created. Team name: ${data.teamName}`,
           type: "Team",
           timestamp: new Date(),
         });
         value.title = "Team Notification";
-        value.description = `A new team has been created: ${data.teamName}`;
+        value.description = `A new team has been created. Team name: ${data.teamName}`;
         value.receiverId = id;
         value.senderId = user.id;
 
@@ -632,14 +632,14 @@ const contactReassign = async (req, res) => {
     const io = getIo();
     io.to(`notify_${existing.staffId}`).emit("receive_notification", {
       title: "Contact Reassign",
-      message: `A contact has been reassigned by a team member: ${teamMember.name}`,
+      message: `A contact has been reassigned by a team member. Team member name: ${teamMember.name}`,
       type: "contact",
       timestamp: new Date(),
     });
 
     const data = {};
     data.title = "Contact Reassign";
-    data.description = `A contact has been reassigned by a team member: ${teamMember.name}`;
+    data.description = `A contact has been reassigned by a team member. Team member name: ${teamMember.name}`;
     data.receiverId = existing.staffId;
     data.senderId = user.id;
 

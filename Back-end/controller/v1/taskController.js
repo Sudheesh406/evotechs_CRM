@@ -245,7 +245,7 @@ const taskStageUpdate = async (req, res) => {
       }
     }
 
-    const contactsDetails = contacts.findOne({
+    const contactsDetails = await contacts.findOne({
       where: { id: existingTask.contactId },
     });
 
@@ -257,13 +257,14 @@ const taskStageUpdate = async (req, res) => {
         allAdmins.forEach((admin) => {
           io.to(`notify_${admin.id}`).emit("receive_notification", {
             title: "Task For Review",
-            message: `A new task is ready for review: ${contactsDetails.name} — Requirement: ${existingTask.requirement}`,
+            message: `A new task is ready for review. Customer: ${contactsDetails.name},
+            Requirement: ${existingTask.requirement}`,
             type: "Task",
             timestamp: new Date(),
           });
 
           value.title = "Task For Review";
-          value.description = `A new task is ready for review: ${contactsDetails.name} — Requirement: ${existingTask.requirement}`;
+          value.description = `A new task is ready for review. Customer: ${contactsDetails.name}, Requirement: ${existingTask.requirement}`;
           value.receiverId = admin.id;
           value.senderId = user.id;
 
@@ -378,7 +379,7 @@ const updateStagesAndNotes = async (req, res) => {
       }
     }
 
-    const contactsDetails = contacts.findOne({
+    const contactsDetails = await contacts.findOne({
       where: { id: existingTask.contactId },
     });
 
@@ -390,13 +391,13 @@ const updateStagesAndNotes = async (req, res) => {
         allAdmins.forEach((admin) => {
           io.to(`notify_${admin.id}`).emit("receive_notification", {
             title: "Task For Review",
-            message: `A new task is ready for review: ${contactsDetails.name} — Requirement: ${existingTask.requirement}`,
+            message: `A new task is ready for review. Customer: ${contactsDetails.name}, Requirement: ${existingTask.requirement}`,
             type: "Task",
             timestamp: new Date(),
           });
 
           value.title = "Task For Review";
-          value.description = `A new task is ready for review: ${contactsDetails.name} — Requirement: ${existingTask.requirement}`;
+          value.description = `A new task is ready for review. Customer: ${contactsDetails.name}, Requirement: ${existingTask.requirement}`;
           value.receiverId = admin.id;
           value.senderId = user.id;
 
@@ -527,11 +528,9 @@ const updateTeamStagesAndNotes = async (req, res) => {
       const staffDetails = await signup.findOne({ where: { id: user.id } });
       if (!staffDetails) return httpError(res, 404, "Staff not found");
 
-      const fullDetails = `Date: ${
-        new Date().toISOString().split("T")[0]
-      },    Staff Name: ${staffDetails.name},    Stage: ${
-        data.stages
-      }, notes: ${data.notes}`;
+      const fullDetails = `Date: ${new Date().toISOString().split("T")[0]
+        },    Staff Name: ${staffDetails.name},    Stage: ${data.stages
+        }, notes: ${data.notes}`;
       const updatedTeamWork = existingTask.teamWork
         ? [...existingTask.teamWork, fullDetails]
         : [fullDetails];
@@ -559,7 +558,7 @@ const updateTeamStagesAndNotes = async (req, res) => {
         teamWork: updatedTeamWork,
       });
 
-      const contactsDetails = contacts.findOne({
+      const contactsDetails = await contacts.findOne({
         where: { id: existingTask.contactId },
       });
 
@@ -571,13 +570,13 @@ const updateTeamStagesAndNotes = async (req, res) => {
           allAdmins.forEach((admin) => {
             io.to(`notify_${admin.id}`).emit("receive_notification", {
               title: "Task For Review",
-              message: `A new task is ready for review: ${contactsDetails.name} — Requirement: ${existingTask.requirement}`,
+              message: `A new task is ready for review. Customer: ${contactsDetails.name}, Requirement: ${existingTask.requirement}`,
               type: "Task",
               timestamp: new Date(),
             });
 
             value.title = "Task For Review";
-            value.description = `A new task is ready for review: ${contactsDetails.name} — Requirement: ${existingTask.requirement}`;
+            value.description = `A new task is ready for review. Customer: ${contactsDetails.name}, Requirement: ${existingTask.requirement}`;
             value.receiverId = admin.id;
             value.senderId = user.id;
 
@@ -731,21 +730,21 @@ const updateStagesByAdmin = async (req, res) => {
       });
     }
 
-    const contactsDetails = contacts.findOne({
+    const contactsDetails = await contacts.findOne({
       where: { id: existingTask.contactId },
     });
 
     const io = getIo();
     io.to(`notify_${existingTask.staffId}`).emit("receive_notification", {
       title: "Stage Update",
-      message: `Your task stage has been updated by the admin. Task: ${contactsDetails.name} — Requirement: ${existingTask.requirement}`,
+      message: `Your task stage has been updated by the admin. Customer: ${contactsDetails.name}, Requirement: ${existingTask.requirement}`,
       type: "Task",
       timestamp: new Date(),
     });
 
     const value = {};
     value.title = "Stage Update";
-    value.description = `Your task stage has been updated by the admin. Task: ${contactsDetails.name} — Requirement: ${existingTask.requirement}`;
+    value.description = `Your task stage has been updated by the admin. Customer: ${contactsDetails.name}, Requirement: ${existingTask.requirement}`;
     value.receiverId = existingTask.staffId;
     value.senderId = user.id;
 
@@ -788,21 +787,21 @@ const reworkUpdate = async (req, res) => {
       });
     }
 
-    const contactsDetails = contacts.findOne({
+    const contactsDetails = await contacts.findOne({
       where: { id: existing.contactId },
     });
 
     const io = getIo();
     io.to(`notify_${existing.staffId}`).emit("receive_notification", {
       title: "Rework Assigned",
-      message: `You got a rework from management: ${contactsDetails.name} — Requirement: ${existing.requirement}`,
+      message: `You got a rework from management. Customer: ${contactsDetails.name}, Requirement: ${existing.requirement}`,
       type: "Task",
       timestamp: new Date(),
     });
 
     const data = {};
     data.title = "Rework Assigned";
-    data.description = `You got a rework from management: ${contactsDetails.name} — Requirement: ${existing.requirement}`;
+    data.description = `You got a rework from management. Customer: ${contactsDetails.name}, Requirement: ${existing.requirement}`;
     data.receiverId = existing.staffId;
     data.senderId = user.id;
 
@@ -860,21 +859,21 @@ const againReworkUpdate = async (req, res) => {
       });
     }
 
-    const contactsDetails = contacts.findOne({
+    const contactsDetails = await contacts.findOne({
       where: { id: existing.contactId },
     });
 
     const io = getIo();
     io.to(`notify_${existing.staffId}`).emit("receive_notification", {
       title: " Again Rework Assigned",
-      message: `You got a rework again from management: ${contactsDetails.name} — Requirement: ${existing.requirement}`,
+      message: `You got a rework again from management. Customer: ${contactsDetails.name}, Requirement: ${existing.requirement}`,
       type: "Task",
       timestamp: new Date(),
     });
 
     const data = {};
     data.title = "Again Rework Assigned";
-    data.description = `You got a rework again from management: ${contactsDetails.name} — Requirement: ${existing.requirement}`;
+    data.description = `You got a rework again from management. Customer: ${contactsDetails.name}, Requirement: ${existing.requirement}`;
     data.receiverId = existing.staffId;
     data.senderId = user.id;
 
@@ -918,7 +917,7 @@ const newUpdate = async (req, res) => {
       newUpdate: !existing.newUpdate,
     });
 
-    const contactsDetails = contacts.findOne({
+    const contactsDetails = await contacts.findOne({
       where: { id: existing.contactId },
     });
 
@@ -929,13 +928,13 @@ const newUpdate = async (req, res) => {
       allAdmins.forEach((admin) => {
         io.to(`notify_${admin.id}`).emit("receive_notification", {
           title: "Rework Completed",
-          message: `A rework has been completed: ${contactsDetails.name} — Requirement: ${existing.requirement}`,
+          message: `A rework has been completed. Customer: ${contactsDetails.name}, Requirement: ${existing.requirement}`,
           type: "Task",
           timestamp: new Date(),
         });
 
         value.title = "Rework Completed";
-        value.description = `A rework has been completed: ${contactsDetails.name} — Requirement: ${existing.requirement}`;
+        value.description = `A rework has been completed. Customer: ${contactsDetails.name}, Requirement: ${existing.requirement}`;
         value.receiverId = admin.id;
         value.senderId = user.id;
 
