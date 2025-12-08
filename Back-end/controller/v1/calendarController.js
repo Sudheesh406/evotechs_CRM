@@ -324,8 +324,6 @@ const createLeave = async (req, res) => {
   const user = req.user; // Assuming req.user is set via authentication middleware
   const { leaveType, category, leaveDate, endDate, description, HalfTime } = req.body;
 
-  console.log("Request Body:", req.body); // Debugging line
-
   try {
     const allAdmins = await signup.findAll({ where: { role: "admin" } });
 
@@ -548,8 +546,6 @@ const CreateLeaveAndWFHRecord = async (req, res) => {
   try {
     const data = req.body; // Array of staff objects
 
-    console.log("Incoming Data:", data);
-
     if (!Array.isArray(data)) {
       return res.status(400).json({ message: "Invalid data format" });
     }
@@ -609,8 +605,6 @@ const GetLeaveAndWFHRecord = async (req, res) => {
     try {
 
       const user = req.user;
-      console.log("User Info:", user);  
-
 
       let allStaff;
      let isExist = await roleChecker(user.id)
