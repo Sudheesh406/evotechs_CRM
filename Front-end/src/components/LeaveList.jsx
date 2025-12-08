@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import axios from "../instance/Axios";
+import Swal from "sweetalert2";
+
 
 // --- Excel-style Summary Modal Component ---
 const YearlySummaryModal = ({ isOpen, onClose, data }) => {
@@ -142,16 +144,41 @@ export default function LeaveList({
   const [summaryData, setSummaryData] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
-  const viewLeaveAndWFH = async () => {
-    try {
-      const { data } = await axios.get("/calendar/leave-WFH-record");
-      setSummaryData(data.data);
-      setShowModal(true);
-    } catch (error) {
-      console.error("Error fetching records:", error);
-      alert("Failed to fetch yearly records.");
-    }
-  };
+const viewLeaveAndWFH = async () => {
+  try {
+    // 🔵 Show Loading Alert
+    Swal.fire({
+      title: "Loading...",
+      text: "Fetching yearly leave & WFH records",
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+
+    // 🔵 Fetch API data
+    const { data } = await axios.get("/calendar/leave-WFH-record");
+
+    // 🟢 Success: Close loading and show success popup
+    Swal.close();
+
+    // 🔵 Set data & open modal
+    setSummaryData(data.data);
+    setShowModal(true);
+
+  } catch (error) {
+    console.error("Error fetching records:", error);
+
+    // 🔴 Error Alert
+    Swal.fire({
+      icon: "error",
+      title: "Failed to Load",
+      text: "Unable to fetch yearly leave/WFH records.",
+      confirmButtonColor: "#d33",
+    });
+  }
+};
 
   return (
     <div className="mt-6 bg-white rounded-xl shadow p-6">
