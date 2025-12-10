@@ -71,6 +71,7 @@ import AdminRejectedWork from './pages/rejection/adminRejectedWork/AdminRejected
 import WorklogDetail from "./pages/workspace-pages/admin_workspace_side/WorklogDetail";
 import SubTaskForAdmin from './pages/activity-pages/admin_activity/SubTaskForAdmin';
 
+import Pipeline from "./pages/home-page/adminSide/Pipeline";
 import EmployeeAbsence from "./pages/workspace-pages/EmployeeAbsence";
 
 import DayBook from "./pages/Accounts-pages/DayBook";
@@ -617,6 +618,14 @@ function Layout() {
             element={
               <ProtectedRoute allowedRoles={["staff", "admin"]}>
                 <EmployeeAbsence />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/workspace/home/pipeline"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <Pipeline />
               </ProtectedRoute>
             }
           />

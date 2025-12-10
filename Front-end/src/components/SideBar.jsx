@@ -279,6 +279,7 @@ const Sidebar = ({ closeSidebar }) => {
           icon: FolderKanban,
         },
         { title: "Employee Absence", path: "/workspace/employee-absence", icon: UserMinus },
+        { title: "Staff pipeline", path: "/workspace/home/pipeline", icon: UserMinus },
       ],
     },
     {

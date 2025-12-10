@@ -32,6 +32,7 @@ const documentRoute = require("./routes/v1/documentRoute");
 const notificationRoute = require('./routes/v1/notificationRoute');
 const rejectRoute = require('./routes/v1/rejectedRoute');
 const accountsRoute = require('./routes/v1/accountsRoute');
+const homePageRoute = require('./routes/v1/homePageRoute');
 
 app.use(express.json());
 app.use(cookieParser());
@@ -66,6 +67,11 @@ app.use("/api/document", documentRoute);
 app.use("/api/notification", notificationRoute);
 app.use("/api/rejected", rejectRoute);
 app.use("/api/account", accountsRoute);
+app.use("/api/home", homePageRoute);
+
+const path = require("path");
+const imagePath = path.join(__dirname, "images");
+app.use("/images", express.static(imagePath));
 
 const server = http.createServer(app);
 

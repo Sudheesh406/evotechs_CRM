@@ -61,9 +61,6 @@ export default function WorkAssign() {
   };
 
 
-      console.log('testing')
-
-
   // Fetch tasks
   const fetchWorkDetails = async () => {
     try {
