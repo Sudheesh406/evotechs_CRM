@@ -2,8 +2,11 @@ const { httpSuccess, httpError } = require("../../utils/v1/httpResponse");
 const roleChecker = require("../../utils/v1/roleChecker");
 const company = require("../../models/v1/company/company");
 const signup = require('../../models/v1/Authentication/authModel')
-const team = require('../../models/v1/Team_work/team')
+const team = require('../../models/v1/Team_work/team');
+const companyProfile = require('../../models/v1/company/companyProfile')
 const { Op } = require("sequelize");
+const fs = require("fs");
+const path = require("path");
 
 const createCompany = async (req, res) => {
   try {
@@ -72,7 +75,9 @@ const getCompanyDetails = async (req, res) => {
       attributes: ["name", "email"],
     });
 
-    const data = { companyDetails, adminDetails, staffDetails };
+    const companyImage = await companyProfile.findOne({})
+
+    const data = { companyDetails, adminDetails, staffDetails, companyImage };
 
     res.status(201).json({ success: true, data });
   } catch (error) {
@@ -82,5 +87,72 @@ const getCompanyDetails = async (req, res) => {
 };
 
 
+const profileImageUpload = async (req, res) => {
+  try {
+    const user = req.user;
+  
+    const access = await roleChecker(user.id);
+    if (!access) {
+      return httpError(res, 403, "Access denied. Admins only.");
+    }
 
-module.exports = { createCompany, getCompanyDetails };
+    // 📸 Check if file uploaded
+    if (!req.file) {
+      return httpError(res, 400, "Profile image is required.");
+    }
+
+    const fileData = req.file;
+
+    console.log(fileData)
+
+    // 🏢 Find company
+    const companyDetails = await company.findOne({});
+    if (!companyDetails) {
+      return httpError(res, 404, "Company not found.");
+    }
+
+    
+     const isExist = await companyProfile.findOne({});
+
+    if (isExist) {
+      // DELETE old image
+      if (isExist.imagePath) {
+        const oldPath = path.join(__dirname, "..", "..", "images", isExist.imagePath);
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      }
+
+      // UPDATE with new image
+      isExist.imagePath = fileData.filename;
+      await isExist.save();
+
+      return res.json({
+        success: true,
+        message: "Image updated successfully",
+        data: isExist,
+      });
+    }
+
+    // 📍 Save to DB
+    const newImage = await companyProfile.create({
+      adminId: user.id,
+      companyId: companyDetails.id,
+      imagePath: fileData.filename, // or fileData.filename if storing filename
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Profile image uploaded successfully",
+      data: newImage,
+    });
+
+  } catch (error) {
+    console.error("Error in profile image upload:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Internal server error",
+    });
+  }
+};
+
+
+module.exports = { createCompany, getCompanyDetails, profileImageUpload };

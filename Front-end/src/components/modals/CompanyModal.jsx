@@ -38,9 +38,22 @@ const initialFormData = {
   status: "active",
 };
 
-const CompanyForm = () => {
+const CompanyForm = ({companyDetails, refresh, setRefresh, setShowCompanyModal}) => {
+
   const [formData, setFormData] = useState(initialFormData);
   const [currentStep, setCurrentStep] = useState(0);
+
+  // ✅ Auto-fill form when companyDetails is present
+  React.useEffect(() => {
+    if (companyDetails) {
+      setFormData((prev) => ({
+        ...prev,
+        ...companyDetails,
+        employeeCount: companyDetails.employeeCount || "",
+        foundedYear: companyDetails.foundedYear || "",
+      }));
+    }
+  }, [companyDetails]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -64,11 +77,17 @@ const CompanyForm = () => {
 
     try {
    const response = await axios.post("/company/create", formData);
-   console.log('response',response)
-
+   
       Swal.fire("Success", "Company added successfully", "success");
       setFormData(initialFormData);
       setCurrentStep(0);
+      if(refresh){
+        setRefresh(false)
+      }else{
+        setRefresh(true)
+      }
+      
+      setShowCompanyModal(false)
     } catch (err) {
       Swal.fire(
         "Error",
@@ -81,7 +100,7 @@ const CompanyForm = () => {
   return (
     <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg p-8">
       <h2 className="text-2xl font-bold text-teal-600 mb-6 text-center">
-        Add New Company
+        Company Details Form
       </h2>
 
       {/* Step Indicator */}

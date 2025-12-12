@@ -184,7 +184,6 @@ const profileUpload = async (req, res) => {
       // DELETE old image
       if (isExist.imagePath) {
         const oldPath = path.join(__dirname, "..", "..", "images", isExist.imagePath);
-        console.log("Deleting old image at path:", oldPath);
         if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
       }
 
@@ -276,15 +275,12 @@ const getStaffProfile = async (req, res) => {
       };
     });
 
-    console.log('formatted',formatted)
     return res.json({ success: true, data: formatted });
   } catch (error) {
     console.error("Error in getStaffProfile:", error);
     res.status(500).json({ message: "Internal server error", error });
   }
 };
-
-
 
 
 
