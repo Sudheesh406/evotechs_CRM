@@ -12,13 +12,12 @@ import {
 import axios from "../instance/Axios";
 
 // --- Configuration / Fallback ---
-const DEFAULT_AVATAR = "/path/to/default/avatar.png"; 
+const DEFAULT_AVATAR = "/path/to/default/avatar.png";
 // *** IMPORT Swal (SweetAlert2) FOR MODAL ALERTS ***
 import Swal from "sweetalert2";
 
 // --- Base URL for Staff Profile Images (UPDATED based on user's new link) ---
 const STAFF_PROFILE_BASE_URL = `${import.meta.env.VITE_BACKEND_URL}/images/`;
-
 
 // --- Staff Tooltip Component (UNCHANGED) ---
 const StaffTooltip = ({ staff, position, onStay, onLeave }) => {
@@ -90,18 +89,28 @@ const StaffTooltip = ({ staff, position, onStay, onLeave }) => {
 
 // --- Staff Modal Component (FIXED) ---
 
-const StaffModal = ({ isOpen, onClose, staffList, onStaffUpdate, refresh, setRefresh }) => {
+const StaffModal = ({
+  isOpen,
+  onClose,
+  staffList,
+  onStaffUpdate,
+  refresh,
+  setRefresh,
+}) => {
   const [selectedStaffId, setSelectedStaffId] = useState("");
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
   useEffect(() => {
     // If the selected staff member is removed from staffList (e.g., API update), reset selection
-    if (staffList.length > 0 && selectedStaffId !== "" && !staffList.find(s => s.id === Number(selectedStaffId))) {
+    if (
+      staffList.length > 0 &&
+      selectedStaffId !== "" &&
+      !staffList.find((s) => s.id === Number(selectedStaffId))
+    ) {
       setSelectedStaffId("");
     }
   }, [staffList, selectedStaffId]);
-
 
   if (!isOpen) return null;
 
@@ -109,7 +118,7 @@ const StaffModal = ({ isOpen, onClose, staffList, onStaffUpdate, refresh, setRef
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    
+
     if (file) {
       setImageFile(file);
       const reader = new FileReader();
@@ -121,11 +130,11 @@ const StaffModal = ({ isOpen, onClose, staffList, onStaffUpdate, refresh, setRef
       setImageFile(null);
       setImagePreview(null);
     }
-    
-    // **FIX:** Clear the file input's value after processing the file. 
-    // This allows the user to re-select the exact same file immediately after 
+
+    // **FIX:** Clear the file input's value after processing the file.
+    // This allows the user to re-select the exact same file immediately after
     // it was cleared from the state or if they want to try uploading it again.
-    e.target.value = null; 
+    e.target.value = null;
   };
 
   const handleSubmit = async (e) => {
@@ -169,7 +178,7 @@ const StaffModal = ({ isOpen, onClose, staffList, onStaffUpdate, refresh, setRef
       // Reset local state after successful submission
       setImageFile(null);
       setImagePreview(null);
-      setSelectedStaffId(""); 
+      setSelectedStaffId("");
       onClose();
 
       // *** SweetAlert2 Success Alert ***
@@ -181,11 +190,10 @@ const StaffModal = ({ isOpen, onClose, staffList, onStaffUpdate, refresh, setRef
       });
 
       // Toggle refresh state to trigger main data fetch
-      setRefresh(!refresh); 
-
+      setRefresh(!refresh);
     } catch (error) {
       console.error("Error updating staff image:", error);
-      
+
       // *** SweetAlert2 Error Alert ***
       Swal.fire({
         title: "Error!",
@@ -231,7 +239,7 @@ const StaffModal = ({ isOpen, onClose, staffList, onStaffUpdate, refresh, setRef
               id="staff-select"
               value={selectedStaffId}
               onChange={(e) => {
-                // **FIX:** We only update the staff ID. 
+                // **FIX:** We only update the staff ID.
                 // We keep the image selection persistent until the user selects a new image.
                 setSelectedStaffId(e.target.value);
               }}
@@ -312,13 +320,18 @@ const StaffModal = ({ isOpen, onClose, staffList, onStaffUpdate, refresh, setRef
 
 // --- Main Component (UNCHANGED) ---
 
-export default function TeamWorkOverview() {
+export default function TeamWorkOverview({ role }) {
   const [staffData, setStaffData] = useState([]);
   const [staffTaskDetails, setStaffTaskDetails] = useState({});
   const [hoveredStaff, setHoveredStaff] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [refresh, setRefresh] = useState(false)
+  const [refresh, setRefresh] = useState(false);
+  const [button, setButton] = useState(false);
+
+  useEffect(()=>{
+    setButton(role);
+  },[role])
 
   // --- Helper to merge data and get final structure (UPDATED BASE URL) ---
   const mergeStaffData = (staffList, taskDetails) => {
@@ -457,17 +470,20 @@ export default function TeamWorkOverview() {
             Our Squad
           </h2>
           <p className="text-gray-500 text-sm mt-1">
-            Hover over any member to view their current task metrics.
+            Upload profile image and hover over any member to view their current
+            task metrics.
           </p>
         </div>
         <div>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="px-4 py-2 rounded-full bg-blue-600 text-white font-medium transition-all duration-200 hover:bg-blue-700 hover:scale-105 disabled:opacity-60"
-            disabled={staffData.length === 0}
-          >
-            Update Profile Images
-          </button>
+          {button && (
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="px-4 py-2 rounded-full bg-blue-600 text-white font-medium transition-all duration-200 hover:bg-blue-700 hover:scale-105 disabled:opacity-60"
+              disabled={staffData.length === 0}
+            >
+              Update Profile Images
+            </button>
+          )}
         </div>
       </div>
 

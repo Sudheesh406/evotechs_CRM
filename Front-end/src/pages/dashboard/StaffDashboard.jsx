@@ -5,6 +5,10 @@ import ContactModal from "../../components/modals/ContactModal";
 import TaskModal from "../../components/modals/TaskModal";
 import { MoreVertical } from "lucide-react";
 
+import PipelineDiagram from "../../components/PipelineView"; 
+import MonthlyProfitGraph from "../../components/MonthlyProfitGraph";
+import StaffList from "../../components/StaffList";
+
 const statuses = ["Pending", "Progress", "Completed"];
 const statusColors = {
   Pending: "bg-blue-100",
@@ -18,6 +22,7 @@ const StaffDashboard = () => {
   const [userName, setUserName] = useState("");
   const [openMenuId, setOpenMenuId] = useState(null);
   const [requirements, setRequirements] = useState([]);
+  const [role,setRole] = useState(false)
   const [id,setId] = useState()
 
   // ✅ Modal states
@@ -286,6 +291,13 @@ useEffect(()=>{
         </span>
       </h1>
 
+      <div className="pt-4 px-4">
+              <MonthlyProfitGraph/>
+            </div>
+            <div className="pt-4 px-4 mb-10">
+              <StaffList role={role}/>
+            </div>
+
       <div className="flex gap-4 flex-wrap">
         {statuses.map((status) => {
           const filteredTasks = workDetails.filter(
@@ -411,6 +423,7 @@ useEffect(()=>{
             </div>
           );
         })}
+        
       </div>
 
       {/* ✅ Contact Modal */}
@@ -439,6 +452,9 @@ useEffect(()=>{
           position="right"
         />
       )}
+      <div className="pt-4 px-4">
+              <PipelineDiagram/>
+            </div>
     </div>
   );
 };

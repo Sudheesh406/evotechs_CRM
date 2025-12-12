@@ -78,6 +78,7 @@ const KanbanColumn = ({ title, status, color, tasks }) => {
 const AdminDashboard = () => {
   const [tasks, setTasks] = useState([]);
   const [name, setName] = useState()
+  const [role, setRole] = useState(true) 
 
   const fetchTasks = async () => {
     try {
@@ -126,7 +127,7 @@ const AdminDashboard = () => {
         <MonthlyProfitGraph/>
       </div>
       <div className="pt-4 px-4">
-        <StaffList/>
+        <StaffList role={role}/>
       </div>
       {/* Kanban Board */}
       <main className="flex overflow-x-auto gap-4 p-4">
