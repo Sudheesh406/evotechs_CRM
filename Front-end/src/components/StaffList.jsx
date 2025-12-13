@@ -11,9 +11,8 @@ import {
 } from "lucide-react";
 import axios from "../instance/Axios";
 
-// --- Configuration / Fallback ---
-const DEFAULT_AVATAR = "/path/to/default/avatar.png";
-// *** IMPORT Swal (SweetAlert2) FOR MODAL ALERTS ***
+import DEFAULT_AVATAR from '../assets/images/default.png'
+
 import Swal from "sweetalert2";
 
 // --- Base URL for Staff Profile Images (UPDATED based on user's new link) ---
@@ -126,17 +125,19 @@ const StaffModal = ({
         setImagePreview(reader.result);
       };
       reader.readAsDataURL(file);
+
     } else {
       setImageFile(null);
       setImagePreview(null);
     }
-
+    
     // **FIX:** Clear the file input's value after processing the file.
     // This allows the user to re-select the exact same file immediately after
     // it was cleared from the state or if they want to try uploading it again.
     e.target.value = null;
   };
 
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -203,6 +204,8 @@ const StaffModal = ({
       });
     }
   };
+
+
 
   return (
     <div
@@ -461,6 +464,9 @@ export default function TeamWorkOverview({ role }) {
     initializeData();
   }, [refresh]);
 
+      console.log(staffData)
+
+
   return (
     <div className="relative p-6 font-sans bg-white rounded-2xl shadow-3xl border border-gray-100 max-w-7xl mx-auto">
       <div className="mb-6 border-b pb-4 flex justify-between">
@@ -470,7 +476,7 @@ export default function TeamWorkOverview({ role }) {
             Our Squad
           </h2>
           <p className="text-gray-500 text-sm mt-1">
-            Upload profile image and hover over any member to view their current
+            Hover over any member to view their current
             task metrics.
           </p>
         </div>
@@ -486,6 +492,7 @@ export default function TeamWorkOverview({ role }) {
           )}
         </div>
       </div>
+
 
       <div className="flex flex-wrap justify-center gap-x-4 gap-y-6">
         {staffData.map((staff) => (
