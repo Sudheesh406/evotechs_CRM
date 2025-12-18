@@ -1,7 +1,7 @@
 const { DataTypes } = require("sequelize");
 const { sequelize } = require("../../../database/dbConfigue");
 
-const Pipeline = sequelize.define("Pipeline", {
+const Pipelines = sequelize.define("Pipelines", {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -17,4 +17,4 @@ const Pipeline = sequelize.define("Pipeline", {
   },
 });
 
-module.exports = Pipeline;
+module.exports = Pipelines;
