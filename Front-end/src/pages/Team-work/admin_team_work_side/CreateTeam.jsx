@@ -191,7 +191,7 @@ function CreateTeam() {
   const handleDeleteTeam = async (id) => {
     const result = await MySwal.fire({
       title: "Are you sure?",
-      text: "You won't be able to revert this!",
+      text: "This item will be moved to trash.",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",

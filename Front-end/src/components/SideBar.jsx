@@ -46,8 +46,9 @@ const Sidebar = ({ closeSidebar }) => {
   const [openMenus, setOpenMenus] = useState({});
   const [menuItems, setMenuItems] = useState();
   const [company, setCompany] = useState("company");
+  const [companyImage, setCompanyImage] = useState();
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState(false)
+  const [view, setView] = useState(false);
   const navigate = useNavigate();
 
   const toggleMenu = (index) => {
@@ -278,8 +279,16 @@ const Sidebar = ({ closeSidebar }) => {
           path: "/workspace/work/staff/assign",
           icon: FolderKanban,
         },
-        { title: "Employee Absence", path: "/workspace/employee-absence", icon: UserMinus },
-        { title: "Staff pipeline", path: "/workspace/home/pipeline", icon: UserMinus },
+        {
+          title: "Employee Absence",
+          path: "/workspace/employee-absence",
+          icon: UserMinus,
+        },
+        {
+          title: "Staff pipeline",
+          path: "/workspace/home/pipeline",
+          icon: UserMinus,
+        },
       ],
     },
     {
@@ -303,51 +312,46 @@ const Sidebar = ({ closeSidebar }) => {
   ];
   // --- End of Menu Data ---
 
-useEffect(() => {
-  async function initRole() {
-    try {
-      let acess = null;
-      const { data } = await axios.get("/auth/role");
+  useEffect(() => {
+    async function initRole() {
+      try {
+        let acess = null;
+        const { data } = await axios.get("/auth/role");
 
-      setCompany(data?.data?.company);
+        setCompany(data?.data?.company);
+        setCompanyImage(data?.data?.companyImage);
 
-      if (data?.data?.role) {
-        acess = data.data.role;
-      }
-
-      if (data?.data?.value) {
-        setView(true);
-      }
-
-      console.log(data)
-
-      setLoading(false);
-
-      // Assign menu items
-      if (acess === "admin") {
-        setMenuItems(adminItems);
-      } else {
-        // Staff logic
-        let updated = staffItems;
-
-        // If staff does NOT have "view" permission → remove Accounts
-        if (!data?.data?.value) {
-          updated = staffItems.filter(
-            (item) => item.title !== "Accounts"
-          );
+        if (data?.data?.role) {
+          acess = data.data.role;
         }
 
-        setMenuItems(updated);
+        if (data?.data?.value) {
+          setView(true);
+        }
+
+        setLoading(false);
+
+        // Assign menu items
+        if (acess === "admin") {
+          setMenuItems(adminItems);
+        } else {
+          // Staff logic
+          let updated = staffItems;
+
+          // If staff does NOT have "view" permission → remove Accounts
+          if (!data?.data?.value) {
+            updated = staffItems.filter((item) => item.title !== "Accounts");
+          }
+
+          setMenuItems(updated);
+        }
+      } catch (err) {
+        console.error("Error initializing role:", err);
       }
-
-    } catch (err) {
-      console.error("Error initializing role:", err);
     }
-  }
 
-  initRole();
-}, []);
-
+    initRole();
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -375,8 +379,6 @@ useEffect(() => {
     );
   }
 
-  // --- Start of Main Component Rendering with Blue Theme ---
-
   return (
     <div
       className="flex flex-col justify-between h-screen w-64 shadow-2xl transition-all duration-300"
@@ -385,13 +387,24 @@ useEffect(() => {
       {/* Top + Menu Scrollable */}
       <div className="flex flex-col overflow-y-auto flex-1 custom-scrollbar">
         {/* Logo */}
-        <div className="p-6 border-b border-gray-200 flex items-center gap-4 bg-white sticky top-0 z-20">
+        <div className="pt-6 pb-6 pl-3 border-b border-gray-200 bg-white sticky top-0 z-20 flex items-center gap-4">
           {/* Company Logo */}
-          <img
-            src={company?.logoUrl || DefaultLog} // <-- default image
-            alt="Company Logo"
-            className="w-12 h-12 rounded-full object-cover border border-gray-300"
-          />
+          <div
+            className="w-24 h-24 rounded-full border-2 flex items-center justify-center overflow-hidden shadow-sm"
+            style={{ borderColor: PRIMARY_BLUE }}
+          >
+            <img
+              src={
+                companyImage?.imagePath
+                  ? `${import.meta.env.VITE_BACKEND_URL}/images/${
+                      companyImage.imagePath
+                    }`
+                  : DefaultLog
+              }
+              alt="Company Logo"
+              className="w-full h-full object-cover"
+            />
+          </div>
 
           {/* Company Info */}
           <div>

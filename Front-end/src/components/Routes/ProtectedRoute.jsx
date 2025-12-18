@@ -6,10 +6,12 @@ import socket from "../../instance/Socket";
 import toast from "react-hot-toast";
 import { Bell, X, Trash2 } from "lucide-react"; // icons for bell + close
 import { motion, AnimatePresence } from "framer-motion";
+import { use } from "framer-motion/client";
 
 export default function ProtectedRoute({ allowedRoles, children }) {
   const navigate = useNavigate();
   const [role, setRole] = useState(null);
+  const [block, setBlock] = useState()
   const [notification, setNotifications] = useState();
   const [loading, setLoading] = useState(true);
   const location = useLocation(); // 👈 get current location (path + state)
@@ -20,6 +22,7 @@ export default function ProtectedRoute({ allowedRoles, children }) {
       try {
         const { data } = await axios.get("/auth/get/role");
         setRole(data?.data?.role);
+        setBlock(data?.data?.block)
         setNotifications(data?.data?.allNotifications);
         const id = data?.data?.id;
 
@@ -76,6 +79,7 @@ export default function ProtectedRoute({ allowedRoles, children }) {
   if (!role) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
+ 
 
   if (!allowedRoles.includes(role)) {
     // redirect with "from" location info
