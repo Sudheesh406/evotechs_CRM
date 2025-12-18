@@ -8,6 +8,7 @@ const Signup = require("../../models/v1/Authentication/authModel");
 const company = require("../../models/v1/company/company");
 const notifications = require("../../models/v1/Work_space/notification");
 const team = require("../../models/v1/Team_work/team");
+const companyProfile = require('../../models/v1/company/companyProfile');
 const { Op, fn, col, literal, Sequelize } = require("sequelize");
 
 const handleSignup = async (req, res) => {
@@ -170,6 +171,7 @@ const roleChecker = async (req, res) => {
       return httpError(res, 404, "User not found");
     }
     const companyDetails = await company.findOne({});
+    const companyImage = await companyProfile.findOne({});
 
     const teamsDetails = await team.findAll({
       where: {
@@ -198,6 +200,8 @@ const roleChecker = async (req, res) => {
       role: userDetails.role,
       company: companyDetails,
       value,
+      companyImage,
+      block : userDetails.verified
     });
   } catch (error) {
     console.log("error found  in role checker", error);
