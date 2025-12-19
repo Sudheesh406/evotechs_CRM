@@ -36,6 +36,8 @@ import {
   Loader, // For a cleaner loading icon
 } from "lucide-react";
 
+
+import { useSidebar } from "./SidebarContext";
 // --- Define the new color theme variables ---
 const PRIMARY_BLUE = "#0077D8"; // A vibrant, professional blue
 const LIGHT_BG = "#F9FAFB"; // Very light grey/off-white background
@@ -50,6 +52,8 @@ const Sidebar = ({ closeSidebar }) => {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState(false);
   const navigate = useNavigate();
+    const { refreshSignal } = useSidebar();
+
 
   const toggleMenu = (index) => {
     setOpenMenus((prev) => ({
@@ -59,6 +63,8 @@ const Sidebar = ({ closeSidebar }) => {
   };
 
   const id = 0;
+    const { profileUpdated } = useSidebar();
+
 
   // --- Menu Data (Unchanged from previous version, just ensuring it's available) ---
   const staffItems = [
@@ -351,7 +357,7 @@ const Sidebar = ({ closeSidebar }) => {
     }
 
     initRole();
-  }, []);
+  }, [refreshSignal]);
 
   const handleLogout = async () => {
     try {
