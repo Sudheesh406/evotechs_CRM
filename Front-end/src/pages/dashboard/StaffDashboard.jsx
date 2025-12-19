@@ -452,7 +452,7 @@ useEffect(()=>{
           position="right"
         />
       )}
-      <div className="pt-4 px-4">
+      <div className="pt-4 px-4 mb-6">
               <PipelineDiagram/>
             </div>
     </div>
