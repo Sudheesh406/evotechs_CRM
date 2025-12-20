@@ -187,14 +187,14 @@ const roleChecker = async (req, res) => {
       },
     });
 
-    const financeTeam = teamsDetails.find(
-      (t) => t.teamName?.toLowerCase() === "finance"
-    );
+    // const financeTeam = teamsDetails.find(
+    //   (t) => t.teamName?.toLowerCase() === "finance"
+    // );
 
     let value = false;
-    if (financeTeam) {
-      value = true;
-    }
+    // if (financeTeam) {
+    //   value = true;
+    // }
 
     return httpSuccess(res, 200, "Role fetched successfully", {
       role: userDetails.role,

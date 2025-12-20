@@ -149,22 +149,22 @@ const Sidebar = ({ closeSidebar }) => {
         // { title: "Employee Absence", path: "/workspace/employee-absence", icon: UserMinus },
       ],
     },
-    {
-      title: "Accounts",
-      icon: ReceiptText,
-      subMenu: [
-        {
-          title: "Day Book",
-          path: "/accounts/day-book",
-          icon: Receipt,
-        },
-        {
-          title: "Income Sheet",
-          path: "/accounts/income-sheet",
-          icon: Wallet,
-        },
-      ],
-    },
+    // {
+    //   title: "Accounts",
+    //   icon: ReceiptText,
+    //   subMenu: [
+    //     {
+    //       title: "Day Book",
+    //       path: "/accounts/day-book",
+    //       icon: Receipt,
+    //     },
+    //     {
+    //       title: "Income Sheet",
+    //       path: "/accounts/income-sheet",
+    //       icon: Wallet,
+    //     },
+    //   ],
+    // },
     { title: "Trash", icon: Trash2, path: "/trash" },
   ];
 
