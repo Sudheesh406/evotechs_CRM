@@ -7,6 +7,7 @@ import Swal from "sweetalert2";
 const columnStructure = [
   { key: "invoiceNo", header: "INVOICE NO", rowspan: 2, isDataCol: true },
   { key: "date", header: "DATE", rowspan: 2, isDataCol: true },
+  { key: "transactionId", header: "TRANSACTION_ID", rowspan: 2, isDataCol: true },
   { key: "name", header: "NAME OF PERSON/FIRM", rowspan: 2, isDataCol: true },
   { key: "totalAmount", header: "TOTAL AMOUNT", rowspan: 2, isDataCol: true },
   { key: "received", header: "RECEIVED", rowspan: 2, isDataCol: true },
@@ -24,15 +25,16 @@ const createEmptyRow = (id = uuidv4()) => ({
   received: null,
   credit: null,
   balance: null,
+  transactionId: "",
 });
 
 // --- Update getDataColumnKeys for new headers ---
 const getDataColumnKeys = (structure) => {
   return structure.map((col) => ({
     key: col.key,
-    align: col.key === "name" ? "left" : "right",
+    align: col.key === "name" || col.key === "transactionId" ? "left" : "right",
     dataType:
-      col.key === "invoiceNo" || col.key === "date" || col.key === "name"
+      col.key === "invoiceNo" || col.key === "date" || col.key === "name" || col.key === "transactionId"
         ? "text"
         : "number",
   }));
@@ -40,11 +42,11 @@ const getDataColumnKeys = (structure) => {
 
 const dataColumnKeys = getDataColumnKeys(columnStructure);
 
-// Ensure minimum rows (UPDATED to use new createEmptyRow)
+// Ensure minimum rows
 const ensureMinRows = (data, minCount) => {
   const newRows = [...data];
   while (newRows.length < minCount) {
-    newRows.push(createEmptyRow()); // auto UUID
+    newRows.push(createEmptyRow());
   }
   return newRows;
 };
@@ -73,14 +75,11 @@ const IncomeSheet = () => {
       });
 
       const res = response.data;
-      console.log(res);
 
       if (res.success && res.data) {
         const entries = res.data.entries.map((row) => ({ ...row }));
-
         const updated = ensureMinRows(entries, 50);
         setData(updated);
-
         setLastSavedData(JSON.stringify(entries));
 
         const maxId =
@@ -148,7 +147,7 @@ const IncomeSheet = () => {
       )
     );
 
-    const cleanRows = filledRows.map((row) => ({ ...row })); // UUID stays!
+    const cleanRows = filledRows.map((row) => ({ ...row }));
 
     if (JSON.stringify(cleanRows) === lastSavedData) {
       Swal.fire({
@@ -165,13 +164,11 @@ const IncomeSheet = () => {
       month: selectedMonth,
       year: selectedYear,
       type: selectedType,
-      entries: cleanRows, // UUID INCLUDED
+      entries: cleanRows,
     };
 
     try {
       const res = await axios.post("/account/income-sheet/create", payload);
-      console.log("Saved successfully", res.data);
-
       setLastSavedData(JSON.stringify(cleanRows));
 
       Swal.fire({
@@ -182,8 +179,6 @@ const IncomeSheet = () => {
         showConfirmButton: false,
       });
     } catch (error) {
-      console.log("Error saving Income sheet", error);
-
       Swal.fire({
         icon: "error",
         title: "Error",
@@ -222,22 +217,10 @@ const IncomeSheet = () => {
             className="px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-md font-semibold text-gray-700 hover:border-gray-400 transition"
           >
             {[
-              "January",
-              "February",
-              "March",
-              "April",
-              "May",
-              "June",
-              "July",
-              "August",
-              "September",
-              "October",
-              "November",
-              "December",
+              "January", "February", "March", "April", "May", "June",
+              "July", "August", "September", "October", "November", "December",
             ].map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
+              <option key={m} value={m}>{m}</option>
             ))}
           </select>
 
@@ -246,13 +229,8 @@ const IncomeSheet = () => {
             onChange={(e) => setSelectedYear(e.target.value)}
             className="px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-md font-semibold text-gray-700 hover:border-gray-400 transition"
           >
-            {Array.from(
-              { length: 5 },
-              (_, i) => new Date().getFullYear() - i
-            ).map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
+            {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((y) => (
+              <option key={y} value={y}>{y}</option>
             ))}
           </select>
 
@@ -301,7 +279,8 @@ const IncomeSheet = () => {
                     rowSpan={col.rowspan || 1}
                     colSpan={col.colspan || 1}
                     className={`px-4 py-2 text-center text-sm font-semibold text-gray-700 border border-gray-300 ${
-                      col.key === "name" ? "min-w-[300px]" : ""
+                      col.key === "name" ? "min-w-[300px]" : 
+                      col.key === "transactionId" ? "min-w-[250px]" : ""
                     }`}
                   >
                     {col.header}
@@ -320,6 +299,8 @@ const IncomeSheet = () => {
                       col.key === "credit" ||
                       col.key === "balance";
 
+                    const isTextArea = col.key === "name" || col.key === "transactionId";
+
                     return (
                       <td
                         key={col.key}
@@ -327,23 +308,18 @@ const IncomeSheet = () => {
                           isNumeric ? "text-right" : "text-left"
                         }`}
                       >
-                        {col.key === "name" ? (
+                        {isTextArea ? (
                           <textarea
                             value={row[col.key] ?? ""}
                             onChange={(e) =>
-                              handleCellChange(
-                                row.coloumnId,
-                                col.key,
-                                e.target.value
-                              )
+                              handleCellChange(row.coloumnId, col.key, e.target.value)
                             }
                             className="w-full px-1 py-0.5 border-none focus:outline-none resize-none overflow-hidden bg-transparent text-left font-medium"
                             rows={1}
                             style={{ minHeight: "24px" }}
                             onInput={(e) => {
                               e.target.style.height = "auto";
-                              e.target.style.height =
-                                e.target.scrollHeight + "px";
+                              e.target.style.height = e.target.scrollHeight + "px";
                             }}
                           />
                         ) : (
@@ -351,11 +327,7 @@ const IncomeSheet = () => {
                             type="text"
                             value={row[col.key] ?? ""}
                             onChange={(e) =>
-                              handleCellChange(
-                                row.coloumnId,
-                                col.key,
-                                e.target.value
-                              )
+                              handleCellChange(row.coloumnId, col.key, e.target.value)
                             }
                             className={`w-full h-full px-1 py-0.5 focus:outline-none border-none bg-transparent ${
                               isNumeric ? "text-right font-medium" : "text-left"
@@ -373,22 +345,11 @@ const IncomeSheet = () => {
                 <td className="border px-2 py-1 text-center" colSpan={3}>
                   TOTAL
                 </td>
-
-                <td className="border px-2 py-1 text-right">
-                  {totals.totalAmount.toFixed(2)}
-                </td>
-
-                <td className="border px-2 py-1 text-right">
-                  {totals.received.toFixed(2)}
-                </td>
-
-                <td className="border px-2 py-1 text-right">
-                  {totals.credit.toFixed(2)}
-                </td>
-
-                <td className="border px-2 py-1 text-right">
-                  {totals.balance.toFixed(2)}
-                </td>
+                <td className="border px-2 py-1 text-right">{totals.totalAmount.toFixed(2)}</td>
+                <td className="border px-2 py-1 text-right">{totals.received.toFixed(2)}</td>
+                <td className="border px-2 py-1 text-right">{totals.credit.toFixed(2)}</td>
+                <td className="border px-2 py-1 text-right">{totals.balance.toFixed(2)}</td>
+                <td className="border px-2 py-1"></td> 
               </tr>
             </tbody>
           </table>

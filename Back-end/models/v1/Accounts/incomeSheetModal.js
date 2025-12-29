@@ -22,7 +22,7 @@ const IncomeSheet = sequelize.define(
     },
 
     type: {
-      type: DataTypes.STRING, // Pathanamthitta / Trivandrum etc.
+      type: DataTypes.STRING,
       allowNull: false,
     },
 

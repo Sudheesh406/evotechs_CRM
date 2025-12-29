@@ -396,7 +396,7 @@ const Sidebar = ({ closeSidebar }) => {
         <div className="pt-6 pb-6 pl-3 border-b border-gray-200 bg-white sticky top-0 z-20 flex items-center gap-4">
           {/* Company Logo */}
           <div
-            className="w-24 h-24 rounded-full border-2 flex items-center justify-center overflow-hidden shadow-sm"
+            className="w-14 h-12 rounded-full border-2 flex items-center justify-center overflow-hidden shadow-sm"
             style={{ borderColor: PRIMARY_BLUE }}
           >
             <img

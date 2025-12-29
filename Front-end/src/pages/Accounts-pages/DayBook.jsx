@@ -3,10 +3,10 @@ import axios from "../../instance/Axios";
 import { v4 as uuidv4 } from "uuid";
 import Swal from "sweetalert2";
 
-
 // Define the column headers with nesting structure
 const columnStructure = [
   { key: "date", header: "DATE", rowspan: 2, isDataCol: true },
+  { key: "transactionId", header: "TRANSACTION_ID", rowspan: 2, isDataCol: true },
   { key: "particulars", header: "PARTICULARS", rowspan: 2, isDataCol: true },
   {
     key: "payments",
@@ -79,9 +79,9 @@ const getDataColumnKeys = (structure) => {
       : [
           {
             key: col.key,
-            align: col.key === "particulars" ? "left" : "right",
+            align: (col.key === "particulars" || col.key === "transactionId") ? "left" : "right",
             dataType:
-              col.key === "date" || col.key === "particulars"
+              col.key === "date" || col.key === "particulars" || col.key === "transactionId"
                 ? "text"
                 : "number",
           },
@@ -104,7 +104,7 @@ const createEmptyRow = (coloumnId) => {
 const ensureMinRows = (data, minCount) => {
   const newRows = [...data];
   while (newRows.length < minCount) {
-    newRows.push(createEmptyRow(uuidv4())); // ← UNIQUE ID
+    newRows.push(createEmptyRow(uuidv4()));
   }
   return newRows;
 };
@@ -113,7 +113,7 @@ const ensureMinRows = (data, minCount) => {
 const recalculateBalances = (rows) => {
   let lastCash = 0;
   let lastBank = 0;
-  let started = false; // Only start calculation after first non-empty row
+  let started = false;
 
   return rows.map((row) => {
     const hasData = Object.keys(row).some(
@@ -138,26 +138,21 @@ const recalculateBalances = (rows) => {
       return { ...row, balance_cash: lastCash, balance_bank: lastBank };
     }
 
-    // Empty rows → do NOT calculate, just show empty
     return { ...row, balance_cash: "", balance_bank: "" };
   });
 };
 
-// --- REACT COMPONENT ---
 const DayBook = () => {
   const [data, setData] = useState([]);
   const [nextId, setNextId] = useState(1);
-
   const [selectedType, setSelectedType] = useState("Pathanamthitta");
   const [selectedMonth, setSelectedMonth] = useState(
     new Date().toLocaleString("en-US", { month: "long" })
   );
-
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [lastSavedData, setLastSavedData] = useState([]);
   const [showToast, setShowToast] = useState(false);
 
-  // --- FETCH DAYBOOK DATA ---
   const fetchDaybook = async () => {
     try {
       const response = await axios.post("/account/day-book/get", {
@@ -167,32 +162,25 @@ const DayBook = () => {
       });
 
       const res = response.data;
-      console.log(res);
 
       if (res.success && res.data) {
         const entries = res.data.entries.map((row) => ({ ...row }));
         const calculatedEntries = recalculateBalances(entries);
-
         const updated = ensureMinRows(calculatedEntries, 50);
         setData(updated);
-
-        // 👉 SAVE CLEANED DATA for comparison
         setLastSavedData(JSON.stringify(entries));
 
         const maxId =
           entries.length > 0
             ? Math.max(...entries.map((r) => r.coloumnId)) + 1
             : 1;
-
         setNextId(maxId);
       } else {
-        // When no record found → reset table
         setData(ensureMinRows([], 50));
         setNextId(1);
       }
     } catch (error) {
       console.log("Error fetching DayBook details", error);
-      // Optional: also reset on API error
       setData(ensureMinRows([], 50));
       setNextId(1);
     }
@@ -202,37 +190,35 @@ const DayBook = () => {
     const delay = setTimeout(() => {
       fetchDaybook();
     }, 500);
-
     return () => clearTimeout(delay);
   }, [selectedYear, selectedMonth, selectedType]);
 
-  // --- HANDLE CELL CHANGE ---
-const handleCellChange = useCallback((rowId, key, value) => {
-  // 👉 SHOW the toast every time user types
-  triggerToast();
+  const triggerToast = () => {
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 2000);
+  };
 
-  setData((prevData) => {
-    const newData = prevData.map((row) => {
-      if (row.coloumnId === rowId) {
-        const columnInfo = dataColumnKeys.find((col) => col.key === key);
-        const formattedValue =
-          columnInfo.dataType === "number"
-            ? value === ""
-              ? null
-              : Number(value.replace(/[^0-9.]/g, ""))
-            : value;
+  const handleCellChange = useCallback((rowId, key, value) => {
+    triggerToast();
+    setData((prevData) => {
+      const newData = prevData.map((row) => {
+        if (row.coloumnId === rowId) {
+          const columnInfo = dataColumnKeys.find((col) => col.key === key);
+          const formattedValue =
+            columnInfo.dataType === "number"
+              ? value === ""
+                ? null
+                : Number(value.replace(/[^0-9.]/g, ""))
+              : value;
 
-        return { ...row, [key]: formattedValue };
-      }
-      return row;
+          return { ...row, [key]: formattedValue };
+        }
+        return row;
+      });
+      return recalculateBalances(newData);
     });
+  }, []);
 
-    return recalculateBalances(newData);
-  });
-}, []);
-
-
-  // --- HANDLE ADD ROWS ---
   const handleAddRows = () => {
     setData((prevData) => {
       const newRows = Array.from({ length: 50 }, () =>
@@ -242,65 +228,53 @@ const handleCellChange = useCallback((rowId, key, value) => {
     });
   };
 
-  // --- HANDLE SAVE CHANGES ---
-const handleSaveChanges = async () => {
-  const filledRows = data.filter((row) =>
-    Object.keys(row).some(
-      (key) => key !== "coloumnId" && row[key] !== null && row[key] !== ""
-    )
-  );
+  const handleSaveChanges = async () => {
+    const filledRows = data.filter((row) =>
+      Object.keys(row).some(
+        (key) => key !== "coloumnId" && row[key] !== null && row[key] !== ""
+      )
+    );
 
-  const cleanRows = filledRows.map((row) => ({ ...row }));
+    const cleanRows = filledRows.map((row) => ({ ...row }));
 
-  // Compare with last saved data
-  if (JSON.stringify(cleanRows) === lastSavedData) {
-    Swal.fire({
-      icon: "info",
-      title: "No changes detected",
-      text: "You haven’t made any changes to save.",
-      timer: 2000,
-      showConfirmButton: false,
-    });
-    return;
-  }
+    if (JSON.stringify(cleanRows) === lastSavedData) {
+      Swal.fire({
+        icon: "info",
+        title: "No changes detected",
+        text: "You haven’t made any changes to save.",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+      return;
+    }
 
-  const payload = {
-    month: selectedMonth,
-    year: selectedYear,
-    type: selectedType,
-    entries: cleanRows,
+    const payload = {
+      month: selectedMonth,
+      year: selectedYear,
+      type: selectedType,
+      entries: cleanRows,
+    };
+
+    try {
+      const res = await axios.post("/account/day-book/create", payload);
+      setLastSavedData(JSON.stringify(cleanRows));
+      Swal.fire({
+        icon: "success",
+        title: "Saved!",
+        text: "Day Book entries have been saved successfully.",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to save Day Book entries. Please try again.",
+        confirmButtonColor: "#d33",
+      });
+    }
   };
 
-  try {
-    const res = await axios.post("/account/day-book/create", payload);
-    console.log("Saved successfully", res.data);
-
-    // Update reference after successful save
-    setLastSavedData(JSON.stringify(cleanRows));
-
-    // SweetAlert success message
-    Swal.fire({
-      icon: "success",
-      title: "Saved!",
-      text: "Day Book entries have been saved successfully.",
-      timer: 2000,
-      showConfirmButton: false,
-    });
-  } catch (error) {
-    console.log("Error saving Day Book", error);
-
-    // SweetAlert error message
-    Swal.fire({
-      icon: "error",
-      title: "Error",
-      text: "Failed to save Day Book entries. Please try again.",
-      confirmButtonColor: "#d33",
-    });
-  }
-};
-
-
-  // --- UTILITY FUNCTIONS ---
   const formatValue = (value, isNumeric) => {
     if (value === null || value === undefined) return "";
     return isNumeric && typeof value === "number" ? value.toString() : value;
@@ -316,15 +290,8 @@ const handleSaveChanges = async () => {
     return value;
   };
 
-  const triggerToast = () => {
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 2000);
-  };
-
-  // --- RENDER ---
   return (
     <div className="p-4 overflow-x-auto ">
-      {/* HEADER and BUTTONS */}
       <div className="flex justify-between items-center mb-6 border-b pb-3 border-gray-300">
         <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">
           <span className="text-indigo-600">Day</span> Book
@@ -336,22 +303,10 @@ const handleSaveChanges = async () => {
             className="px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-md font-semibold text-gray-700 hover:border-gray-400 transition duration-150"
           >
             {[
-              "January",
-              "February",
-              "March",
-              "April",
-              "May",
-              "June",
-              "July",
-              "August",
-              "September",
-              "October",
-              "November",
-              "December",
+              "January", "February", "March", "April", "May", "June",
+              "July", "August", "September", "October", "November", "December",
             ].map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
+              <option key={m} value={m}>{m}</option>
             ))}
           </select>
           <select
@@ -359,13 +314,8 @@ const handleSaveChanges = async () => {
             onChange={(e) => setSelectedYear(e.target.value)}
             className="px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-md font-semibold text-gray-700 hover:border-gray-400 transition duration-150"
           >
-            {Array.from(
-              { length: 5 },
-              (_, i) => new Date().getFullYear() - i
-            ).map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
+            {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((y) => (
+              <option key={y} value={y}>{y}</option>
             ))}
           </select>
           <select
@@ -389,17 +339,15 @@ const handleSaveChanges = async () => {
             >
               Save Changes
             </button>
-
-              {showToast && (
-            <div className="absolute top-full mt-2 right-0 w-[170px] bg-red-500 text-black font-bold text-sm px-4 py-3 rounded shadow-md animate-slideDown z-50">
-             ⚠️ Don’t forget to click the Save button after making changes.
-            </div>
-          )}
+            {showToast && (
+              <div className="absolute top-full mt-2 right-0 w-[170px] bg-red-500 text-black font-bold text-sm px-4 py-3 rounded shadow-md animate-slideDown z-50">
+                ⚠️ Don’t forget to click the Save button after making changes.
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* TABLE */}
       <div className="overflow-x-auto w-full">
         <div className="shadow-lg rounded-lg min-w-max border border-gray-300">
           <table className="min-w-full divide-y divide-gray-300">
@@ -433,84 +381,60 @@ const handleSaveChanges = async () => {
             </thead>
 
             <tbody className="bg-white divide-y divide-gray-200">
-              {data.map((row) => {
-                const isOpeningBalanceRow = row.coloumnId === 1;
+              {data.map((row) => (
+                <tr key={row.coloumnId} className="hover:bg-yellow-50">
+                  {dataColumnKeys.map((col) => {
+                    const isNumeric = col.dataType === "number";
+                    // Now handles both Particulars and Comments as textareas
+                    const isTextArea = col.key === "particulars" || col.key === "transactionId";
+                    const isReadOnly = col.key.startsWith("balance");
 
-                return (
-                  <tr key={row.coloumnId} className="hover:bg-yellow-50">
-                    {dataColumnKeys.map((col) => {
-                      const isNumeric = col.dataType === "number";
-                      const isParticulars = col.key === "particulars";
-                      const isReadOnly =
-                        col.key.startsWith("balance")
-
-                      return (
-                        <td
-                          key={col.key}
-                          className={`p-0 text-sm border border-gray-200 align-top ${
-                            col.align === "right" ? "text-right" : "text-left"
-                          }`}
-                        >
-                          {isParticulars ? (
-                            <textarea
-                              value={formatValue(row[col.key], isNumeric)}
-                              onChange={(e) =>
-                                handleCellChange(
-                                  row.coloumnId,
-                                  col.key,
-                                  e.target.value
-                                )
-                              }
-                              rows={1}
-                              className={`w-full min-w-[400px] px-2 py-1 resize-none overflow-y-hidden focus:outline-none border-none bg-transparent text-left ${
-                                isReadOnly
-                                  ? "cursor-not-allowed text-gray-700"
-                                  : ""
-                              }`}
-                              readOnly={isReadOnly}
-                              onInput={(e) => {
-                                e.target.style.height = "auto";
-                                e.target.style.height =
-                                  e.target.scrollHeight + "px";
-                              }}
-                            />
-                          ) : (
-                            <input
-                              type="text"
-                              value={formatValue(row[col.key], isNumeric)}
-                              onChange={(e) =>
-                                handleCellChange(
-                                  row.coloumnId,
-                                  col.key,
-                                  e.target.value
-                                )
-                              }
-                              className={`w-full h-full min-w-[75px] px-2 py-1 focus:outline-none border-none bg-transparent ${
-                                isNumeric
-                                  ? "text-right font-medium"
-                                  : "text-left"
-                              } ${
-                                isReadOnly
-                                  ? "cursor-not-allowed text-gray-700"
-                                  : ""
-                              }`}
-                              readOnly={isReadOnly}
-                              placeholder={
-                                isReadOnly
-                                  ? displayFormattedValue(
-                                      row[col.key],
-                                      isNumeric
-                                    )
-                                  : ""
-                              }
-                            />
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                );
-              })}
+                    return (
+                      <td
+                        key={col.key}
+                        className={`p-0 text-sm border border-gray-200 align-top ${
+                          col.align === "right" ? "text-right" : "text-left"
+                        }`}
+                      >
+                        {isTextArea ? (
+                          <textarea
+                            value={formatValue(row[col.key], isNumeric)}
+                            onChange={(e) =>
+                              handleCellChange(row.coloumnId, col.key, e.target.value)
+                            }
+                            rows={1}
+                            className={`w-full px-2 py-1 resize-none overflow-y-hidden focus:outline-none border-none bg-transparent text-left ${
+                              col.key === "particulars" ? "min-w-[400px]" : "min-w-[200px]"
+                            } ${isReadOnly ? "cursor-not-allowed text-gray-700" : ""}`}
+                            readOnly={isReadOnly}
+                            onInput={(e) => {
+                              e.target.style.height = "auto";
+                              e.target.style.height = e.target.scrollHeight + "px";
+                            }}
+                          />
+                        ) : (
+                          <input
+                            type="text"
+                            value={formatValue(row[col.key], isNumeric)}
+                            onChange={(e) =>
+                              handleCellChange(row.coloumnId, col.key, e.target.value)
+                            }
+                            className={`w-full h-full min-w-[75px] px-2 py-1 focus:outline-none border-none bg-transparent ${
+                              isNumeric ? "text-right font-medium" : "text-left"
+                            } ${isReadOnly ? "cursor-not-allowed text-gray-700" : ""}`}
+                            readOnly={isReadOnly}
+                            placeholder={
+                              isReadOnly
+                                ? displayFormattedValue(row[col.key], isNumeric)
+                                : ""
+                            }
+                          />
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

@@ -42,14 +42,13 @@ const CreateDayBookRecord = async (req, res) => {
   }
 };
 
+
 const getDayBookRecord = async (req, res) => {
   const { selectedYear, selectedMonth, selectedType } = req.body;
 
   if (!selectedYear || !selectedMonth || !selectedType) {
     return httpError(res, 400, "Missing required fields: year, month, or type");
   }
-
-  console.log(selectedYear, selectedMonth, selectedType);
 
   try {
     const dayBookRecord = await DayBook.findOne({
@@ -59,8 +58,6 @@ const getDayBookRecord = async (req, res) => {
         type: selectedType,
       },
     });
-
-    console.log("dayBookRecord", dayBookRecord);
 
     if (!dayBookRecord) {
       return httpSuccess(res, 200, "No DayBook record found", null);
@@ -82,6 +79,7 @@ const getDayBookRecord = async (req, res) => {
     );
   }
 };
+
 
 const CreateIncomeSheetRecord = async (req, res) => {
   try {
@@ -135,7 +133,6 @@ const getIncomeSheetRecord = async (req, res) => {
     return httpError(res, 400, "Missing required fields: year, month, or type");
   }
 
-
   try {
     const incomeSheetRecord = await IncomeSheet.findOne({
       where: {
@@ -144,8 +141,6 @@ const getIncomeSheetRecord = async (req, res) => {
         type: selectedType,
       },
     });
-
-    console.log("income Sheet Record", incomeSheetRecord);
 
     if (!incomeSheetRecord) {
       return httpSuccess(res, 200, "No income sheet record found", null);

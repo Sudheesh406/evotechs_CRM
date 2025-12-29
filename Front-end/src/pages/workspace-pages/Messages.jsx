@@ -1,7 +1,34 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "../../instance/Axios";
 import { getRoomId } from "../../components/utils/Room";
-import socket from '../../instance/Socket'
+import socket from "../../instance/Socket";
+
+// Helper component to turn URLs into clickable links
+const Linkify = ({ text }) => {
+  if (!text) return null;
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+
+  return (
+    <>
+      {parts.map((part, i) =>
+        urlRegex.test(part) ? (
+          <a
+            key={i}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline text-blue-600 hover:text-blue-800 break-all"
+          >
+            {part}
+          </a>
+        ) : (
+          part
+        )
+      )}
+    </>
+  );
+};
 
 const Messages = () => {
   const [staffList, setStaffList] = useState([]);
@@ -21,7 +48,6 @@ const Messages = () => {
         const { data } = await axios.get("/message/get/all/staff/");
         if (data.data) {
           setStaffList(data.data.existing || []);
-          // normalize to number if possible
           const excludedId = data.data.excludedId;
           setUser(
             excludedId !== undefined && excludedId !== null
@@ -45,14 +71,13 @@ const Messages = () => {
         const { data } = await axios.get(`/message/get/${selectedStaff.id}`);
         const formatted = (data.data?.existing || []).map((msg) => ({
           text: msg.message,
-          sendingDate: msg.sendingDate, // YYYY-MM-DD from backend
-          sendingTime: msg.sendingTime, // HH:MM:SS from backend
+          sendingDate: msg.sendingDate,
+          sendingTime: msg.sendingTime,
           isMine: Number(msg.senderId) === Number(user),
           id: msg.id,
-          raw: msg, // keep raw in case you need it
+          raw: msg,
         }));
 
-        // ensure sorted by date/time (stable)
         formatted.sort(
           (a, b) =>
             new Date(`${a.sendingDate}T${a.sendingTime}`) -
@@ -75,16 +100,12 @@ const Messages = () => {
     socket.emit("joinRoom", room);
   }, [selectedStaff, user]);
 
-  // Receive messages via socket (single handler, normalize incoming payload)
+  // Receive messages via socket
   useEffect(() => {
     const handler = ({ senderId, message: incomingMessage }) => {
-      // incomingMessage may be an object or string depending on server
       if (!incomingMessage) return;
-
-      // If the server broadcasted senderId === user (your own), ignore it (you already optimistic-updated)
       if (Number(senderId) === Number(user)) return;
 
-      // Normalize message object
       const normalized = {
         text:
           incomingMessage.text ??
@@ -94,8 +115,8 @@ const Messages = () => {
           incomingMessage.sendingDate ?? incomingMessage.sending_date ?? null,
         sendingTime:
           incomingMessage.sendingTime ?? incomingMessage.sending_time ?? null,
-        isMine: false, // force false because senderId !== current user
-        id: incomingMessage.id ?? `srv-${Date.now()}`, // fallback id
+        isMine: false,
+        id: incomingMessage.id ?? `srv-${Date.now()}`,
       };
 
       const otherId = Number(senderId);
@@ -103,21 +124,19 @@ const Messages = () => {
 
       setChats((prev) => {
         const updated = [...(prev[otherId] || []), normalized];
-
         updated.sort(
           (a, b) =>
             new Date(`${a.sendingDate}T${a.sendingTime}`) -
               new Date(`${b.sendingDate}T${b.sendingTime}`) ||
             (a.id || 0).toString().localeCompare((b.id || 0).toString())
         );
-
         return { ...prev, [otherId]: updated };
       });
     };
 
     socket.on("receiveMessage", handler);
     return () => socket.off("receiveMessage", handler);
-  }, [user]); // note: don't depend on selectedStaff so that all incoming messages update proper chats
+  }, [user]);
 
   // Send message
   const handleSend = async () => {
@@ -127,10 +146,9 @@ const Messages = () => {
     setTimeout(() => setSending(false), 300);
 
     const now = new Date();
-    const sendingDate = now.toISOString().split("T")[0]; // YYYY-MM-DD
-    const sendingTime = now.toTimeString().split(" ")[0]; // HH:MM:SS 24h
+    const sendingDate = now.toISOString().split("T")[0];
+    const sendingTime = now.toTimeString().split(" ")[0];
 
-    // create optimistic message with a temporary id
     const tempId = `temp-${Date.now()}`;
 
     const newMsg = {
@@ -141,13 +159,11 @@ const Messages = () => {
       id: tempId,
     };
 
-    // Optimistic update (add to selected staff chat)
     setChats((prev) => ({
       ...prev,
       [selectedStaff.id]: [...(prev[selectedStaff.id] || []), newMsg],
     }));
 
-    // Emit to server - do NOT send isMine flag
     const room = getRoomId(user, selectedStaff.id);
     socket.emit("send_message", {
       senderId: user,
@@ -157,7 +173,6 @@ const Messages = () => {
         text: newMsg.text,
         sendingDate: newMsg.sendingDate,
         sendingTime: newMsg.sendingTime,
-        // do not include isMine
       },
     });
 
@@ -165,7 +180,7 @@ const Messages = () => {
     if (textareaRef.current) textareaRef.current.style.height = "auto";
   };
 
-  // Auto-scroll to bottom when chats change or selection changes
+  // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chats, selectedStaff]);
@@ -175,7 +190,7 @@ const Messages = () => {
       {/* Staff list */}
       <div className="w-1/4 bg-white border-r border-gray-200 flex flex-col">
         <div className="p-5 font-semibold text-sm tracking-wide border-b border-gray-200 text-gray-700 uppercase">
-          Staff
+          Members
         </div>
         <div className="flex-1 overflow-y-auto">
           {staffList.map((staff) => (
@@ -239,7 +254,9 @@ const Messages = () => {
                         : "bg-white text-gray-800 border border-gray-200"
                     }`}
                   >
-                    <div className="leading-snug">{msg.text}</div>
+                    <div className="leading-snug">
+                      <Linkify text={msg.text} />
+                    </div>
                     <div className="text-[10px] text-gray-500 text-right mt-1">
                       {msg.sendingDate && msg.sendingTime
                         ? new Date(
@@ -272,19 +289,16 @@ const Messages = () => {
                 }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault(); // Prevents new line
-                    handleSend(); // Send message
+                    e.preventDefault();
+                    handleSend();
                   }
-                  // else Shift+Enter will naturally insert a new line
                 }}
               />
 
               <button
                 onClick={handleSend}
                 className={`ml-3 p-3 bg-gradient-to-br from-purple-400 via-violet-500 to-fuchsia-500 text-white rounded-full hover:bg-blue-600 transition-transform duration-200 flex items-center justify-center ${
-                  sending
-                    ? "scale-125 -translate-y-1 translate-x-1 rotate-12"
-                    : ""
+                  sending ? "scale-125 -translate-y-1 translate-x-1 rotate-12" : ""
                 }`}
               >
                 <svg
