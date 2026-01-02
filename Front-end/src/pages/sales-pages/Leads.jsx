@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { ChevronDown, Phone, X, Edit, Trash, CheckCircle } from "lucide-react";
+import { ChevronDown, Phone, X, Edit, Trash, CheckCircle, Download } from "lucide-react";
 import DataTable from "../../components/Table2";
 import axios from "../../instance/Axios";
 import Swal from "sweetalert2";
 import toast from "react-hot-toast";
 
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable"; // Import the function directly
 
 const Leads = () => {
   const [leads, setLeads] = useState([]);
@@ -76,6 +78,46 @@ const Leads = () => {
 
     return () => clearTimeout(delayDebounce);
   }, [page, searchTerm]);
+
+  const handleDownload = () => {
+    if (leads.length === 0) {
+      toast.error("No data available to download");
+      return;
+    }
+
+    const doc = new jsPDF({ orientation: "landscape" });
+
+    doc.setFontSize(16);
+    doc.text("Leads List", 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Total Records: ${totalCount} | Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
+
+    const tableColumn = ["Name", "Description", "Email", "Phone", "Location", "Purpose", "Source", "Priority", "Amount"];
+    const tableRows = leads.map((lead) => [
+      lead.name,
+      lead.description,
+      lead.email,
+      lead.phone,
+      lead.location,
+      lead.purpose,
+      lead.source,
+      lead.priority,
+      lead.amount,
+    ]);
+
+    // Use the function directly instead of doc.autoTable
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 30,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [79, 70, 229] },
+    });
+
+    const fileName = `Leads_List_${new Date().toISOString().split("T")[0]}.pdf`;
+    doc.save(fileName);
+    toast.success("Downloading PDF list...");
+  };
 
   // Open modal for create or edit
   const openModal = (lead = null) => {
@@ -171,7 +213,10 @@ const Leads = () => {
 
     try {
       if (editingId) {
-       const response = await axios.put(`/customer/lead/update/${editingId}`, formData);
+        const response = await axios.put(
+          `/customer/lead/update/${editingId}`,
+          formData
+        );
         // ✅ SweetAlert after successful edit
         Swal.fire({
           title: "Updated!",
@@ -179,10 +224,9 @@ const Leads = () => {
           icon: "success",
           confirmButtonColor: "#3085d6",
         });
-        if(response?.data?.data?.value){
-          toast.success('Client added to Contact');
+        if (response?.data?.data?.value) {
+          toast.success("Client added to Contact");
         }
-
       } else {
         await axios.post("/customer/lead/create", formData);
 
@@ -333,8 +377,14 @@ const Leads = () => {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
+            onClick={handleDownload}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow w-full sm:w-auto transition-colors"
+          >
+            Download PDF
+          </button>
+          <button
             onClick={() => openModal()}
-            className="bg-blue-600 text-white px-4 py-2 rounded shadow w-full sm:w-auto"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow w-full sm:w-auto transition-colors"
           >
             Create Lead
           </button>
@@ -375,12 +425,6 @@ const Leads = () => {
                 >
                   <Trash size={16} />
                 </button>
-                {/* <button
-                  onClick={() => handleApprove(row.id)}
-                  className=" p-1 text-green-600 rounded hover:bg-green-200"
-                >
-                  <CheckCircle size={16} />
-                </button> */}
               </div>
             );
           }
@@ -499,6 +543,5 @@ const Leads = () => {
     </div>
   );
 };
-
 
 export default Leads;

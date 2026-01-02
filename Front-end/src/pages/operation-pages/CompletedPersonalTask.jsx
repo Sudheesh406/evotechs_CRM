@@ -3,13 +3,13 @@ import axios from "../../instance/Axios";
 import Table2 from "../../components/Table2";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
-
+import * as XLSX from "xlsx"; 
 
 export default function CompletedPersonalTask() {
   const [reworks, setReworks] = useState([]);
   const navigate = useNavigate();
-   const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   const columns = [
     { key: "date", label: "Date" },
@@ -26,36 +26,61 @@ export default function CompletedPersonalTask() {
     { key: "action", label: "Action" }, 
   ];
 
- const getCompletedTask = async () => {
-  try {
-    const res = await axios.get(`/completed/staff/get?page=${currentPage}&limit=20`);
-    const tasks = res.data.data.map((t) => ({
-      id: t.id,
-      contactId: t.customer?.id,
-      newUpdate: t.newUpdate,
-      date: new Date(t.createdAt).toLocaleDateString(),
-      customerName: t.customer?.name || "",
-      customerPhone: t.customer?.phone || "",
-      amount: t.customer?.amount || "",
-      stage: t.stage,
-      requirement: t.requirement,
-      finishBy: new Date(t.finishBy).toLocaleDateString(),
-      staffName: t.staff?.name || "",
-      priority: t.priority,
-      source: t.customer?.source || "",
-      status: t.newUpdate ? "Completed" : "Pending",
-      reject: t.reject
+  const getCompletedTask = async () => {
+    try {
+      const res = await axios.get(`/completed/staff/get?page=${currentPage}&limit=20`);
+      const tasks = res.data.data.map((t) => ({
+        id: t.id,
+        contactId: t.customer?.id,
+        newUpdate: t.newUpdate,
+        date: new Date(t.createdAt).toLocaleDateString(),
+        customerName: t.customer?.name || "",
+        customerPhone: t.customer?.phone || "",
+        amount: t.customer?.amount || "",
+        stage: t.stage,
+        requirement: t.requirement,
+        finishBy: new Date(t.finishBy).toLocaleDateString(),
+        staffName: t.staff?.name || "",
+        priority: t.priority,
+        source: t.customer?.source || "",
+        status: t.newUpdate ? "Completed" : "Pending",
+        reject: t.reject
+      }));
+
+      setReworks(tasks);
+      setTotalPages(res.data.pagination?.totalPages || 1);
+
+    } catch (error) {
+      Swal.fire("Error", "Failed to get completed tasks.", "error");
+      console.error("Error found in get completed tasks", error);
+    }
+  };
+
+  const handleDownload = () => {
+    if (reworks.length === 0) {
+      return Swal.fire("Info", "No completed tasks to export.", "info");
+    }
+
+    // Define exactly what columns appear in the Excel file
+    const exportData = reworks.map((row) => ({
+      "Date": row.date,
+      "Customer Name": row.customerName,
+      "Customer Phone": row.customerPhone,
+      "Amount": row.amount,
+      "Stage": row.stage,
+      "Requirement": row.requirement,
+      "Finish By": row.finishBy,
+      "Staff Name": row.staffName,
+      "Priority": row.priority,
+      "Source": row.source,
+      "Status": row.reject ? "Rejected" : row.status,
     }));
 
-    setReworks(tasks);
-    setTotalPages(res.data.pagination?.totalPages || 1);
-
-  } catch (error) {
-    Swal.fire("Error", "Failed to get completed tasks.", "error");
-    console.error("Error found in get completed tasks", error);
-  }
-};
-
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Completed Tasks");
+    XLSX.writeFile(workbook, `Completed_Tasks_Page_${currentPage}.xlsx`);
+  };
 
   const handleBankRejection = async(data)=>{
     try {
@@ -64,16 +89,14 @@ export default function CompletedPersonalTask() {
       if(response){
           getCompletedTask();
       }
-
     } catch (error) {
       console.error('error',error)
     }
   }
 
-
- useEffect(() => {
-  getCompletedTask();
-}, [currentPage]);
+  useEffect(() => {
+    getCompletedTask();
+  }, [currentPage]);
 
   const renderCell = (key, row) => {
     if (key === "date") {
@@ -92,30 +115,30 @@ export default function CompletedPersonalTask() {
       );
     }
 
-     if (key === "action") {
-    // Hide button if reject = true
-    if (row.reject) {
+    if (key === "action") {
+      if (row.reject) {
+        return (
+          <span className="text-red-500 font-semibold">Rejected</span>
+        );
+      }
+
       return (
-        <span className="text-red-500 font-semibold">Rejected</span>
+        <button
+          onClick={(e) => {
+            e.stopPropagation(); 
+            handleBankRejection(row);
+          }}
+          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+        >
+          Reject
+        </button>
       );
     }
 
-    return (
-      <button
-        onClick={(e) => {
-          e.stopPropagation(); // prevent triggering row click
-          handleBankRejection(row);
-        }}
-        className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-      >
-        Reject
-      </button>
-    );
-  }
-
     return row[key];
   };
-const role = true
+
+  const role = true
   const handleRowClick = (row) => {
     const payload = { taskId: row.id, contactId: row.contactId , role};
     const dataToSend = encodeURIComponent(JSON.stringify(payload));
@@ -123,15 +146,24 @@ const role = true
   };
 
   return (
-    <div className="p-6 bg-gray-50">
-      <h1 className="text-xl font-semibold mb-6 text-gray-800">Completed Task</h1>
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-xl font-semibold text-gray-800">Completed Task</h1>
+        <button
+          onClick={handleDownload}
+             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow w-full sm:w-auto transition-colors"
+          >
+            Download List
+          </button>
+      </div>
+
       <Table2
         columns={columns}
         data={reworks}
         renderCell={renderCell}
-        onRowClick={handleRowClick} // Table2 should handle this
+        onRowClick={handleRowClick} 
       />
-        {/* Pagination Controls */}
+
       <div className="flex justify-center items-center gap-4 mt-6">
         <button
           disabled={currentPage === 1}

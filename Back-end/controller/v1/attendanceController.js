@@ -429,6 +429,8 @@ function formatMinutesToHoursMins(minutes) {
   return `${mins} mins`;
 }
 
+
+
 const getStaffAttendance = async (req, res) => {
   try {
     const user = req.user;

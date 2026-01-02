@@ -3,6 +3,10 @@ import { ChevronDown, Phone, X, Edit, Trash, CheckCircle } from "lucide-react";
 import DataTable from "../../components/Table2";
 import axios from "../../instance/Axios";
 import Swal from "sweetalert2";
+import toast from "react-hot-toast"; // Added for notifications
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+
 
 const LeadsPending = () => {
   const [leads, setLeads] = useState([]);
@@ -74,6 +78,59 @@ const LeadsPending = () => {
 
     return () => clearTimeout(delayDebounce);
   }, [page, searchTerm]);
+
+  // Download Function
+ const handleDownload = () => {
+    if (leads.length === 0) {
+      toast.error("No data available to download");
+      return;
+    }
+
+    const doc = new jsPDF({ orientation: "landscape" });
+
+    doc.setFontSize(16);
+    doc.text("Rejected Leads List", 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Total Records: ${totalCount} | Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
+
+    const tableColumn = [
+      "Name",
+      "Description",
+      "Email",
+      "Phone",
+      "Location",
+      "Purpose",
+      "Source",
+      "Priority",
+      "Amount",
+    ];
+
+    const tableRows = leads.map((lead) => [
+      lead.name,
+      lead.description,
+      lead.email,
+      lead.phone,
+      lead.location,
+      lead.purpose,
+      lead.source,
+      lead.priority,
+      lead.amount,
+    ]);
+
+    // Calling the function directly as autoTable(doc, ...)
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 30,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [220, 38, 38] }, // Red theme for Rejected Leads
+    });
+
+    const fileName = `Rejected_Leads_${new Date().toISOString().split("T")[0]}.pdf`;
+    doc.save(fileName);
+    toast.success("Downloading PDF list...");
+  };
+
 
   // Open modal for create or edit
   const openModal = (lead = null) => {
@@ -267,46 +324,6 @@ const LeadsPending = () => {
     });
   };
 
-  const handleApprove = async (id) => {
-    try {
-      const result = await Swal.fire({
-        title: "Approve this lead?",
-        text: "This will convert the lead into a contact.",
-        icon: "question",
-        showCancelButton: true,
-        confirmButtonColor: "#3085d6",
-        cancelButtonColor: "#d33",
-        confirmButtonText: "Yes, approve it!",
-      });
-
-      if (result.isConfirmed) {
-        // Wait for the API to finish so errors can be caught
-        await axios.patch(`/customer/lead/confirm/${id}`);
-        // Refresh your list
-        getLeads(page);
-
-        // Optional success message
-        Swal.fire(
-          "Approved!",
-          "The lead has been converted into a contact.",
-          "success"
-        );
-      }
-    } catch (error) {
-      if (error?.response?.status === 400) {
-        Swal.fire({
-          title: "Already Exists",
-          text: "This record already exists. Please check contacts and trash.",
-          icon: "error",
-          confirmButtonText: "OK",
-        });
-      } else {
-        console.error("error found in handleApprove", error);
-        Swal.fire("Error", "Something went wrong.", "error");
-      }
-    }
-  };
-
   const totalPages = Math.ceil(totalCount / limit);
 
   return (
@@ -326,12 +343,12 @@ const LeadsPending = () => {
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {/* <button
-            onClick={() => openModal()}
-            className="bg-blue-600 text-white px-4 py-2 rounded shadow w-full sm:w-auto"
+          <button
+            onClick={handleDownload}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow w-full sm:w-auto transition-colors"
           >
-            Create Lead
-          </button> */}
+            Download
+          </button>
         </div>
       </div>
       {/* DataTable */}
@@ -369,12 +386,6 @@ const LeadsPending = () => {
                 >
                   <Trash size={16} />
                 </button>
-                {/* <button
-                  onClick={() => handleApprove(row.id)}
-                  className=" p-1 text-green-600 rounded hover:bg-green-200"
-                >
-                  <CheckCircle size={16} />
-                </button> */}
               </div>
             );
           }

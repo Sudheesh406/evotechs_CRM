@@ -3,6 +3,9 @@ import { ChevronDown, Phone, X, Edit, Trash, CheckCircle } from "lucide-react";
 import DataTable from "../../components/Table2";
 import axios from "../../instance/Axios";
 import Swal from "sweetalert2";
+import toast from "react-hot-toast"; // Added for notifications
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const Completed = () => {
   const [leads, setLeads] = useState([]);
@@ -47,8 +50,10 @@ const Completed = () => {
   // Fetch leads
   const getLeads = async (pageNo = 1, search = "") => {
     try {
-      const response = await axios.get(`/customer/lead/complete/get?page=${pageNo}&limit=${limit}&search=${search}`)
-      
+      const response = await axios.get(
+        `/customer/lead/complete/get?page=${pageNo}&limit=${limit}&search=${search}`
+      );
+
       if (response.data && response.data.data) {
         const { leads, total } = response.data.data;
         leads.forEach((lead) => {
@@ -73,6 +78,47 @@ const Completed = () => {
 
     return () => clearTimeout(delayDebounce);
   }, [page, searchTerm]);
+
+  // Download Function
+  const handleDownload = () => {
+    if (leads.length === 0) {
+      toast.error("No data available to download");
+      return;
+    }
+
+    const doc = new jsPDF({ orientation: "landscape" });
+
+    doc.setFontSize(16);
+    doc.text("Leads List", 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Total Records: ${totalCount} | Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
+
+    const tableColumn = ["Name", "Description", "Email", "Phone", "Location", "Purpose", "Source", "Priority", "Amount"];
+    const tableRows = leads.map((lead) => [
+      lead.name,
+      lead.description,
+      lead.email,
+      lead.phone,
+      lead.location,
+      lead.purpose,
+      lead.source,
+      lead.priority,
+      lead.amount,
+    ]);
+
+    // Use the function directly instead of doc.autoTable
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 30,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [79, 70, 229] },
+    });
+
+    const fileName = `Leads_List_${new Date().toISOString().split("T")[0]}.pdf`;
+    doc.save(fileName);
+    toast.success("Downloading PDF list...");
+  };
 
   // Open modal for create or edit
   const openModal = (lead = null) => {
@@ -325,12 +371,12 @@ const Completed = () => {
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {/* <button
-            onClick={() => openModal()}
-            className="bg-blue-600 text-white px-4 py-2 rounded shadow w-full sm:w-auto"
+          <button
+            onClick={handleDownload}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow w-full sm:w-auto transition-colors"
           >
-            Create Lead
-          </button> */}
+            Download
+          </button>
         </div>
       </div>
       {/* DataTable */}
@@ -356,24 +402,12 @@ const Completed = () => {
           if (key === "actions") {
             return (
               <div className="flex gap-2">
-                {/* <button
-                  onClick={() => openModal(row)}
-                  className="p-1 text-blue-600 hover:bg-blue-100 rounded"
-                >
-                  <Edit size={16} />
-                </button> */}
                 <button
                   onClick={() => handleDelete(row.id)}
                   className="p-1 text-red-600 hover:bg-red-100 rounded"
                 >
                   <Trash size={16} />
                 </button>
-                {/* <button
-                  onClick={() => handleApprove(row.id)}
-                  className=" p-1 text-green-600 rounded hover:bg-green-200"
-                >
-                  <CheckCircle size={16} />
-                </button> */}
               </div>
             );
           }

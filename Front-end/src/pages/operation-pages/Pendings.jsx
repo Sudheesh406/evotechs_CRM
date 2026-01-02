@@ -3,6 +3,7 @@ import axios from "../../instance/Axios";
 import Table2 from "../../components/Table2";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
+import * as XLSX from "xlsx"; // Import the xlsx library
 
 export default function Pendings() {
   const [pendingWorks, setPendingWorks] = useState([]);
@@ -50,6 +51,22 @@ export default function Pendings() {
     }
   };
 
+  // --- NEW DOWNLOAD FUNCTION ---
+  const handleDownload = () => {
+    if (pendingWorks.length === 0) {
+      return Swal.fire("Info", "No data available to download", "info");
+    }
+
+    // 1. Create a worksheet from the data
+    const worksheet = XLSX.utils.json_to_sheet(pendingWorks);
+    // 2. Create a workbook
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Pending Tasks");
+    // 3. Export the file
+    XLSX.writeFile(workbook, `Pending_Tasks_Page_${currentPage}.xlsx`);
+  };
+  // ------------------------------
+
   useEffect(() => {
     getPendingTask();
   }, [currentPage]);
@@ -67,22 +84,31 @@ export default function Pendings() {
 
   const handleRowClick = (row) => {
     const data = { taskId: row.id, contactId: row.contactId };
-    console.log(data);
-
     const dataToSend = encodeURIComponent(JSON.stringify({ data }));
     navigate(`/activities/tasks/person/${dataToSend}`);
   };
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <h1 className="text-xl font-semibold mb-6 text-red-500">Pendings</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-xl font-semibold text-red-500">Pendings</h1>
+        
+        {/* DOWNLOAD BUTTON */}
+        <button
+          onClick={handleDownload}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow w-full sm:w-auto transition-colors"
+          >
+            Download List
+          </button>
+      </div>
+
       <Table2
         columns={columns}
         data={pendingWorks}
         renderCell={renderCell}
-        onRowClick={handleRowClick} // Table2 should handle this
+        onRowClick={handleRowClick}
       />
-       {/* Pagination Controls */}
+
       <div className="flex justify-center items-center mt-6 gap-3">
         <button
           onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}

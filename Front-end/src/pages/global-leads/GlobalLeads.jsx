@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Phone } from "lucide-react";
+import { Phone, Download } from "lucide-react";
 import DataTable from "../../components/Table2";
 import axios from "../../instance/Axios";
+import toast from "react-hot-toast";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const GlobalLeads = () => {
   const [leads, setLeads] = useState([]);
@@ -30,8 +33,6 @@ const GlobalLeads = () => {
       const response = await axios.get(
         `/customer/lead/global/get?page=${pageNo}&limit=${limit}&search=${search}`
       );
-
-      console.log("response", response);
 
       if (response.data && response.data.data) {
         const { leads, total } = response.data.data;
@@ -68,6 +69,48 @@ const GlobalLeads = () => {
     return () => clearTimeout(delayDebounce);
   }, [page, searchTerm]);
 
+  // --- Export to Excel Function ---
+
+  const handleDownload = () => {
+    if (leads.length === 0) {
+      toast.error("No data available to download");
+      return;
+    }
+
+    const doc = new jsPDF({ orientation: "landscape" });
+
+    doc.setFontSize(16);
+    doc.text("Leads List", 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Total Records: ${totalCount} | Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
+
+    const tableColumn = ["Name", "Description", "Email", "Phone", "Location", "Purpose", "Source", "Priority", "Amount"];
+    const tableRows = leads.map((lead) => [
+      lead.name,
+      lead.description,
+      lead.email,
+      lead.phone,
+      lead.location,
+      lead.purpose,
+      lead.source,
+      lead.priority,
+      lead.amount,
+    ]);
+
+    // Use the function directly instead of doc.autoTable
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 30,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [79, 70, 229] },
+    });
+
+    const fileName = `Leads_List_${new Date().toISOString().split("T")[0]}.pdf`;
+    doc.save(fileName);
+    toast.success("Downloading PDF list...");
+  };
+
   const totalPages = Math.ceil(totalCount / limit);
 
   return (
@@ -85,6 +128,15 @@ const GlobalLeads = () => {
           <span className="text-gray-600 text-sm">
             Total Records: {totalCount}
           </span>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={handleDownload}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow w-full sm:w-auto flex items-center justify-center gap-2 transition-colors"
+          >
+            <Download size={16} />
+            Download
+          </button>
         </div>
       </div>
 
@@ -119,18 +171,18 @@ const GlobalLeads = () => {
           }
 
           if (key === "staffRole") {
-            if(row.staffRole === 'admin'){
-                return (
-                  <span className="inline-block px-2 py-1 text-xs font-medium bg-red-300 text-indigo-700 rounded-full">
-                    {row.staffRole || "-"}
-                  </span>
-                );
-            }else{
-                return (
-                  <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-300 text-indigo-700 rounded-full">
-                    {row.staffRole || "-"}
-                  </span>
-                ); 
+            if (row.staffRole === "admin") {
+              return (
+                <span className="inline-block px-2 py-1 text-xs font-medium bg-red-300 text-indigo-700 rounded-full">
+                  {row.staffRole || "-"}
+                </span>
+              );
+            } else {
+              return (
+                <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-300 text-indigo-700 rounded-full">
+                  {row.staffRole || "-"}
+                </span>
+              );
             }
           }
 

@@ -4,6 +4,8 @@ import DataTable from "../../components/Table2";
 import axios from "../../instance/Axios";
 import Swal from "sweetalert2";
 import ContactModal from "../../components/modals/ContactModal";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const Contacts = () => {
   const [leads, setLeads] = useState([]);
@@ -68,6 +70,47 @@ const Contacts = () => {
     return () => clearTimeout(delayDebounce);
   }, [page, searchTerm]);
 
+  // ✅ Handle Download CSV (Fixed Phone Number Formatting)
+  const handleDownload = () => {
+    if (leads.length === 0) {
+      toast.error("No data available to download");
+      return;
+    }
+
+    const doc = new jsPDF({ orientation: "landscape" });
+
+    doc.setFontSize(16);
+    doc.text("Leads List", 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Total Records: ${totalCount} | Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
+
+    const tableColumn = ["Name", "Description", "Email", "Phone", "Location", "Purpose", "Source", "Priority", "Amount"];
+    const tableRows = leads.map((lead) => [
+      lead.name,
+      lead.description,
+      lead.email,
+      lead.phone,
+      lead.location,
+      lead.purpose,
+      lead.source,
+      lead.priority,
+      lead.amount,
+    ]);
+
+    // Use the function directly instead of doc.autoTable
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 30,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [79, 70, 229] },
+    });
+
+    const fileName = `Leads_List_${new Date().toISOString().split("T")[0]}.pdf`;
+    doc.save(fileName);
+    toast.success("Downloading PDF list...");
+  };
+
   // ✅ Open modal (edit or create)
   const openModal = (contact = null) => {
     if (contact) {
@@ -113,7 +156,6 @@ const Contacts = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // validation
     const newErrors = {};
     Object.keys(formData).forEach((key) => {
       if (key !== "email" && !formData[key].trim()) {
@@ -125,7 +167,6 @@ const Contacts = () => {
       return;
     }
 
-    // check for unchanged edit
     if (editingId && JSON.stringify(formData) === JSON.stringify(originalData)) {
       Swal.fire({
         title: "No changes!",
@@ -208,10 +249,16 @@ const Contacts = () => {
             Total Records {totalCount}
           </span>
         </div>
-        <div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={handleDownload}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow w-full sm:w-auto transition-colors"
+          >
+            Download
+          </button>
           <button
             onClick={() => openModal()}
-            className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700"
+            className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition-colors"
           >
             Create Contact
           </button>
@@ -289,7 +336,7 @@ const Contacts = () => {
         <ContactModal
           isOpen={isModalOpen}
           onClose={closeModal}
-          onSubmit={handleSubmit} // ✅ Fixed prop name
+          onSubmit={handleSubmit}
           formData={formData}
           errors={errors}
           handleChange={(e) => {

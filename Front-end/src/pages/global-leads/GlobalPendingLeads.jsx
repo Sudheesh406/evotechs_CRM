@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Phone } from "lucide-react";
+import { Phone, Download } from "lucide-react";
 import DataTable from "../../components/Table2";
 import axios from "../../instance/Axios";
+import toast from "react-hot-toast";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+
 
 const GlobalPendingLeads = () => {
   const [leads, setLeads] = useState([]);
@@ -63,6 +67,58 @@ const GlobalPendingLeads = () => {
     return () => clearTimeout(delayDebounce);
   }, [page, searchTerm]);
 
+   // Download Function
+ const handleDownload = () => {
+    if (leads.length === 0) {
+      toast.error("No data available to download");
+      return;
+    }
+
+    const doc = new jsPDF({ orientation: "landscape" });
+
+    doc.setFontSize(16);
+    doc.text("Rejected Leads List", 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Total Records: ${totalCount} | Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
+
+    const tableColumn = [
+      "Name",
+      "Description",
+      "Email",
+      "Phone",
+      "Location",
+      "Purpose",
+      "Source",
+      "Priority",
+      "Amount",
+    ];
+
+    const tableRows = leads.map((lead) => [
+      lead.name,
+      lead.description,
+      lead.email,
+      lead.phone,
+      lead.location,
+      lead.purpose,
+      lead.source,
+      lead.priority,
+      lead.amount,
+    ]);
+
+    // Calling the function directly as autoTable(doc, ...)
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 30,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [220, 38, 38] }, // Red theme for Rejected Leads
+    });
+
+    const fileName = `Rejected_Leads_${new Date().toISOString().split("T")[0]}.pdf`;
+    doc.save(fileName);
+    toast.success("Downloading PDF list...");
+  };
+
   const totalPages = Math.ceil(totalCount / limit);
 
   return (
@@ -81,10 +137,19 @@ const GlobalPendingLeads = () => {
             Total Records: {totalCount}
           </span>
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={handleDownload}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow w-full sm:w-auto flex items-center justify-center gap-2 transition-colors"
+          >
+            <Download size={16} />
+            Download
+          </button>
+        </div>
       </div>
 
       {/* DataTable */}
-   <DataTable
+      <DataTable
         columns={columns}
         data={leads}
         renderCell={(key, row) => {
@@ -114,18 +179,18 @@ const GlobalPendingLeads = () => {
           }
 
           if (key === "staffRole") {
-            if(row.staffRole === 'admin'){
-                return (
-                  <span className="inline-block px-2 py-1 text-xs font-medium bg-red-300 text-indigo-700 rounded-full">
-                    {row.staffRole || "-"}
-                  </span>
-                );
-            }else{
-                return (
-                  <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-300 text-indigo-700 rounded-full">
-                    {row.staffRole || "-"}
-                  </span>
-                ); 
+            if (row.staffRole === "admin") {
+              return (
+                <span className="inline-block px-2 py-1 text-xs font-medium bg-red-300 text-indigo-700 rounded-full">
+                  {row.staffRole || "-"}
+                </span>
+              );
+            } else {
+              return (
+                <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-300 text-indigo-700 rounded-full">
+                  {row.staffRole || "-"}
+                </span>
+              );
             }
           }
 

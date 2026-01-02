@@ -603,29 +603,38 @@ const CreateLeaveAndWFHRecord = async (req, res) => {
 
 const GetLeaveAndWFHRecord = async (req, res) => {
     try {
+        const user = req.user;
+        const currentYear = new Date().getFullYear(); // Get current year (e.g., 2026)
 
-      const user = req.user;
+        // 1. Define date range for current year
+        const startOfYear = new Date(currentYear, 0, 1); // Jan 1st
+        const endOfYear = new Date(currentYear, 11, 31, 23, 59, 59); // Dec 31st
 
-      let allStaff;
-     let isExist = await roleChecker(user.id)
-      if(isExist){
-         allStaff = await signup.findAll({
-            where: { role: 'staff' },
-            attributes: ['id', 'name'],
-            raw: true
-        });
-      }else{
-           allStaff = await signup.findAll({
-            where: { id: user.id },
-            attributes: ['id', 'name'],
-            raw: true
-        });
-      }
-        // 2. Fetch approved leave/WFH records
+        let allStaff;
+        let isExist = await roleChecker(user.id);
+        
+        if (isExist) {
+            allStaff = await signup.findAll({
+                where: { role: 'staff' },
+                attributes: ['id', 'name'],
+                raw: true
+            });
+        } else {
+            allStaff = await signup.findAll({
+                where: { id: user.id },
+                attributes: ['id', 'name'],
+                raw: true
+            });
+        }
+
+        // 2. Fetch approved leave/WFH records ONLY FOR CURRENT YEAR
         const allApprovedRecords = await Leaves.findAll({
             where: {
                 softDelete: false,
-                status: 'Approve'
+                status: 'Approve',
+                leaveDate: {
+                    [Op.between]: [startOfYear, endOfYear] // Filter by date range
+                }
             },
             include: [
                 {
@@ -675,7 +684,6 @@ const GetLeaveAndWFHRecord = async (req, res) => {
         // 4. Aggregate by staff
         const staffRecords = processedRecords.reduce((acc, record) => {
             const staffKey = record.staffId;
-
             if (!acc[staffKey]) {
                 acc[staffKey] = {
                     staffId: record.staffId,
@@ -685,25 +693,24 @@ const GetLeaveAndWFHRecord = async (req, res) => {
                     monthlyData: {}
                 };
             }
-
             const staff = acc[staffKey];
-
             staff.totalLeave += record.leaveDays;
             staff.totalWFH += record.wfhDays;
 
             if (!staff.monthlyData[record.monthYear]) {
                 staff.monthlyData[record.monthYear] = { leave: 0, wfh: 0 };
             }
-
             staff.monthlyData[record.monthYear].leave += record.leaveDays;
             staff.monthlyData[record.monthYear].wfh += record.wfhDays;
-
             return acc;
         }, {});
 
-        // 5. Fetch allocated totals
+        // 5. Fetch allocated totals ONLY FOR CURRENT YEAR
         const allocations = await LeaveAndWFH.findAll({
-            where: { softDelete: false },
+            where: { 
+                softDelete: false,
+                year: currentYear // Filter by current year
+            },
             raw: true
         });
 
@@ -716,18 +723,16 @@ const GetLeaveAndWFHRecord = async (req, res) => {
             };
         });
 
-        // 6. Combine ALL STAFF (even if no records found)
+        // 6. Combine ALL STAFF
         const finalReport = allStaff.map(staff => {
             const existing = staffRecords[staff.id];
-
             const allocation = allocationMap[staff.id] || {
                 allocatedLeaves: 0,
                 allocatedWFH: 0,
-                allocationYear: null
+                allocationYear: currentYear // Default to current year even if no record
             };
 
             if (existing) {
-                // Staff with leave/wfh records
                 return {
                     staffId: existing.staffId,
                     staffName: existing.staffName,
@@ -743,7 +748,6 @@ const GetLeaveAndWFHRecord = async (req, res) => {
                     }))
                 };
             } else {
-                // Staff with NO leave/WFH data
                 return {
                     staffId: staff.id,
                     staffName: staff.name,
@@ -758,13 +762,13 @@ const GetLeaveAndWFHRecord = async (req, res) => {
         });
 
         return res.status(200).json({
-            message: "Leave, WFH & allocated records fetched successfully",
+            message: `Leave, WFH & allocated records for ${currentYear} fetched successfully`,
             data: finalReport
         });
 
     } catch (error) {
-        console.error("Error in getting record of leave and WFH", error);
-        return res.status(500).json({ message: "Server error", error: error.message || error });
+        console.error("Error in getting record", error);
+        return res.status(500).json({ message: "Server error", error: error.message });
     }
 };
 
