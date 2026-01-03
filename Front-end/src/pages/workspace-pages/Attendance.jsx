@@ -3,6 +3,10 @@ import { LogIn, LogOut, X, Edit, Trash2, Clock, Calendar } from "lucide-react";
 import axios from "../../instance/Axios";
 import Swal from "sweetalert2";
 
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import { Phone, Download } from "lucide-react";
+
 const presetTimes = [
   "08:00 AM",
   "08:30 AM",
@@ -41,13 +45,13 @@ function isValidTime(value) {
 }
 
 function timeToMinutes(timeStr) {
-  if (!timeStr || typeof timeStr !== 'string') return 0; // Return 0 or throw an error based on preference
+  if (!timeStr || typeof timeStr !== "string") return 0; // Return 0 or throw an error based on preference
 
   const [time, modifier] = timeStr.trim().split(" ");
-  console.log('modifier', modifier);
-    if (!modifier) {
+  console.log("modifier", modifier);
+  if (!modifier) {
     console.error("Time string is missing AM/PM modifier:", timeStr);
-    return 0; 
+    return 0;
   }
 
   let [hours, minutes] = time.split(":").map(Number);
@@ -402,7 +406,88 @@ export default function Attendance() {
       );
     }
   };
-  
+
+  const handleDownload = () => {
+    if (attendanceList.length === 0) {
+      Swal.fire({
+        icon: "info",
+        title: "No Records",
+        text: "There are no attendance records to export.",
+      });
+      return;
+    }
+
+    const doc = new jsPDF();
+
+    // Report Header
+    doc.setFontSize(20);
+    doc.setTextColor(30, 64, 175); // Blue-800
+    doc.text("Attendance Report", 14, 20);
+
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(
+      `Staff Attendance Summary | Generated: ${new Date().toLocaleString()}`,
+      14,
+      28
+    );
+    doc.text(`Total Days Recorded: ${attendanceList.length}`, 14, 33);
+
+    // Prepare table data
+    const tableColumn = ["Date", "Entry Time", "Exit Time", "Status"];
+    const tableRows = attendanceList.map((record) => {
+      // Logic for Status column
+      let status = "Complete";
+      if (!record.entry || !record.exit) status = "Partial";
+
+      return [
+        new Date(record.date).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        }),
+        record.entry || "--",
+        record.exit || "--",
+        status,
+      ];
+    });
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 40,
+      theme: "striped",
+      headStyles: {
+        fillColor: [30, 64, 175], // Blue-800
+        textColor: 255,
+        fontSize: 11,
+      },
+      columnStyles: {
+        0: { fontStyle: "bold" }, // Date column
+        3: { halign: "center" }, // Status column
+      },
+      didParseCell: (data) => {
+        // Color code the Status column
+        if (data.column.index === 3) {
+          if (data.cell.raw === "Partial") {
+            data.cell.styles.textColor = [220, 38, 38]; // Red
+          } else {
+            data.cell.styles.textColor = [22, 163, 74]; // Green
+          }
+        }
+      },
+    });
+
+    doc.save(`Attendance_Report_${new Date().toISOString().split("T")[0]}.pdf`);
+
+    Swal.fire({
+      icon: "success",
+      title: "Success",
+      text: "Attendance report downloaded",
+      timer: 1500,
+      showConfirmButton: false,
+    });
+  };
 
   return (
     // Clean, light gray background
@@ -486,9 +571,18 @@ export default function Attendance() {
 
         {/* Attendance Records Table */}
         <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 border border-gray-200 overflow-x-auto">
-          <h2 className="text-xl font-semibold text-gray-700 mb-6 border-b pb-3">
-            Recent Records
-          </h2>
+          <div className="flex justify-between items-center mb-6 border-b pb-3">
+            <h2 className="text-xl font-semibold text-gray-700">
+              Recent Records
+            </h2>
+            <button
+              onClick={handleDownload}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow flex items-center gap-2 transition-all text-sm font-medium"
+            >
+              <Download className="w-4 h-4" />
+              Download Report
+            </button>
+          </div>
           <div className="overflow-x-auto border border-gray-200 rounded-lg">
             <table className="min-w-full divide-y divide-gray-200 text-sm">
               <thead className="bg-gray-50">

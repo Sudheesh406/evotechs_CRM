@@ -3,6 +3,10 @@ import axios from "../../../instance/Axios";
 import Table2 from "../../../components/Table2";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
+import { Download } from "lucide-react"; // Added
+import { jsPDF } from "jspdf"; // Added
+import autoTable from "jspdf-autotable"; // Added
+import toast from "react-hot-toast"; // Added
 
 export default function AdminRejectedWork() {
   const [reworks, setReworks] = useState([]);
@@ -56,6 +60,49 @@ export default function AdminRejectedWork() {
     }
   };
 
+  // --- PDF DOWNLOAD LOGIC ---
+  const handleDownload = () => {
+    if (reworks.length === 0) {
+      toast.error("No data available to download");
+      return;
+    }
+
+    const doc = new jsPDF({ orientation: "landscape" });
+
+    doc.setFontSize(16);
+    doc.text("Admin Rejected Tasks Report", 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Page ${currentPage} | Date: ${new Date().toLocaleDateString()}`, 14, 22);
+
+    // Filter out 'Action' column for PDF
+    const pdfColumns = columns.filter(col => col.key !== 'action').map(col => col.label);
+    
+    const tableRows = reworks.map((row) => [
+      row.date || "-",
+      row.customerName || "-",
+      row.customerPhone || "-",
+      row.amount || "-",
+      row.stage || "-",
+      row.requirement || "-",
+      row.finishBy || "-",
+      row.staffName || "-",
+      row.priority || "-",
+      row.source || "-",
+      row.status || "-",
+    ]);
+
+    autoTable(doc, {
+      head: [pdfColumns],
+      body: tableRows,
+      startY: 30,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [185, 28, 28] }, // Dark Red theme for Rejected status
+    });
+
+    doc.save(`Rejected_Tasks_Page_${currentPage}.pdf`);
+    toast.success("Downloading PDF...");
+  };
+
   const handleBankRejection = async (data) => {
     try {
       const id = data.id;
@@ -75,9 +122,7 @@ export default function AdminRejectedWork() {
   const renderCell = (key, row) => {
     if (key === "date") {
       return (
-        <span
-          className={`px-2 py-1 rounded-full text-sm font-medium ${row.dateColor}`}
-        >
+        <span className={`px-2 py-1 rounded-full text-sm font-medium ${row.dateColor}`}>
           {row.date}
         </span>
       );
@@ -85,21 +130,18 @@ export default function AdminRejectedWork() {
 
     if (key === "status") {
       return (
-        <span
-          className={`px-2 py-1 rounded-full text-sm text-red-500 font-medium ${row.status}`}
-        >
+        <span className={`px-2 py-1 rounded-full text-sm text-red-500 font-medium`}>
           {row.status}
         </span>
       );
     }
 
     if (key === "action") {
-      // Show button only if reject = true
       if (row.reject) {
         return (
           <button
             onClick={(e) => {
-              e.stopPropagation(); // prevent triggering row click
+              e.stopPropagation();
               handleBankRejection(row);
             }}
             className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
@@ -108,27 +150,36 @@ export default function AdminRejectedWork() {
           </button>
         );
       }
-
-      // Otherwise show text if not rejected
       return <span className="text-gray-500 font-semibold">Not Rejected</span>;
     }
 
     return row[key];
   };
-  const role = true;
-  const handleRowClick = (row) => {};
+
+  const handleRowClick = (row) => {
+    // Navigate logic here if needed, currently empty in your source
+  };
 
   return (
     <div className="p-6 bg-gray-50">
-      <h1 className="text-xl font-semibold mb-6 text-gray-800">
-        Rejected Task
-      </h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-xl font-semibold text-gray-800">Rejected Task</h1>
+        <button
+          onClick={handleDownload}
+          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow flex items-center gap-2 transition-colors"
+        >
+          <Download size={16} />
+          Download
+        </button>
+      </div>
+
       <Table2
         columns={columns}
         data={reworks}
         renderCell={renderCell}
-        onRowClick={handleRowClick} // Table2 should handle this
+        onRowClick={handleRowClick}
       />
+
       {/* Pagination Controls */}
       <div className="flex justify-center items-center gap-4 mt-6">
         <button

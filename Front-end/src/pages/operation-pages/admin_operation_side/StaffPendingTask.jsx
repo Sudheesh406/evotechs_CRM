@@ -2,6 +2,10 @@ import { useEffect, useState } from "react";
 import axios from "../../../instance/Axios";
 import Table2 from "../../../components/Table2";
 import { useNavigate } from "react-router-dom";
+import { Download } from "lucide-react"; // Import icon
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import toast from "react-hot-toast";
 
 const columns = [
   { key: "date", label: "Date" },
@@ -25,8 +29,6 @@ export default function StaffPendingTask() {
   const getPendingWork = async (page = 1) => {
     try {
       const response = await axios.get(`/pending/admin/task/get?page=${page}&limit=20`);
-      console.log("raw response", response);
-
       const mapped = response.data.data.data.map((item) => ({
         id: item.id,
         staffId: item.staff?.id,
@@ -55,6 +57,46 @@ export default function StaffPendingTask() {
     getPendingWork();
   }, []);
 
+  // --- PDF DOWNLOAD LOGIC ---
+  const handleDownload = () => {
+    if (pendingWorks.length === 0) {
+      toast.error("No data available to download");
+      return;
+    }
+
+    const doc = new jsPDF({ orientation: "landscape" });
+
+    doc.setFontSize(16);
+    doc.text("Pending Tasks Report", 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
+
+    const tableColumn = columns.map(col => col.label);
+    const tableRows = pendingWorks.map((row) => [
+      row.date || "-",
+      row.customerName || "-",
+      row.customerPhone || "-",
+      row.amount || "-",
+      row.stage || "-",
+      row.requirement || "-",
+      row.finishBy || "-",
+      row.staffName || "-",
+      row.priority || "-",
+      row.source || "-",
+    ]);
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 30,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [239, 68, 68] }, // Red theme to match your page heading
+    });
+
+    doc.save(`Pending_Tasks_${new Date().toISOString().split("T")[0]}.pdf`);
+    toast.success("Downloading PDF...");
+  };
+
   const renderCell = (key, row) => {
     if (key === "finishBy") {
       return (
@@ -80,7 +122,16 @@ export default function StaffPendingTask() {
 
   return (
     <div className="p-6 bg-gray-50">
-      <h1 className="text-xl font-semibold mb-6 text-red-500">Pendings</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-xl font-semibold text-red-500">Pendings</h1>
+        <button
+          onClick={handleDownload}
+          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow flex items-center gap-2 transition-colors"
+        >
+          <Download size={16} />
+          Download
+        </button>
+      </div>
 
       <Table2
         columns={columns}

@@ -380,7 +380,7 @@ const Leads = () => {
             onClick={handleDownload}
             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow w-full sm:w-auto transition-colors"
           >
-            Download PDF
+            Download
           </button>
           <button
             onClick={() => openModal()}

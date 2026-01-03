@@ -3,7 +3,9 @@ import axios from "../../instance/Axios";
 import Table2 from "../../components/Table2";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
-import * as XLSX from "xlsx"; // 1. Import xlsx
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import { Phone, Download } from "lucide-react";
 
 export default function Reworks() {
   const [reworks, setReworks] = useState([]);
@@ -56,17 +58,82 @@ export default function Reworks() {
   };
 
   // 2. Download Function
-  const handleDownload = () => {
+const handleDownload = () => {
     if (reworks.length === 0) {
-      return Swal.fire("Info", "No rework data to export.", "info");
+      Swal.fire({
+        icon: "info",
+        title: "No Data",
+        text: "There are no rework tasks to download.",
+      });
+      return;
     }
-    // Remove internal IDs or unnecessary keys for the Excel file
-    const exportData = reworks.map(({ id, contactId, newUpdate, ...rest }) => rest);
+
+    // Initialize PDF in landscape to fit 11 columns
+    const doc = new jsPDF({ orientation: "landscape" });
+
+    // Header Details
+    doc.setFontSize(18);
+    doc.setTextColor(31, 41, 55); // Gray-800
+    doc.text("Reworks Report", 14, 15);
     
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Reworks");
-    XLSX.writeFile(workbook, `Reworks_Page_${currentPage}.xlsx`);
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Page ${currentPage} | Generated on: ${new Date().toLocaleString()}`, 14, 22);
+
+    // Prepare Table Headers and Data
+    const tableColumn = columns.map(col => col.label);
+    const tableRows = reworks.map(row => [
+      row.date,
+      row.customerName,
+      row.customerPhone,
+      row.amount,
+      row.stage,
+      row.requirement,
+      row.finishBy,
+      row.staffName,
+      row.priority,
+      row.source,
+      row.status
+    ]);
+
+    // Generate Table
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 30,
+      theme: 'grid',
+      styles: { fontSize: 7.5, cellPadding: 2 }, // Smaller font to fit all columns
+      headStyles: { 
+        fillColor: [37, 99, 235], // Blue-600
+        textColor: 255,
+        halign: 'center' 
+      },
+      columnStyles: {
+        5: { cellWidth: 40 }, // Requirement column gets more space
+        10: { halign: 'center', fontStyle: 'bold' } // Status column
+      },
+      // Conditional Styling for Status
+      didParseCell: (data) => {
+        if (data.column.index === 10) { // Status Column
+          if (data.cell.raw === "Completed") {
+            data.cell.styles.textColor = [22, 163, 74]; // Green-600
+          } else {
+            data.cell.styles.textColor = [220, 38, 38]; // Red-600
+          }
+        }
+      }
+    });
+
+    const fileName = `Reworks_Report_Page_${currentPage}_${new Date().toISOString().split("T")[0]}.pdf`;
+    doc.save(fileName);
+    
+    Swal.fire({
+      icon: "success",
+      title: "Success",
+      text: "PDF has been downloaded.",
+      timer: 1500,
+      showConfirmButton: false
+    });
   };
 
   useEffect(() => {
@@ -107,7 +174,7 @@ export default function Reworks() {
           onClick={handleDownload}
              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow w-full sm:w-auto transition-colors"
           >
-            Download List
+            Download
           </button>
       </div>
 

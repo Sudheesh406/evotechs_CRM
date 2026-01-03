@@ -14,7 +14,11 @@ const GlobalContacts = () => {
   const limit = 10;
 
   const columns = [
-    { label: "Contact Name", key: "name", className: "font-medium text-gray-800" },
+    {
+      label: "Contact Name",
+      key: "name",
+      className: "font-medium text-gray-800",
+    },
     { label: "Description", key: "description" },
     { label: "Email", key: "email", className: "text-indigo-600" },
     { label: "Phone", key: "phone" },
@@ -37,7 +41,7 @@ const GlobalContacts = () => {
         const { contacts: apiContacts, total } = response.data.data;
 
         // Map contacts and extract followerName & role from assignedStaff
-        const formattedContacts = apiContacts.map(contact => ({
+        const formattedContacts = apiContacts.map((contact) => ({
           ...contact,
           followerName: contact.assignedStaff?.name || "-",
           role: contact.assignedStaff?.role || "-",
@@ -59,9 +63,8 @@ const GlobalContacts = () => {
     return () => clearTimeout(delayDebounce);
   }, [page, searchTerm]);
 
-
   const handleDownload = () => {
-    if (leads.length === 0) {
+    if (contacts.length === 0) {
       toast.error("No data available to download");
       return;
     }
@@ -69,21 +72,35 @@ const GlobalContacts = () => {
     const doc = new jsPDF({ orientation: "landscape" });
 
     doc.setFontSize(16);
-    doc.text("Leads List", 14, 15);
+    doc.text("Contacts List", 14, 15);
     doc.setFontSize(10);
-    doc.text(`Total Records: ${totalCount} | Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
+    doc.text(
+      `Total Records: ${totalCount} | Generated on: ${new Date().toLocaleDateString()}`,
+      14,
+      22
+    );
 
-    const tableColumn = ["Name", "Description", "Email", "Phone", "Location", "Purpose", "Source", "Priority", "Amount"];
-    const tableRows = leads.map((lead) => [
-      lead.name,
-      lead.description,
-      lead.email,
-      lead.phone,
-      lead.location,
-      lead.purpose,
-      lead.source,
-      lead.priority,
-      lead.amount,
+    const tableColumn = [
+      "Name",
+      "Description",
+      "Email",
+      "Phone",
+      "Location",
+      "Purpose",
+      "Source",
+      "Priority",
+      "Amount",
+    ];
+    const tableRows = contacts.map((lead) => [
+      lead.name || "-", // Use 'lead', not 'contacts'
+      lead.description || "-",
+      lead.email || "-",
+      lead.phone || "-",
+      lead.location || "-",
+      lead.purpose || "-",
+      lead.source || "-",
+      lead.priority || "-",
+      lead.amount || "-",
     ]);
 
     // Use the function directly instead of doc.autoTable
@@ -95,7 +112,9 @@ const GlobalContacts = () => {
       headStyles: { fillColor: [79, 70, 229] },
     });
 
-    const fileName = `Leads_List_${new Date().toISOString().split("T")[0]}.pdf`;
+    const fileName = `Contacts_List_${
+      new Date().toISOString().split("T")[0]
+    }.pdf`;
     doc.save(fileName);
     toast.success("Downloading PDF list...");
   };
@@ -160,7 +179,7 @@ const GlobalContacts = () => {
           }
 
           if (key === "role") {
-            if (row.role === 'admin') {
+            if (row.role === "admin") {
               return (
                 <span className="inline-block px-2 py-1 text-xs font-medium bg-red-300 text-indigo-700 rounded-full">
                   {row.role || "-"}

@@ -3,7 +3,9 @@ import axios from "../../instance/Axios";
 import Table2 from "../../components/Table2";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
-import * as XLSX from "xlsx"; 
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import { Phone, Download } from "lucide-react";
 
 export default function CompletedPersonalTask() {
   const [reworks, setReworks] = useState([]);
@@ -56,31 +58,7 @@ export default function CompletedPersonalTask() {
     }
   };
 
-  const handleDownload = () => {
-    if (reworks.length === 0) {
-      return Swal.fire("Info", "No completed tasks to export.", "info");
-    }
 
-    // Define exactly what columns appear in the Excel file
-    const exportData = reworks.map((row) => ({
-      "Date": row.date,
-      "Customer Name": row.customerName,
-      "Customer Phone": row.customerPhone,
-      "Amount": row.amount,
-      "Stage": row.stage,
-      "Requirement": row.requirement,
-      "Finish By": row.finishBy,
-      "Staff Name": row.staffName,
-      "Priority": row.priority,
-      "Source": row.source,
-      "Status": row.reject ? "Rejected" : row.status,
-    }));
-
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Completed Tasks");
-    XLSX.writeFile(workbook, `Completed_Tasks_Page_${currentPage}.xlsx`);
-  };
 
   const handleBankRejection = async(data)=>{
     try {
@@ -145,6 +123,87 @@ export default function CompletedPersonalTask() {
     navigate(`/activities/tasks/team/${dataToSend}`);
   };
 
+  const handleDownload = () => {
+    if (reworks.length === 0) {
+      Swal.fire({
+        icon: "info",
+        title: "No Data",
+        text: "There are no completed tasks to download.",
+      });
+      return;
+    }
+
+    // Set orientation to landscape to fit 11 columns
+    const doc = new jsPDF({ orientation: "landscape" });
+
+    // Document Title and Info
+    doc.setFontSize(18);
+    doc.setTextColor(40, 40, 40);
+    doc.text("Completed Personal Tasks Report", 14, 15);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Page ${currentPage} | Total Pages: ${totalPages}`, 14, 22);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 27);
+
+    // Prepare headers (excluding 'Action' column)
+    const tableColumn = columns
+      .filter(col => col.key !== "action")
+      .map(col => col.label);
+
+    // Prepare body data (matching the filtered columns)
+    const tableRows = reworks.map(row => [
+      row.date,
+      row.customerName,
+      row.customerPhone,
+      row.amount,
+      row.stage,
+      row.requirement,
+      row.finishBy,
+      row.staffName,
+      row.priority,
+      row.source,
+      row.status
+    ]);
+
+    // Create the table
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 35,
+      theme: 'striped',
+      styles: { fontSize: 7.5, cellPadding: 2 },
+      headStyles: { 
+        fillColor: [22, 163, 74], // Green-600 to match 'Completed' theme
+        textColor: 255,
+        halign: 'center' 
+      },
+      columnStyles: {
+        5: { cellWidth: 45 }, // Requirement column gets more room
+        10: { halign: 'center' } // Status column
+      },
+      // Styling logic for the PDF cells
+      didParseCell: (data) => {
+        // Highlight Status column
+        if (data.column.index === 10) { 
+           data.cell.styles.fontStyle = 'bold';
+           data.cell.styles.textColor = [22, 163, 74]; // Green text
+        }
+      }
+    });
+
+    const fileName = `Completed_Tasks_Page_${currentPage}_${new Date().toISOString().split("T")[0]}.pdf`;
+    doc.save(fileName);
+    
+    Swal.fire({
+      icon: "success",
+      title: "Download Started",
+      text: "Your PDF is being generated.",
+      timer: 1500,
+      showConfirmButton: false
+    });
+  };
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-6">
@@ -153,7 +212,7 @@ export default function CompletedPersonalTask() {
           onClick={handleDownload}
              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow w-full sm:w-auto transition-colors"
           >
-            Download List
+            Download
           </button>
       </div>
 

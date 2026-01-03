@@ -3,6 +3,10 @@ import axios from "../../instance/Axios";
 import { v4 as uuidv4 } from "uuid";
 import Swal from "sweetalert2";
 
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import { Phone, Download } from "lucide-react";
+
 // Define the column headers with nesting structure
 const columnStructure = [
   { key: "invoiceNo", header: "INVOICE NO", rowspan: 2, isDataCol: true },
@@ -201,6 +205,75 @@ const IncomeSheet = () => {
     balance: data.reduce((sum, row) => sum + (row.balance || 0), 0),
   };
 
+
+  // --- HANDLE PDF DOWNLOAD ---
+  const handleDownload = () => {
+    const doc = new jsPDF("l", "mm", "a4"); // Landscape orientation
+
+    // Title and Metadata
+    doc.setFontSize(18);
+    doc.text(`Income Sheet - ${selectedType}`, 14, 15);
+    doc.setFontSize(11);
+    doc.text(`Period: ${selectedMonth} ${selectedYear}`, 14, 22);
+
+    // Filter only rows that have data to keep the PDF clean
+    const filledRows = data.filter((row) =>
+      Object.keys(row).some(
+        (key) => key !== "coloumnId" && row[key] !== null && row[key] !== ""
+      )
+    );
+
+    // Prepare table body
+    const tableBody = filledRows.map((row) => [
+      row.invoiceNo || "",
+      row.date || "",
+      row.transactionId || "",
+      row.name || "",
+      row.totalAmount?.toFixed(2) || "0.00",
+      row.received?.toFixed(2) || "0.00",
+      row.credit?.toFixed(2) || "0.00",
+      row.balance?.toFixed(2) || "0.00",
+    ]);
+
+    // Add the Totals Row at the end
+    tableBody.push([
+      { content: "TOTAL", colSpan: 4, styles: { halign: "center", fontStyle: "bold", fillGray: 200 } },
+      totals.totalAmount.toFixed(2),
+      totals.received.toFixed(2),
+      totals.credit.toFixed(2),
+      totals.balance.toFixed(2),
+    ]);
+
+    autoTable(doc, {
+      startY: 30,
+      head: [
+        ["INVOICE NO", "DATE", "TRANSACTION ID", "NAME OF PERSON/FIRM", "TOTAL", "RECEIVED", "CREDIT", "BALANCE"]
+      ],
+      body: tableBody,
+      theme: "grid",
+      headStyles: { fillColor: [79, 70, 229], textColor: 255, halign: "center" }, // Indigo color
+      columnStyles: {
+        0: { cellWidth: 25 },
+        1: { cellWidth: 25 },
+        2: { cellWidth: 40 },
+        3: { cellWidth: "auto" },
+        4: { halign: "right" },
+        5: { halign: "right" },
+        6: { halign: "right" },
+        7: { halign: "right" },
+      },
+      styles: { fontSize: 9, cellPadding: 2 },
+      didParseCell: function (data) {
+        // Bold the last row (Totals)
+        if (data.row.index === tableBody.length - 1) {
+          data.cell.styles.fontStyle = 'bold';
+        }
+      }
+    });
+
+    doc.save(`Income_Sheet_${selectedType}_${selectedMonth}_${selectedYear}.pdf`);
+  };
+
   // --- RENDER ---
   return (
     <div className="p-4 overflow-x-auto ">
@@ -250,7 +323,13 @@ const IncomeSheet = () => {
             Add Rows (Current Rows: {data.length})
           </button>
 
-          <div className="relative">
+          <div className="relative flex gap-2">
+            <button
+              onClick={handleDownload}
+              className="px-4 py-2  bg-gray-800 text-white font-bold rounded-lg shadow-md hover:bg-gray-900 transition duration-150"
+            >
+            <Download size={16} />
+            </button>
             <button
               onClick={handleSaveChanges}
               className="px-4 py-2 bg-green-600 text-white font-bold rounded-lg shadow-md hover:bg-green-700 transition"

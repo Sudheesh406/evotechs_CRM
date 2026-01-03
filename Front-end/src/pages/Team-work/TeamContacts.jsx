@@ -3,6 +3,10 @@ import Table2 from "../../components/Table2";
 import Swal from "sweetalert2";
 import axios from "../../instance/Axios";
 
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import { Phone, Download } from "lucide-react";
+
 export default function TeamContacts() {
   const [teamContacts, setTeamContacts] = useState([]);
   const [user, setUser] = useState();
@@ -116,10 +120,100 @@ export default function TeamContacts() {
     if (page > 1) setPage(page - 1);
   };
 
+  const handleDownload = () => {
+    if (teamContacts.length === 0) {
+      Swal.fire({
+        icon: "info",
+        title: "No Data",
+        text: "There are no contacts to download.",
+      });
+      return;
+    }
+
+    const doc = new jsPDF({ orientation: "landscape" });
+
+    // Document Header
+    doc.setFontSize(18);
+    doc.setTextColor(33, 33, 33);
+    doc.text("Team Contacts Report", 14, 15);
+    
+    // Add subtitle if search is active
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    let subtitle = `Page ${page} of ${totalPages} | Generated: ${new Date().toLocaleString()}`;
+    if (searchName || searchPhone) {
+      subtitle += ` | Filtered by: ${searchName} ${searchPhone}`;
+    }
+    doc.text(subtitle, 14, 22);
+
+    // Prepare table headers and body
+    const tableColumn = columns.map(col => col.label);
+    const tableRows = teamContacts.map(row => [
+      row.date,
+      row.customerName,
+      row.amount,
+      row.priority,
+      row.email,
+      row.phone,
+      row.location,
+      row.purpose,
+      row.followerName,
+      row.followerEmail,
+    ]);
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 30,
+      theme: 'grid',
+      styles: { fontSize: 7, cellPadding: 2 },
+      headStyles: { 
+        fillColor: [75, 85, 99], // Gray-600 for a neutral contact list feel
+        textColor: 255,
+        halign: 'center' 
+      },
+      columnStyles: {
+        1: { cellWidth: 30 }, // Name
+        4: { cellWidth: 35 }, // Email
+        7: { cellWidth: 35 }, // Purpose
+        9: { cellWidth: 35 }, // Follower Email
+      },
+      // Color-coded priority for management review
+      didParseCell: (data) => {
+        if (data.column.index === 3) {
+          if (data.cell.raw === "High") data.cell.styles.textColor = [220, 38, 38];
+          if (data.cell.raw === "Normal") data.cell.styles.textColor = [37, 99, 235];
+        }
+      }
+    });
+
+    const fileName = searchName || searchPhone 
+      ? `Filtered_Contacts_${new Date().getTime()}.pdf` 
+      : `Team_Contacts_Page_${page}.pdf`;
+      
+    doc.save(fileName);
+    
+    Swal.fire({
+      icon: "success",
+      title: "Exported",
+      text: "Contacts list has been saved as PDF",
+      timer: 1500,
+      showConfirmButton: false
+    });
+  };
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <h1 className="text-xl font-semibold mb-6 text-black">Team Contacts</h1>
-
+<div className="flex justify-between items-center mb-6">
+  <h1 className="text-xl font-semibold text-black">Team Contacts</h1>
+  <button
+    onClick={handleDownload}
+    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow flex items-center gap-2 transition-colors"
+  >
+    <Download size={18} />
+    Download
+  </button>
+</div>
       {/* 🔍 Search Bar */}
       <div className="flex flex-wrap gap-4 mb-6">
         <input

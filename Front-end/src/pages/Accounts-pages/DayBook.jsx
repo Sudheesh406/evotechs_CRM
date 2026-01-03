@@ -3,10 +3,20 @@ import axios from "../../instance/Axios";
 import { v4 as uuidv4 } from "uuid";
 import Swal from "sweetalert2";
 
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import { Phone, Download } from "lucide-react";
+
+
 // Define the column headers with nesting structure
 const columnStructure = [
   { key: "date", header: "DATE", rowspan: 2, isDataCol: true },
-  { key: "transactionId", header: "TRANSACTION_ID", rowspan: 2, isDataCol: true },
+  {
+    key: "transactionId",
+    header: "TRANSACTION_ID",
+    rowspan: 2,
+    isDataCol: true,
+  },
   { key: "particulars", header: "PARTICULARS", rowspan: 2, isDataCol: true },
   {
     key: "payments",
@@ -79,9 +89,14 @@ const getDataColumnKeys = (structure) => {
       : [
           {
             key: col.key,
-            align: (col.key === "particulars" || col.key === "transactionId") ? "left" : "right",
+            align:
+              col.key === "particulars" || col.key === "transactionId"
+                ? "left"
+                : "right",
             dataType:
-              col.key === "date" || col.key === "particulars" || col.key === "transactionId"
+              col.key === "date" ||
+              col.key === "particulars" ||
+              col.key === "transactionId"
                 ? "text"
                 : "number",
           },
@@ -290,6 +305,99 @@ const DayBook = () => {
     return value;
   };
 
+  const handleDownload = () => {
+    // Filter out completely empty rows for the PDF
+    const rowsToExport = data.filter((row) =>
+      Object.keys(row).some(
+        (key) => key !== "coloumnId" && row[key] !== null && row[key] !== ""
+      )
+    );
+
+    if (rowsToExport.length === 0) {
+      Swal.fire("Info", "No data to export", "info");
+      return;
+    }
+
+    const doc = new jsPDF({
+      orientation: "landscape",
+      unit: "mm",
+      format: "a4",
+    });
+
+    // Add Title
+    doc.setFontSize(16);
+    doc.text(`Day Book - ${selectedType}`, 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Period: ${selectedMonth} ${selectedYear}`, 14, 22);
+
+    // Define the headers manually to handle the nested structure
+    const head = [
+      [
+        {
+          content: "DATE",
+          rowSpan: 2,
+          styles: { halign: "center", valign: "middle" },
+        },
+        {
+          content: "TRANSACTION_ID",
+          rowSpan: 2,
+          styles: { halign: "center", valign: "middle" },
+        },
+        {
+          content: "PARTICULARS",
+          rowSpan: 2,
+          styles: { halign: "center", valign: "middle" },
+        },
+        { content: "PAYMENTS", colSpan: 2, styles: { halign: "center" } },
+        { content: "RECEIPTS", colSpan: 2, styles: { halign: "center" } },
+        { content: "BALANCE", colSpan: 2, styles: { halign: "center" } },
+      ],
+      [
+        "Cash Book",
+        "Bank Book",
+        "Cash Book",
+        "Bank Book",
+        "Cash Book",
+        "Bank Book",
+      ],
+    ];
+
+    // Map data to table rows
+    const body = rowsToExport.map((row) => [
+      row.date || "",
+      row.transactionId || "",
+      row.particulars || "",
+      row.payments_cash !== null ? row.payments_cash.toLocaleString() : "",
+      row.payments_bank !== null ? row.payments_bank.toLocaleString() : "",
+      row.receipts_cash !== null ? row.receipts_cash.toLocaleString() : "",
+      row.receipts_bank !== null ? row.receipts_bank.toLocaleString() : "",
+      row.balance_cash !== "" ? row.balance_cash.toLocaleString() : "",
+      row.balance_bank !== "" ? row.balance_bank.toLocaleString() : "",
+    ]);
+
+    autoTable(doc, {
+      head: head,
+      body: body,
+      startY: 30,
+      theme: "grid",
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [79, 70, 229], textColor: 255 }, // Indigo theme
+      columnStyles: {
+        0: { cellWidth: 25 }, // Date
+        1: { cellWidth: 30 }, // Transaction ID
+        2: { cellWidth: "auto" }, // Particulars (flex)
+        3: { halign: "right" },
+        4: { halign: "right" },
+        5: { halign: "right" },
+        6: { halign: "right" },
+        7: { halign: "right", fontStyle: "bold" },
+        8: { halign: "right", fontStyle: "bold" },
+      },
+    });
+
+    doc.save(`DayBook_${selectedType}_${selectedMonth}_${selectedYear}.pdf`);
+  };
+
   return (
     <div className="p-4 overflow-x-auto ">
       <div className="flex justify-between items-center mb-6 border-b pb-3 border-gray-300">
@@ -303,10 +411,22 @@ const DayBook = () => {
             className="px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-md font-semibold text-gray-700 hover:border-gray-400 transition duration-150"
           >
             {[
-              "January", "February", "March", "April", "May", "June",
-              "July", "August", "September", "October", "November", "December",
+              "January",
+              "February",
+              "March",
+              "April",
+              "May",
+              "June",
+              "July",
+              "August",
+              "September",
+              "October",
+              "November",
+              "December",
             ].map((m) => (
-              <option key={m} value={m}>{m}</option>
+              <option key={m} value={m}>
+                {m}
+              </option>
             ))}
           </select>
           <select
@@ -314,8 +434,13 @@ const DayBook = () => {
             onChange={(e) => setSelectedYear(e.target.value)}
             className="px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-md font-semibold text-gray-700 hover:border-gray-400 transition duration-150"
           >
-            {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((y) => (
-              <option key={y} value={y}>{y}</option>
+            {Array.from(
+              { length: 5 },
+              (_, i) => new Date().getFullYear() - i
+            ).map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
             ))}
           </select>
           <select
@@ -332,7 +457,13 @@ const DayBook = () => {
           >
             Add Rows (Current Rows: {data.length})
           </button>
-          <div className="relative">
+          <div className="relative flex gap-2">
+            <button
+              onClick={handleDownload}
+              className="px-4 py-2  bg-gray-800 text-white font-bold rounded-lg shadow-md hover:bg-gray-900 transition duration-150"
+            >
+            <Download size={16} />
+            </button>
             <button
               onClick={handleSaveChanges}
               className="px-4 py-2 bg-green-600 text-white font-bold rounded-lg shadow-md hover:bg-green-700 transition duration-150"
@@ -386,7 +517,8 @@ const DayBook = () => {
                   {dataColumnKeys.map((col) => {
                     const isNumeric = col.dataType === "number";
                     // Now handles both Particulars and Comments as textareas
-                    const isTextArea = col.key === "particulars" || col.key === "transactionId";
+                    const isTextArea =
+                      col.key === "particulars" || col.key === "transactionId";
                     const isReadOnly = col.key.startsWith("balance");
 
                     return (
@@ -400,16 +532,27 @@ const DayBook = () => {
                           <textarea
                             value={formatValue(row[col.key], isNumeric)}
                             onChange={(e) =>
-                              handleCellChange(row.coloumnId, col.key, e.target.value)
+                              handleCellChange(
+                                row.coloumnId,
+                                col.key,
+                                e.target.value
+                              )
                             }
                             rows={1}
                             className={`w-full px-2 py-1 resize-none overflow-y-hidden focus:outline-none border-none bg-transparent text-left ${
-                              col.key === "particulars" ? "min-w-[400px]" : "min-w-[200px]"
-                            } ${isReadOnly ? "cursor-not-allowed text-gray-700" : ""}`}
+                              col.key === "particulars"
+                                ? "min-w-[400px]"
+                                : "min-w-[200px]"
+                            } ${
+                              isReadOnly
+                                ? "cursor-not-allowed text-gray-700"
+                                : ""
+                            }`}
                             readOnly={isReadOnly}
                             onInput={(e) => {
                               e.target.style.height = "auto";
-                              e.target.style.height = e.target.scrollHeight + "px";
+                              e.target.style.height =
+                                e.target.scrollHeight + "px";
                             }}
                           />
                         ) : (
@@ -417,11 +560,19 @@ const DayBook = () => {
                             type="text"
                             value={formatValue(row[col.key], isNumeric)}
                             onChange={(e) =>
-                              handleCellChange(row.coloumnId, col.key, e.target.value)
+                              handleCellChange(
+                                row.coloumnId,
+                                col.key,
+                                e.target.value
+                              )
                             }
                             className={`w-full h-full min-w-[75px] px-2 py-1 focus:outline-none border-none bg-transparent ${
                               isNumeric ? "text-right font-medium" : "text-left"
-                            } ${isReadOnly ? "cursor-not-allowed text-gray-700" : ""}`}
+                            } ${
+                              isReadOnly
+                                ? "cursor-not-allowed text-gray-700"
+                                : ""
+                            }`}
                             readOnly={isReadOnly}
                             placeholder={
                               isReadOnly

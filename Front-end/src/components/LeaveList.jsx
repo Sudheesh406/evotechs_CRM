@@ -2,6 +2,9 @@ import React, { useState } from "react";
 import axios from "../instance/Axios";
 import Swal from "sweetalert2";
 
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import { Phone, Download } from "lucide-react";
 
 // --- Excel-style Summary Modal Component ---
 const YearlySummaryModal = ({ isOpen, onClose, data }) => {
@@ -9,10 +12,77 @@ const YearlySummaryModal = ({ isOpen, onClose, data }) => {
 
   const record = data[0]; // Accessing the record from your API response
 
+  const handleDownloadYearlyPDF = () => {
+    const doc = new jsPDF();
+    const record = data[0];
+
+    // --- Header ---
+    doc.setFontSize(22);
+    doc.setTextColor(79, 70, 229); // Indigo-600
+    doc.text("Yearly Leave & WFH Report", 14, 20);
+
+    doc.setFontSize(12);
+    doc.setTextColor(100);
+    doc.text(`Staff Name: ${record.staffName}`, 14, 30);
+    doc.text(`Academic/Fiscal Year: ${record.allocationYear}`, 14, 37);
+
+    // --- Summary Stats Boxes ---
+    // Leave Box
+    doc.setDrawColor(200);
+    doc.setFillColor(249, 250, 251);
+    doc.roundedRect(14, 45, 85, 20, 3, 3, "FD");
+    doc.setFontSize(10);
+    doc.setTextColor(30, 64, 175); // Blue
+    doc.text("LEAVE UTILIZATION", 18, 52);
+    doc.setFontSize(14);
+    doc.text(`${record.totalLeave} / ${record.allocatedLeaves} Days`, 18, 60);
+
+    // WFH Box
+    doc.setFillColor(240, 253, 244);
+    doc.roundedRect(110, 45, 85, 20, 3, 3, "FD");
+    doc.setTextColor(21, 128, 61); // Green
+    doc.setFontSize(10);
+    doc.text("WFH UTILIZATION", 114, 52);
+    doc.setFontSize(14);
+    doc.text(`${record.totalWFH} / ${record.allocatedWFH} Days`, 114, 60);
+
+    // --- Monthly Breakdown Table ---
+    const tableColumn = ["Month", "Leave Days Used", "WFH Days Used"];
+    const tableRows = record.monthlySummary.map((item) => [
+      new Date(item.month).toLocaleString("default", {
+        month: "long",
+        year: "numeric",
+      }),
+      item.leave,
+      item.wfh,
+    ]);
+
+    autoTable(doc, {
+      startY: 75,
+      head: [tableColumn],
+      body: tableRows,
+      theme: "grid",
+      headStyles: { fillColor: [79, 70, 229], halign: "center" },
+      columnStyles: {
+        1: { halign: "center" },
+        2: { halign: "center" },
+      },
+      styles: { fontSize: 10, cellPadding: 5 },
+    });
+
+    // --- Footer ---
+    const finalY = doc.lastAutoTable.finalY + 15;
+    doc.setFontSize(9);
+    doc.setTextColor(150);
+    doc.text("This is a system-generated report.", 14, finalY);
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, finalY + 5);
+
+    doc.save(`${record.staffName}_Yearly_Leave_${record.allocationYear}.pdf`);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-
         {/* Modal Header */}
         <div className="px-6 py-4 bg-gray-50 border-b flex justify-between items-center">
           <div>
@@ -23,17 +93,25 @@ const YearlySummaryModal = ({ isOpen, onClose, data }) => {
               Staff: {record.staffName} | Year: {record.allocationYear}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-3xl"
-          >
-            &times;
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleDownloadYearlyPDF}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow flex items-center gap-2 transition-all text-sm font-medium"
+            >
+              <Download size={16} className="text-indigo-600" />
+              Download
+            </button>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 text-3xl leading-none"
+            >
+              &times;
+            </button>
+          </div>
         </div>
 
         {/* Modal Body */}
         <div className="p-6">
-
           {/* Summary Cards */}
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg">
@@ -79,7 +157,6 @@ const YearlySummaryModal = ({ isOpen, onClose, data }) => {
 
           {/* Excel-like Table */}
           <div className="border border-gray-200 rounded-lg overflow-hidden">
-
             {/* Header Table */}
             <table className="min-w-full divide-y divide-gray-200 table-fixed">
               <thead className="bg-gray-100">
@@ -127,12 +204,10 @@ const YearlySummaryModal = ({ isOpen, onClose, data }) => {
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );
 };
-
 
 // --- Main LeaveList Component ---
 export default function LeaveList({
@@ -144,41 +219,40 @@ export default function LeaveList({
   const [summaryData, setSummaryData] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
-const viewLeaveAndWFH = async () => {
-  try {
-    // 🔵 Show Loading Alert
-    Swal.fire({
-      title: "Loading...",
-      text: "Fetching yearly leave & WFH records",
-      allowOutsideClick: false,
-      allowEscapeKey: false,
-      didOpen: () => {
-        Swal.showLoading();
-      },
-    });
+  const viewLeaveAndWFH = async () => {
+    try {
+      // 🔵 Show Loading Alert
+      Swal.fire({
+        title: "Loading...",
+        text: "Fetching yearly leave & WFH records",
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
 
-    // 🔵 Fetch API data
-    const { data } = await axios.get("/calendar/leave-WFH-record");
+      // 🔵 Fetch API data
+      const { data } = await axios.get("/calendar/leave-WFH-record");
 
-    // 🟢 Success: Close loading and show success popup
-    Swal.close();
+      // 🟢 Success: Close loading and show success popup
+      Swal.close();
 
-    // 🔵 Set data & open modal
-    setSummaryData(data.data);
-    setShowModal(true);
+      // 🔵 Set data & open modal
+      setSummaryData(data.data);
+      setShowModal(true);
+    } catch (error) {
+      console.error("Error fetching records:", error);
 
-  } catch (error) {
-    console.error("Error fetching records:", error);
-
-    // 🔴 Error Alert
-    Swal.fire({
-      icon: "error",
-      title: "Failed to Load",
-      text: "Unable to fetch yearly leave/WFH records.",
-      confirmButtonColor: "#d33",
-    });
-  }
-};
+      // 🔴 Error Alert
+      Swal.fire({
+        icon: "error",
+        title: "Failed to Load",
+        text: "Unable to fetch yearly leave/WFH records.",
+        confirmButtonColor: "#d33",
+      });
+    }
+  };
 
   return (
     <div className="mt-6 bg-white rounded-xl shadow p-6">

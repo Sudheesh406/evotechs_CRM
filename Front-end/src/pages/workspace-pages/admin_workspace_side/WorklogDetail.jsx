@@ -10,6 +10,9 @@ const WorklogDetail = () => {
   const [staffs, setStaffs] = useState([]);
   const [staffId, setStaffId] = useState(""); // changed to string (single id)
 
+  const [holidaysData, setHolidaysData] = useState([]);
+  const [leavesData, setLeavesData] = useState([]);
+
   const numColumns = 30;
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
@@ -83,6 +86,10 @@ const WorklogDetail = () => {
 
       const worklogs = response.data.data.worklogs;
       const dailyWorkHours = response.data.data.dailyWorkHours || [];
+      const holidays = response.data.data.holidays || [];
+      const leaves = response.data.data.leaves || [];
+       setHolidaysData(holidays);
+      setLeavesData(leaves);
 
       const daysInMonth = getDaysInMonth(year, month - 1);
       const emptyTable = Array(daysInMonth)
@@ -229,6 +236,61 @@ const handleCellDoubleClick = (rowIndex, cellIndex) => {
 };
 
 
+  const getDateInfo = (rowIndex) => {
+  const dateObj = new Date(currentYear, currentMonth, rowIndex + 1);
+  const formattedDate = dateObj.toLocaleDateString("en-CA");
+
+  let info = {
+    className: "bg-white text-gray-700",
+    label: "" // This will store 'Maintenance', 'Public Holiday', etc.
+  };
+
+  // 1. Check Holiday
+ const holiday = holidaysData.find((h) => h.holidayDate === formattedDate);
+
+if (holiday) {
+  const hName = holiday.holidayName || "";
+  const lowerName = hName.toLowerCase();
+
+  // 1. Set the Color
+  const isMaint = lowerName === "maintenance";
+  info.className = isMaint 
+    ? "bg-purple-500 text-white font-bold" 
+    : "bg-red-500 text-white font-bold";
+
+  // 2. Set the Label (Detail)
+  if (lowerName === 'companyholiday') {
+    info.label = 'Company Holiday';
+  } else if (lowerName === 'publicholiday') {
+    info.label = 'Public Holiday';
+  } else {
+    // This handles 'Maintenance' or any other custom name
+    info.label = hName; 
+  }
+
+  return info;
+}
+
+  // 2. Check Leave
+  const leaf = leavesData.find((l) => l.leaveDate === formattedDate);
+  if (leaf) {
+    const { category, leaveType, HalfTime } = leaf;
+    // Set label based on leave type
+    info.label = category === "WFH" ? `WFH (${HalfTime})` : `${category} (${leaveType})`;
+
+    if (HalfTime === "Leave" && category === "WFH") info.className = "bg-yellow-300 text-black";
+    else if (HalfTime === "Offline" && category === "WFH") info.className = "bg-gray-500 text-white";
+    else if (category === "Leave" && leaveType === "fullday") info.className = "bg-blue-800 text-white";
+    else if (category === "WFH" && leaveType === "fullday") info.className = "bg-gray-500 text-white";
+    else if (category === "Leave" && (leaveType === "morning" || leaveType === "afternoon")) {
+      info.className = "bg-orange-500 text-white";
+    }
+    return info;
+  }
+
+  return info;
+};
+
   // -----------------------------
   // UI
   // -----------------------------
@@ -236,6 +298,8 @@ const handleCellDoubleClick = (rowIndex, cellIndex) => {
     <div className="flex flex-col bg-gray-50 font-sans text-gray-800">
       {/* Header */}
       <header className="p-4 bg-white shadow-md flex justify-between items-center relative">
+                <div className="flex flex-col gap-2">
+
         <div className="flex items-center gap-4">
           <h1 className="text-xl font-extrabold text-gray-900 tracking-tight">
             <span className="text-indigo-600">Work Log </span> Detail
@@ -247,7 +311,32 @@ const handleCellDoubleClick = (rowIndex, cellIndex) => {
             })}
           </span>
         </div>
-
+         {/* Quick Legend Details */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
+            <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
+              <div className="w-3 h-3 rounded bg-blue-800"></div> Full Leave
+            </div>
+            <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
+              <div className="w-3 h-3 rounded bg-orange-500"></div> Half Leave
+            </div>
+            <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
+              <div className="w-3 h-3 rounded bg-gray-500"></div> WFH
+            </div>
+            <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
+              <div className="w-3 h-3 rounded bg-gray-500"></div> WFH-Off
+            </div>
+            <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
+              <div className="w-3 h-3 rounded bg-yellow-300 border border-gray-300"></div>{" "}
+              WFH-Half
+            </div>
+            <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
+              <div className="w-3 h-3 rounded bg-red-500"></div> Holiday
+            </div>
+            <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
+              <div className="w-3 h-3 rounded bg-purple-500"></div> Maintenance
+            </div>
+          </div>
+</div>
         <div className="flex items-center gap-3">
           {/* Staff Selector */}
           <select
@@ -336,9 +425,23 @@ const handleCellDoubleClick = (rowIndex, cellIndex) => {
             <tbody className="bg-white divide-y divide-gray-100">
               {tableData.map((rowData, rowIndex) => (
                 <tr key={rowIndex}>
-                  <td className="sticky left-0 bg-white p-3 text-sm font-medium text-gray-700 whitespace-nowrap border-r border-gray-200 z-10">
-                    {dates[rowIndex]}
-                  </td>
+                   <td
+                  className={`sticky left-0 p-2 text-sm font-medium whitespace-nowrap border-r border-gray-200 z-10 group transition-all duration-200 ${
+                    getDateInfo(rowIndex).className
+                  }`}
+                  title={getDateInfo(rowIndex).label} // Standard hover tooltip
+                >
+                  <div className="flex flex-col items-start leading-tight">
+                    <span>{dates[rowIndex]}</span>
+
+                    {/* Display the Detail Label (e.g., "Maintenance") */}
+                    {getDateInfo(rowIndex).label && (
+                      <span className="text-[9px] font-bold uppercase tracking-tighter opacity-80 mt-0.5 pointer-events-none">
+                        {getDateInfo(rowIndex).label}
+                      </span>
+                    )}
+                  </div>
+                </td>
                   {rowData.map((cellData, cellIndex) => {
                     // CellData is always an object: {value, comment}
                     const value = cellData.value || "";

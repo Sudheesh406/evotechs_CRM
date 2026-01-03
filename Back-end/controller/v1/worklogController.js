@@ -1,9 +1,12 @@
 const { httpSuccess, httpError } = require("../../utils/v1/httpResponse");
 const signup = require("../../models/v1/Authentication/authModel");
 const roleChecker = require("../../utils/v1/roleChecker");
-const { Op, Sequelize } = require("sequelize");
+const { Op, Sequelize, fn, col, where } = require("sequelize");
+
 const worklog = require("../../models/v1/Work_space/worklog");
 const attendance = require("../../models/v1/Work_space/attendance");
+const Holiday = require("../../models/v1/Work_space/holiday");
+const Leave = require("../../models/v1/Work_space/Leave");
 
 const createWorklog = async (req, res) => {
   try {
@@ -63,7 +66,6 @@ const createWorklog = async (req, res) => {
 
         savedWorklogs.push(entry);
       }
-
     }
 
     // 6. Return success response
@@ -73,7 +75,6 @@ const createWorklog = async (req, res) => {
     return httpError(res, 500, "Internal Server Error");
   }
 };
-
 
 const getWorklog = async (req, res) => {
   const user = req.user; // staff info
@@ -103,7 +104,6 @@ const getWorklog = async (req, res) => {
     // 2. IF NO WORKLOG FOUND → AUTO–COPY PREVIOUS MONTH TASKS
     // ---------------------------------------------------------
     if (worklogs.length === 0) {
-
       // Calculate previous month date range
       const prevMonth = month === 1 ? 12 : month - 1;
       const prevYear = month === 1 ? year - 1 : year;
@@ -122,7 +122,6 @@ const getWorklog = async (req, res) => {
       });
 
       if (prevTasks.length > 0) {
-
         // Create new entries for the 1st day of the month
         const newEntries = prevTasks.map((t) => ({
           staffId: user.id,
@@ -209,19 +208,61 @@ const getWorklog = async (req, res) => {
     );
 
     // -------------------------------------------
-    // 4. FINAL RESPONSE
+    // 4. HOLIDAY AND LEAVE
+    // -------------------------------------------
+
+    const holidays = await Holiday.findAll({
+      where: {
+        [Op.and]: [
+          where(fn("MONTH", col("holidayDate")), month),
+          // Filter by Year
+          where(fn("YEAR", col("holidayDate")), year),
+          // Filter for active records
+          { softDelete: false },
+        ],
+      },
+    });
+
+    const leaves = await Leave.findAll({
+      where: {
+        [Op.and]: [
+          { staffId: user.id },
+          { softDelete: false },
+          {
+            // Keep your existing date overlap logic
+            [Op.or]: [
+              {
+                [Op.and]: [
+                  where(fn("MONTH", col("leaveDate")), month),
+                  where(fn("YEAR", col("leaveDate")), year),
+                ],
+              },
+              {
+                [Op.and]: [
+                  where(fn("MONTH", col("endDate")), month),
+                  where(fn("YEAR", col("endDate")), year),
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    // -------------------------------------------
+    // 5. FINAL RESPONSE
     // -------------------------------------------
     return httpSuccess(res, 200, "Worklogs fetched successfully", {
       worklogs,
       dailyWorkHours,
+      holidays,
+      leaves,
     });
   } catch (error) {
     console.error("Error in getting worklog:", error);
-    return httpError(res, 500, "Internal Server Error",error);
+    return httpError(res, 500, "Internal Server Error", error);
   }
 };
-
-
 
 const getStaffWork = async (req, res) => {
   try {
@@ -332,12 +373,11 @@ const getStaffWork = async (req, res) => {
   }
 };
 
-
 const getWorklogAdmin = async (req, res) => {
   const user = req.user; // staff info
-  const { month, year, staffId} = req.body; // month: 1–12
+  const { month, year, staffId } = req.body; // month: 1–12
 
-  if (!month || !year ||!staffId) {
+  if (!month || !year || !staffId) {
     return res.status(400).json({ message: "Month and year are required" });
   }
 
@@ -419,15 +459,54 @@ const getWorklogAdmin = async (req, res) => {
       }
     );
 
+     const holidays = await Holiday.findAll({
+      where: {
+        [Op.and]: [
+          where(fn("MONTH", col("holidayDate")), month),
+          // Filter by Year
+          where(fn("YEAR", col("holidayDate")), year),
+          // Filter for active records
+          { softDelete: false },
+        ],
+      },
+    });
+
+    const leaves = await Leave.findAll({
+      where: {
+        [Op.and]: [
+          { staffId: staffId },
+          { softDelete: false },
+          {
+            // Keep your existing date overlap logic
+            [Op.or]: [
+              {
+                [Op.and]: [
+                  where(fn("MONTH", col("leaveDate")), month),
+                  where(fn("YEAR", col("leaveDate")), year),
+                ],
+              },
+              {
+                [Op.and]: [
+                  where(fn("MONTH", col("endDate")), month),
+                  where(fn("YEAR", col("endDate")), year),
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
     return httpSuccess(res, 200, "Worklogs fetched successfully", {
       worklogs,
       dailyWorkHours,
+      holidays,
+      leaves
     });
   } catch (error) {
     console.error("Error in getting worklog:", error);
     return httpError(res, 500, "Internal Server Error");
   }
 };
-
 
 module.exports = { createWorklog, getWorklog, getStaffWork, getWorklogAdmin };

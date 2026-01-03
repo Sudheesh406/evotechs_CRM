@@ -2,6 +2,10 @@ import { useEffect, useState } from "react";
 import axios from "../../../instance/Axios";
 import Table2 from "../../../components/Table2";
 import { useNavigate } from "react-router-dom";
+import { Download } from "lucide-react"; // Added
+import { jsPDF } from "jspdf"; // Added
+import autoTable from "jspdf-autotable"; // Added
+import toast from "react-hot-toast"; // Added
 
 const columns = [
   { key: "date", label: "Date" },
@@ -53,6 +57,46 @@ function StaffTaskVerification() {
     }
   };
 
+  // --- PDF DOWNLOAD LOGIC ---
+  const handleDownload = () => {
+    if (completedWorks.length === 0) {
+      toast.error("No data available to download");
+      return;
+    }
+
+    const doc = new jsPDF({ orientation: "landscape" });
+
+    doc.setFontSize(16);
+    doc.text("Resolved Works Verification Report", 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Page ${currentPage} | Date: ${new Date().toLocaleDateString()}`, 14, 22);
+
+    const tableColumn = columns.map(col => col.label);
+    const tableRows = completedWorks.map((row) => [
+      row.date || "-",
+      row.customerName || "-",
+      row.customerPhone || "-",
+      row.amount || "-",
+      row.stage || "-",
+      row.requirement || "-",
+      row.finishBy || "-",
+      row.staffName || "-",
+      row.priority || "-",
+      row.source || "-",
+    ]);
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 30,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [13, 148, 136] }, // Teal theme for Resolved tasks
+    });
+
+    doc.save(`Resolved_Works_Page_${currentPage}.pdf`);
+    toast.success("Downloading PDF...");
+  };
+
   useEffect(() => {
     getCompletedWork();
   }, []);
@@ -91,7 +135,16 @@ function StaffTaskVerification() {
 
   return (
     <div className="p-6 bg-gray-50 ">
-      <h1 className="text-xl font-semibold mb-6 text-gray-800">Resolved Works</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-xl font-semibold text-gray-800">Resolved Works</h1>
+        <button
+          onClick={handleDownload}
+          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow flex items-center gap-2 transition-colors"
+        >
+          <Download size={16} />
+          Download
+        </button>
+      </div>
 
       {completedWorks.length === 0 ? (
         <div className="flex justify-center items-center h-64">

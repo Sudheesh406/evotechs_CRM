@@ -80,7 +80,7 @@ const Contacts = () => {
     const doc = new jsPDF({ orientation: "landscape" });
 
     doc.setFontSize(16);
-    doc.text("Leads List", 14, 15);
+    doc.text("Contacts List", 14, 15);
     doc.setFontSize(10);
     doc.text(`Total Records: ${totalCount} | Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
 
@@ -106,7 +106,7 @@ const Contacts = () => {
       headStyles: { fillColor: [79, 70, 229] },
     });
 
-    const fileName = `Leads_List_${new Date().toISOString().split("T")[0]}.pdf`;
+    const fileName = `Contact_List_${new Date().toISOString().split("T")[0]}.pdf`;
     doc.save(fileName);
     toast.success("Downloading PDF list...");
   };

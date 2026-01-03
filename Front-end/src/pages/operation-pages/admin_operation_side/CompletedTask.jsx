@@ -2,6 +2,10 @@ import { useEffect, useState } from "react";
 import axios from "../../../instance/Axios";
 import Table2 from "../../../components/Table2";
 import { useNavigate } from "react-router-dom";
+import { Download } from "lucide-react"; // Added
+import { jsPDF } from "jspdf"; // Added
+import autoTable from "jspdf-autotable"; // Added
+import toast from "react-hot-toast"; // Added
 
 const columns = [
   { key: "date", label: "Date" },
@@ -54,6 +58,47 @@ function CompletedTask() {
     }
   };
 
+  // --- PDF DOWNLOAD LOGIC ---
+  const handleDownload = () => {
+    if (completedWorks.length === 0) {
+      toast.error("No data available to download");
+      return;
+    }
+
+    const doc = new jsPDF({ orientation: "landscape" });
+
+    doc.setFontSize(16);
+    doc.text("Completed Works Report", 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Page: ${currentPage} | Date: ${new Date().toLocaleDateString()}`, 14, 22);
+
+    // Filter out the 'Action' column for the PDF
+    const pdfColumns = columns.filter(col => col.key !== 'action').map(col => col.label);
+    
+    const tableRows = completedWorks.map((row) => [
+      row.date || "-",
+      row.customerName || "-",
+      row.customerPhone || "-",
+      row.amount || "-",
+      row.stage || "-",
+      row.requirement || "-",
+      row.finishBy || "-",
+      row.staffName || "-",
+      row.priority || "-",
+      row.source || "-",
+    ]);
+
+    autoTable(doc, {
+      head: [pdfColumns],
+      body: tableRows,
+      startY: 30,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [37, 99, 235] }, // Blue theme matching the Reject button
+    });
+
+    doc.save(`Completed_Works_Page_${currentPage}.pdf`);
+    toast.success("Downloading PDF...");
+  };
 
   const handleBankRejection = async(data)=>{
     try {
@@ -62,53 +107,42 @@ function CompletedTask() {
       if(response){
             getCompletedWork(currentPage);
       }
-
     } catch (error) {
       console.error('error',error)
     }
   }
 
-
   useEffect(() => {
     getCompletedWork(currentPage);
   }, [currentPage]);
 
-
   const renderCell = (key, row) => {
     if (key === "date") {
       return (
-        <span
-          className={`px-2 py-1 rounded-full text-sm font-medium ${row.dateColor}`}
-        >
+        <span className={`px-2 py-1 rounded-full text-sm font-medium ${row.dateColor}`}>
           {row.date}
         </span>
       );
     }
 
     if (key === "action") {
-    // Hide button if reject = true
-    if (row.reject) {
+      if (row.reject) {
+        return <span className="text-red-500 font-semibold">Rejected</span>;
+      }
       return (
-        <span className="text-red-500 font-semibold">Rejected</span>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleBankRejection(row);
+          }}
+          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+        >
+          Reject
+        </button>
       );
     }
-
-    return (
-      <button
-        onClick={(e) => {
-          e.stopPropagation(); // prevent triggering row click
-          handleBankRejection(row);
-        }}
-        className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-      >
-        Reject
-      </button>
-    );
-  }
-
     return row[key];
   };
-
 
   const handleRowClick = (row) => {
     const data = {
@@ -132,10 +166,17 @@ function CompletedTask() {
   }
 
   return (
-    <div className="p-6 bg-gray-50 ">
-      <h1 className="text-xl font-semibold mb-6 text-gray-800">
-        Completed Works
-      </h1>
+    <div className="p-6 bg-gray-50">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-xl font-semibold text-gray-800">Completed Works</h1>
+        <button
+          onClick={handleDownload}
+          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow transition-colors"
+        >
+          <Download size={18} />
+          Download
+        </button>
+      </div>
 
       {completedWorks.length === 0 ? (
         <div className="flex justify-center items-center h-64">
@@ -149,6 +190,7 @@ function CompletedTask() {
           onRowClick={handleRowClick}
         />
       )}
+      
       <div className="flex justify-center items-center gap-4 mt-6">
         <button
           disabled={currentPage === 1}

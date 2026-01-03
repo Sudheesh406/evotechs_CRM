@@ -3,7 +3,10 @@ import axios from "../../instance/Axios";
 import Table2 from "../../components/Table2";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
-import * as XLSX from "xlsx"; // Import the xlsx library
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import { Phone, Download } from "lucide-react";
+
 
 export default function Pendings() {
   const [pendingWorks, setPendingWorks] = useState([]);
@@ -52,18 +55,75 @@ export default function Pendings() {
   };
 
   // --- NEW DOWNLOAD FUNCTION ---
-  const handleDownload = () => {
+const handleDownload = () => {
     if (pendingWorks.length === 0) {
-      return Swal.fire("Info", "No data available to download", "info");
+      Swal.fire({
+        icon: "info",
+        title: "No Data",
+        text: "There are no pending tasks to download.",
+      });
+      return;
     }
 
-    // 1. Create a worksheet from the data
-    const worksheet = XLSX.utils.json_to_sheet(pendingWorks);
-    // 2. Create a workbook
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Pending Tasks");
-    // 3. Export the file
-    XLSX.writeFile(workbook, `Pending_Tasks_Page_${currentPage}.xlsx`);
+    const doc = new jsPDF({ orientation: "landscape" });
+
+    // Title and Metadata
+    doc.setFontSize(18);
+    doc.setTextColor(220, 38, 38); // Red color to match your "Pendings" theme
+    doc.text("Pending Tasks Report", 14, 15);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 22);
+
+    // Define the columns for the PDF
+    const tableColumn = columns.map(col => col.label);
+
+    // Map the data for the PDF
+    const tableRows = pendingWorks.map(row => [
+      row.date,
+      row.customerName,
+      row.customerPhone,
+      row.amount,
+      row.stage,
+      row.requirement,
+      row.finishBy,
+      row.staffName,
+      row.priority,
+      row.source
+    ]);
+
+    // Generate the table
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 30,
+      theme: 'grid',
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [220, 38, 38] }, // Red background for header
+      alternateRowStyles: { fillColor: [250, 250, 250] },
+      columnStyles: {
+        5: { cellWidth: 40 }, // Give more width to 'Requirement'
+      },
+      // Highlight the "Finish By" date in red text if you want to mirror the UI
+      didParseCell: (data) => {
+        if (data.column.index === 6) { // finishBy column
+           data.cell.styles.textColor = [220, 38, 38];
+           data.cell.styles.fontStyle = 'bold';
+        }
+      }
+    });
+
+    const fileName = `Pending_Tasks_${new Date().toISOString().split("T")[0]}.pdf`;
+    doc.save(fileName);
+    
+    Swal.fire({
+      icon: "success",
+      title: "Downloaded",
+      text: "Pending list has been saved as PDF.",
+      timer: 1500,
+      showConfirmButton: false
+    });
   };
   // ------------------------------
 
@@ -98,7 +158,7 @@ export default function Pendings() {
           onClick={handleDownload}
             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow w-full sm:w-auto transition-colors"
           >
-            Download List
+            Download
           </button>
       </div>
 
