@@ -476,6 +476,7 @@ const getWorklogAdmin = async (req, res) => {
         [Op.and]: [
           { staffId: staffId },
           { softDelete: false },
+          { status: 'Approve' },
           {
             // Keep your existing date overlap logic
             [Op.or]: [
