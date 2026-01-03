@@ -228,6 +228,7 @@ const getWorklog = async (req, res) => {
         [Op.and]: [
           { staffId: user.id },
           { softDelete: false },
+          { status: 'Approve' },
           {
             // Keep your existing date overlap logic
             [Op.or]: [
@@ -497,7 +498,6 @@ const getWorklogAdmin = async (req, res) => {
         ],
       },
     });
-
     return httpSuccess(res, 200, "Worklogs fetched successfully", {
       worklogs,
       dailyWorkHours,
