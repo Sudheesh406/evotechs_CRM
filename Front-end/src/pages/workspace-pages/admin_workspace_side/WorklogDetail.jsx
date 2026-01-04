@@ -88,7 +88,7 @@ const WorklogDetail = () => {
       const dailyWorkHours = response.data.data.dailyWorkHours || [];
       const holidays = response.data.data.holidays || [];
       const leaves = response.data.data.leaves || [];
-       setHolidaysData(holidays);
+      setHolidaysData(holidays);
       setLeavesData(leaves);
 
       const daysInMonth = getDaysInMonth(year, month - 1);
@@ -218,78 +218,88 @@ const WorklogDetail = () => {
     } else setCurrentMonth((prev) => prev + 1);
   };
 
+  // -----------------------------
+  // Handle cell double click
+  // -----------------------------
+  const handleCellDoubleClick = (rowIndex, cellIndex) => {
+    const comment = tableData[rowIndex][cellIndex]?.comment || "";
 
-// -----------------------------
-// Handle cell double click
-// -----------------------------
-const handleCellDoubleClick = (rowIndex, cellIndex) => {
-  const comment = tableData[rowIndex][cellIndex]?.comment || "";
-
-  if (comment) {
-    Swal.fire({
-      title: "Comment",
-      text: comment,
-      confirmButtonText: "Close",
-      confirmButtonColor: "#4F46E5", // indigo tone
-    });
-  }
-};
-
-
-  const getDateInfo = (rowIndex) => {
-  const dateObj = new Date(currentYear, currentMonth, rowIndex + 1);
-  const formattedDate = dateObj.toLocaleDateString("en-CA");
-
-  let info = {
-    className: "bg-white text-gray-700",
-    label: "" // This will store 'Maintenance', 'Public Holiday', etc.
+    if (comment) {
+      Swal.fire({
+        title: "Comment",
+        text: comment,
+        confirmButtonText: "Close",
+        confirmButtonColor: "#4F46E5", // indigo tone
+      });
+    }
   };
 
-  // 1. Check Holiday
- const holiday = holidaysData.find((h) => h.holidayDate === formattedDate);
+  const getDateInfo = (rowIndex) => {
+    const dateObj = new Date(currentYear, currentMonth, rowIndex + 1);
+    const formattedDate = dateObj.toLocaleDateString("en-CA");
+    const dayOfWeek = dateObj.getDay(); // 0 is Sunday, 1 is Monday, etc.
 
-if (holiday) {
-  const hName = holiday.holidayName || "";
-  const lowerName = hName.toLowerCase();
+    let info = {
+      className: "bg-white text-gray-700",
+      label: "",
+    };
 
-  // 1. Set the Color
-  const isMaint = lowerName === "maintenance";
-  info.className = isMaint 
-    ? "bg-purple-500 text-white font-bold" 
-    : "bg-red-500 text-white font-bold";
+    // 1. Check Holiday (Prioritize Holidays over Sundays)
+    const holiday = holidaysData.find((h) => h.holidayDate === formattedDate);
 
-  // 2. Set the Label (Detail)
-  if (lowerName === 'companyholiday') {
-    info.label = 'Company Holiday';
-  } else if (lowerName === 'publicholiday') {
-    info.label = 'Public Holiday';
-  } else {
-    // This handles 'Maintenance' or any other custom name
-    info.label = hName; 
-  }
+    if (holiday) {
+      const hName = holiday.holidayName || "";
+      const lowerName = hName.toLowerCase();
 
-  return info;
-}
+      const isMaint = lowerName === "maintenance";
+      info.className = isMaint
+        ? "bg-purple-500 text-white font-bold"
+        : "bg-red-500 text-white font-bold";
 
-  // 2. Check Leave
-  const leaf = leavesData.find((l) => l.leaveDate === formattedDate);
-  if (leaf) {
-    const { category, leaveType, HalfTime } = leaf;
-    // Set label based on leave type
-    info.label = category === "WFH" ? `WFH (${HalfTime})` : `${category} (${leaveType})`;
+      if (lowerName === "companyholiday") {
+        info.label = "Company Holiday";
+      } else if (lowerName === "publicholiday") {
+        info.label = "Public Holiday";
+      } else {
+        info.label = hName;
+      }
 
-    if (HalfTime === "Leave" && category === "WFH") info.className = "bg-yellow-300 text-black";
-    else if (HalfTime === "Offline" && category === "WFH") info.className = "bg-gray-500 text-white";
-    else if (category === "Leave" && leaveType === "fullday") info.className = "bg-blue-800 text-white";
-    else if (category === "WFH" && leaveType === "fullday") info.className = "bg-gray-500 text-white";
-    else if (category === "Leave" && (leaveType === "morning" || leaveType === "afternoon")) {
-      info.className = "bg-orange-500 text-white";
+      return info;
     }
-    return info;
-  }
 
-  return info;
-};
+    // 2. Check if it's Sunday (New Logic)
+    if (dayOfWeek === 0) {
+      info.className = "bg-red-500 text-white font-bold";
+      info.label = "Sunday";
+      return info;
+    }
+
+    // 3. Check Leave
+    const leaf = leavesData.find((l) => l.leaveDate === formattedDate);
+    if (leaf) {
+      const { category, leaveType, HalfTime } = leaf;
+      info.label =
+        category === "WFH" ? `WFH (${HalfTime})` : `${category} (${leaveType})`;
+
+      if (HalfTime === "Leave" && category === "WFH")
+        info.className = "bg-yellow-300 text-black";
+      else if (HalfTime === "Offline" && category === "WFH")
+        info.className = "bg-gray-500 text-white";
+      else if (category === "Leave" && leaveType === "fullday")
+        info.className = "bg-blue-800 text-white";
+      else if (category === "WFH" && leaveType === "fullday")
+        info.className = "bg-gray-500 text-white";
+      else if (
+        category === "Leave" &&
+        (leaveType === "morning" || leaveType === "afternoon")
+      ) {
+        info.className = "bg-orange-500 text-white";
+      }
+      return info;
+    }
+
+    return info;
+  };
 
   // -----------------------------
   // UI
@@ -298,20 +308,19 @@ if (holiday) {
     <div className="flex flex-col bg-gray-50 font-sans text-gray-800">
       {/* Header */}
       <header className="p-4 bg-white shadow-md flex justify-between items-center relative">
-                <div className="flex flex-col gap-2">
-
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-extrabold text-gray-900 tracking-tight">
-            <span className="text-indigo-600">Work Log </span> Detail
-          </h1>
-          <span className="text-sm font-semibold">
-            {new Date(currentYear, currentMonth).toLocaleString("default", {
-              month: "long",
-              year: "numeric",
-            })}
-          </span>
-        </div>
-         {/* Quick Legend Details */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-4">
+            <h1 className="text-xl font-extrabold text-gray-900 tracking-tight">
+              <span className="text-indigo-600">Work Log </span> Detail
+            </h1>
+            <span className="text-sm font-semibold">
+              {new Date(currentYear, currentMonth).toLocaleString("default", {
+                month: "long",
+                year: "numeric",
+              })}
+            </span>
+          </div>
+          {/* Quick Legend Details */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
             <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
               <div className="w-3 h-3 rounded bg-blue-800"></div> Full Leave
@@ -330,13 +339,13 @@ if (holiday) {
               WFH-Half
             </div>
             <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
-              <div className="w-3 h-3 rounded bg-red-500"></div> Holiday
+              <div className="w-3 h-3 rounded bg-red-500"></div> Holiday / Sunday
             </div>
             <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
               <div className="w-3 h-3 rounded bg-purple-500"></div> Maintenance
             </div>
           </div>
-</div>
+        </div>
         <div className="flex items-center gap-3">
           {/* Staff Selector */}
           <select
@@ -425,23 +434,23 @@ if (holiday) {
             <tbody className="bg-white divide-y divide-gray-100">
               {tableData.map((rowData, rowIndex) => (
                 <tr key={rowIndex}>
-                   <td
-                  className={`sticky left-0 p-2 text-sm font-medium whitespace-nowrap border-r border-gray-200 z-10 group transition-all duration-200 ${
-                    getDateInfo(rowIndex).className
-                  }`}
-                  title={getDateInfo(rowIndex).label} // Standard hover tooltip
-                >
-                  <div className="flex flex-col items-start leading-tight">
-                    <span>{dates[rowIndex]}</span>
+                  <td
+                    className={`sticky left-0 p-2 text-sm font-medium whitespace-nowrap border-r border-gray-200 z-10 group transition-all duration-200 ${
+                      getDateInfo(rowIndex).className
+                    }`}
+                    title={getDateInfo(rowIndex).label} // Standard hover tooltip
+                  >
+                    <div className="flex flex-col items-start leading-tight">
+                      <span>{dates[rowIndex]}</span>
 
-                    {/* Display the Detail Label (e.g., "Maintenance") */}
-                    {getDateInfo(rowIndex).label && (
-                      <span className="text-[9px] font-bold uppercase tracking-tighter opacity-80 mt-0.5 pointer-events-none">
-                        {getDateInfo(rowIndex).label}
-                      </span>
-                    )}
-                  </div>
-                </td>
+                      {/* Display the Detail Label (e.g., "Maintenance") */}
+                      {getDateInfo(rowIndex).label && (
+                        <span className="text-[9px] font-bold uppercase tracking-tighter opacity-80 mt-0.5 pointer-events-none">
+                          {getDateInfo(rowIndex).label}
+                        </span>
+                      )}
+                    </div>
+                  </td>
                   {rowData.map((cellData, cellIndex) => {
                     // CellData is always an object: {value, comment}
                     const value = cellData.value || "";

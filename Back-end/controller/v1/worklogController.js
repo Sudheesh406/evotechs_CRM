@@ -472,6 +472,7 @@ const getWorklogAdmin = async (req, res) => {
       },
     });
 
+
     const leaves = await Leave.findAll({
       where: {
         [Op.and]: [
@@ -498,6 +499,8 @@ const getWorklogAdmin = async (req, res) => {
         ],
       },
     });
+  
+
     return httpSuccess(res, 200, "Worklogs fetched successfully", {
       worklogs,
       dailyWorkHours,

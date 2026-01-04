@@ -417,43 +417,47 @@ const Worklog = () => {
   const getDateInfo = (rowIndex) => {
     const dateObj = new Date(currentYear, currentMonth, rowIndex + 1);
     const formattedDate = dateObj.toLocaleDateString("en-CA");
+    const dayOfWeek = dateObj.getDay(); // 0 is Sunday, 1 is Monday, etc.
 
     let info = {
       className: "bg-white text-gray-700",
-      label: "", // This will store 'Maintenance', 'Public Holiday', etc.
+      label: "",
     };
 
-    // 1. Check Holiday
+    // 1. Check Holiday (Prioritize Holidays over Sundays)
     const holiday = holidaysData.find((h) => h.holidayDate === formattedDate);
 
     if (holiday) {
       const hName = holiday.holidayName || "";
       const lowerName = hName.toLowerCase();
 
-      // 1. Set the Color
       const isMaint = lowerName === "maintenance";
       info.className = isMaint
         ? "bg-purple-500 text-white font-bold"
         : "bg-red-500 text-white font-bold";
 
-      // 2. Set the Label (Detail)
       if (lowerName === "companyholiday") {
         info.label = "Company Holiday";
       } else if (lowerName === "publicholiday") {
         info.label = "Public Holiday";
       } else {
-        // This handles 'Maintenance' or any other custom name
         info.label = hName;
       }
 
       return info;
     }
 
-    // 2. Check Leave
+    // 2. Check if it's Sunday (New Logic)
+    if (dayOfWeek === 0) {
+      info.className = "bg-red-500 text-white font-bold";
+      info.label = "Sunday";
+      return info;
+    }
+
+    // 3. Check Leave
     const leaf = leavesData.find((l) => l.leaveDate === formattedDate);
     if (leaf) {
       const { category, leaveType, HalfTime } = leaf;
-      // Set label based on leave type
       info.label =
         category === "WFH" ? `WFH (${HalfTime})` : `${category} (${leaveType})`;
 
@@ -512,7 +516,7 @@ const Worklog = () => {
               WFH-Half
             </div>
             <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
-              <div className="w-3 h-3 rounded bg-red-500"></div> Holiday
+              <div className="w-3 h-3 rounded bg-red-500"></div> Holiday / Sunday
             </div>
             <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
               <div className="w-3 h-3 rounded bg-purple-500"></div> Maintenance
