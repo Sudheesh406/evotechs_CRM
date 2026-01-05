@@ -5,7 +5,9 @@ dayjs.extend(customParseFormat);
 import axios from "../../../instance/Axios";
 import { ChevronLeft, ChevronRight, Download } from "lucide-react";
 import toast from "react-hot-toast";
-import * as XLSX from "xlsx";
+
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const TARGET_HOURS_MIN = 8.00; // 8h  
 const TARGET_HOURS_MAX = 8.15; // 8h 15m  
@@ -74,38 +76,76 @@ const AdminAttendanceView = () => {
     fetchAttendance();
   }, [selectedStaff, currentMonth]);
 
-  // --- Export to Excel Function ---
-  const handleDownload = () => {
-    if (staffLogs.length === 0) {
-      toast.error("No attendance records to export");
-      return;
-    }
 
-    const dataToExport = staffLogs.map((log) => {
-      const entry = log.entryTime && log.entryTime !== "null" ? dayjs(log.entryTime, "h:mm A") : null;
-      const exit = log.exitTime && log.exitTime !== "null" ? dayjs(log.exitTime, "h:mm A") : null;
-      
-      return {
-        "Date": dayjs(log.date).format("DD MMM YYYY"),
-        "Day": dayjs(log.date).format("dddd"),
-        "Entry Time": entry ? entry.format("hh:mm A") : "Nil",
-        "Exit Time": exit ? exit.format("hh:mm A") : "Nil",
-        "Total Hours": formatHoursWorked(entry, exit) || "Nil"
-      };
-    });
-
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Attendance");
-
-    const fileName = `${selectedStaff.name}_Attendance_${currentMonth.format("MMM_YYYY")}.xlsx`;
-
-    XLSX.writeFile(workbook, fileName);
-    toast.success(`Exporting ${selectedStaff.name}'s attendance for ${currentMonth.format("MMMM")}`);
-  };
 
   const goToPreviousMonth = () => setCurrentMonth(currentMonth.subtract(1, "month"));
   const goToNextMonth = () => setCurrentMonth(currentMonth.add(1, "month"));
+
+const handleDownload = () => {
+    if (staffLogs.length === 0) {
+      toast.error("No data available to export");
+      return;
+    }
+
+    const doc = new jsPDF();
+    const monthYear = currentMonth.format("MMMM YYYY");
+
+    // Title and Header Info
+    doc.setFontSize(18);
+    doc.setTextColor(67, 56, 202); // Indigo-700
+    doc.text(`Attendance Report: ${selectedStaff?.name}`, 14, 20);
+    
+    doc.setFontSize(12);
+    doc.setTextColor(100);
+    doc.text(`Period: ${monthYear}`, 14, 28);
+    doc.text(`Report Generated: ${dayjs().format("DD-MM-YYYY HH:mm")}`, 14, 34);
+
+    // Prepare table data
+    const tableColumn = ["Date", "Entry Time", "Exit Time", "Hours Worked"];
+    const tableRows = staffLogs.map((log) => {
+      const entry = log.entryTime && log.entryTime !== "null" ? dayjs(log.entryTime, "h:mm A") : null;
+      const exit = log.exitTime && log.exitTime !== "null" ? dayjs(log.exitTime, "h:mm A") : null;
+      
+      return [
+        dayjs(log.date).format("ddd, DD MMM YYYY"),
+        entry ? entry.format("hh:mm A") : "Nil",
+        exit ? exit.format("hh:mm A") : "Nil",
+        formatHoursWorked(entry, exit) || "Nil"
+      ];
+    });
+
+    // Generate Table with conditional styling
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 40,
+      theme: 'grid',
+      headStyles: { fillColor: [67, 56, 202] }, // Indigo-700
+      didParseCell: (data) => {
+        // Apply conditional coloring to the PDF cells based on work hours
+        if (data.section === 'body' && data.column.index === 3) {
+           const log = staffLogs[data.row.index];
+           const entry = log.entryTime && log.entryTime !== "null" ? dayjs(log.entryTime, "h:mm A") : null;
+           const exit = log.exitTime && log.exitTime !== "null" ? dayjs(log.exitTime, "h:mm A") : null;
+           const workMinutes = (entry && exit) ? exit.diff(entry, "minute") : null;
+
+           if (workMinutes !== null) {
+              if (workMinutes > TARGET_HOURS_MAX * 60) {
+                data.cell.styles.textColor = [30, 64, 175]; // Blue-800
+                data.cell.styles.fontStyle = 'bold';
+              } else if (workMinutes < TARGET_HOURS_MIN * 60) {
+                data.cell.styles.textColor = [153, 27, 27]; // Red-800
+                data.cell.styles.fontStyle = 'bold';
+              }
+           }
+        }
+      }
+    });
+
+    // Save the PDF
+    const fileName = `${selectedStaff?.name.replace(/\s+/g, '_')}_Attendance_${monthYear}.pdf`;
+    doc.save(fileName);
+  };
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
