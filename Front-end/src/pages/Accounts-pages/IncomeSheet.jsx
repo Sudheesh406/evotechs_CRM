@@ -125,41 +125,29 @@ const IncomeSheet = () => {
     return () => clearTimeout(delay);
   }, [selectedYear, selectedMonth, selectedType]);
 
-  const handleCellChange = useCallback((rowId, key, value) => {
-    triggerToast();
+const handleCellChange = useCallback((rowId, key, value) => {
+  triggerToast();
 
-    setData((prevData) => {
-      const newData = prevData.map((row) => {
-        if (row.coloumnId === rowId) {
-          const columnInfo = dataColumnKeys.find((col) => col.key === key);
-          
-          const formattedValue =
-            columnInfo.dataType === "number"
-              ? value === ""
-                ? null
-                : Number(value.replace(/[^0-9.]/g, ""))
-              : value;
+  setData((prevData) => {
+    return prevData.map((row) => {
+      if (row.coloumnId === rowId) {
+        const columnInfo = dataColumnKeys.find((col) => col.key === key);
+        
+        // Format as number if the column type is numeric, else keep as text
+        const formattedValue =
+          columnInfo.dataType === "number"
+            ? value === ""
+              ? null
+              : Number(value.replace(/[^0-9.]/g, ""))
+            : value;
 
-          let updatedRow = { ...row, [key]: formattedValue };
-
-          if (key === "totalAmount" || key === "received") {
-            const total = key === "totalAmount" ? formattedValue : row.totalAmount;
-            const received = key === "received" ? formattedValue : row.received;
-
-            const difference = (total || 0) - (received || 0);
-
-            updatedRow.credit = difference;
-            updatedRow.balance = difference;
-          }
-
-          return updatedRow;
-        }
-        return row;
-      });
-
-      return newData;
+        // Simply return the row with the new value, no auto-calculation logic
+        return { ...row, [key]: formattedValue };
+      }
+      return row;
     });
-  }, []);
+  });
+}, []);
 
   const handleAddRows = () => {
     setData((prevData) => {
