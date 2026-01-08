@@ -6,7 +6,6 @@ import toast from "react-hot-toast";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
-
 const GlobalPendingLeads = () => {
   const [leads, setLeads] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -16,6 +15,7 @@ const GlobalPendingLeads = () => {
 
   const columns = [
     { label: "Lead Name", key: "name", className: "font-medium text-gray-800" },
+    { label: "Created Date", key: "displayDate" }, // 👈 Added Date column
     { label: "Description", key: "description" },
     { label: "Email", key: "email", className: "text-indigo-600" },
     { label: "Phone", key: "phone" },
@@ -43,9 +43,19 @@ const GlobalPendingLeads = () => {
           else if (priority === "NoUpdates") priority = "No Updates";
           else if (priority === "NotAnClient") priority = "Not a Client";
 
+          // 👉 Format Date to "30 Oct 2025"
+          const displayDate = lead.createdAt
+            ? new Date(lead.createdAt).toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })
+            : "-";
+
           return {
             ...lead,
             priority,
+            displayDate, // 👈 Added formatted date
             followerName: lead.assignedStaff?.name || "-",
             staffRole: lead.assignedStaff?.role || "-",
           };
@@ -67,8 +77,8 @@ const GlobalPendingLeads = () => {
     return () => clearTimeout(delayDebounce);
   }, [page, searchTerm]);
 
-   // Download Function
- const handleDownload = () => {
+  // Download Function
+  const handleDownload = () => {
     if (leads.length === 0) {
       toast.error("No data available to download");
       return;
@@ -79,10 +89,15 @@ const GlobalPendingLeads = () => {
     doc.setFontSize(16);
     doc.text("Rejected Leads List", 14, 15);
     doc.setFontSize(10);
-    doc.text(`Total Records: ${totalCount} | Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
+    doc.text(
+      `Total Records: ${totalCount} | Generated on: ${new Date().toLocaleDateString()}`,
+      14,
+      22
+    );
 
     const tableColumn = [
       "Name",
+      "Created Date", // 👈 Added to PDF header
       "Description",
       "Email",
       "Phone",
@@ -95,6 +110,7 @@ const GlobalPendingLeads = () => {
 
     const tableRows = leads.map((lead) => [
       lead.name,
+      lead.displayDate, // 👈 Added to PDF rows
       lead.description,
       lead.email,
       lead.phone,
@@ -105,7 +121,6 @@ const GlobalPendingLeads = () => {
       lead.amount,
     ]);
 
-    // Calling the function directly as autoTable(doc, ...)
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
@@ -114,7 +129,9 @@ const GlobalPendingLeads = () => {
       headStyles: { fillColor: [220, 38, 38] }, // Red theme for Rejected Leads
     });
 
-    const fileName = `Rejected_Leads_${new Date().toISOString().split("T")[0]}.pdf`;
+    const fileName = `Rejected_Leads_${
+      new Date().toISOString().split("T")[0]
+    }.pdf`;
     doc.save(fileName);
     toast.success("Downloading PDF list...");
   };
@@ -123,7 +140,6 @@ const GlobalPendingLeads = () => {
 
   return (
     <div className="bg-gray-50 min-h-[680px] p-4">
-      {/* Top bar */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
         <div className="flex flex-wrap items-center gap-2">
           <input
@@ -148,7 +164,6 @@ const GlobalPendingLeads = () => {
         </div>
       </div>
 
-      {/* DataTable */}
       <DataTable
         columns={columns}
         data={leads}
@@ -179,26 +194,21 @@ const GlobalPendingLeads = () => {
           }
 
           if (key === "staffRole") {
-            if (row.staffRole === "admin") {
-              return (
-                <span className="inline-block px-2 py-1 text-xs font-medium bg-red-300 text-indigo-700 rounded-full">
-                  {row.staffRole || "-"}
-                </span>
-              );
-            } else {
-              return (
-                <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-300 text-indigo-700 rounded-full">
-                  {row.staffRole || "-"}
-                </span>
-              );
-            }
+            const roleClass =
+              row.staffRole === "admin" ? "bg-red-300" : "bg-blue-300";
+            return (
+              <span
+                className={`inline-block px-2 py-1 text-xs font-medium ${roleClass} text-indigo-700 rounded-full`}
+              >
+                {row.staffRole || "-"}
+              </span>
+            );
           }
 
           return row[key];
         }}
       />
 
-      {/* Pagination */}
       <div className="flex justify-between items-center mt-4 text-sm text-gray-600">
         <span>{limit} Records Per Page</span>
         <div className="flex items-center gap-2">

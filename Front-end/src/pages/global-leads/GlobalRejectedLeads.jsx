@@ -16,6 +16,7 @@ const GlobalRejectedLeads = () => {
 
   const columns = [
     { label: "Lead Name", key: "name", className: "font-medium text-gray-800" },
+    { label: "Created Date", key: "displayDate" }, // 👈 Added Date column
     { label: "Description", key: "description" },
     { label: "Email", key: "email", className: "text-indigo-600" },
     { label: "Phone", key: "phone" },
@@ -43,9 +44,19 @@ const GlobalRejectedLeads = () => {
           else if (priority === "NoUpdates") priority = "No Updates";
           else if (priority === "NotAnClient") priority = "Not a Client";
 
+          // 👉 Format Date to "30 Oct 2025"
+          const displayDate = lead.createdAt 
+            ? new Date(lead.createdAt).toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })
+            : "-";
+
           return {
             ...lead,
             priority,
+            displayDate, // 👈 Added formatted date
             followerName: lead.assignedStaff?.name || "-",
             staffRole: lead.assignedStaff?.role || "-",
           };
@@ -77,13 +88,15 @@ const GlobalRejectedLeads = () => {
     const doc = new jsPDF({ orientation: "landscape" });
 
     doc.setFontSize(16);
-    doc.text("Leads List", 14, 15);
+    doc.text("Rejected Leads List", 14, 15);
     doc.setFontSize(10);
     doc.text(`Total Records: ${totalCount} | Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
 
-    const tableColumn = ["Name", "Description", "Email", "Phone", "Location", "Purpose", "Source", "Priority", "Amount"];
+    // Added Date column to table
+    const tableColumn = ["Name", "Created Date", "Description", "Email", "Phone", "Location", "Purpose", "Source", "Priority", "Amount"];
     const tableRows = leads.map((lead) => [
       lead.name,
+      lead.displayDate, // 👈 Added to PDF rows
       lead.description,
       lead.email,
       lead.phone,
@@ -94,16 +107,15 @@ const GlobalRejectedLeads = () => {
       lead.amount,
     ]);
 
-    // Use the function directly instead of doc.autoTable
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
       startY: 30,
       styles: { fontSize: 8 },
-      headStyles: { fillColor: [79, 70, 229] },
+      headStyles: { fillColor: [220, 38, 38] }, // Keeping it red to indicate "Rejected"
     });
 
-    const fileName = `Leads_List_${new Date().toISOString().split("T")[0]}.pdf`;
+    const fileName = `Rejected_Leads_${new Date().toISOString().split("T")[0]}.pdf`;
     doc.save(fileName);
     toast.success("Downloading PDF list...");
   };
@@ -168,19 +180,12 @@ const GlobalRejectedLeads = () => {
           }
 
           if (key === "staffRole") {
-            if (row.staffRole === "admin") {
-              return (
-                <span className="inline-block px-2 py-1 text-xs font-medium bg-red-300 text-indigo-700 rounded-full">
-                  {row.staffRole || "-"}
-                </span>
-              );
-            } else {
-              return (
-                <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-300 text-indigo-700 rounded-full">
-                  {row.staffRole || "-"}
-                </span>
-              );
-            }
+            const roleColor = row.staffRole === "admin" ? "bg-red-300" : "bg-blue-300";
+            return (
+              <span className={`inline-block px-2 py-1 text-xs font-medium ${roleColor} text-indigo-700 rounded-full`}>
+                {row.staffRole || "-"}
+              </span>
+            );
           }
 
           return row[key];

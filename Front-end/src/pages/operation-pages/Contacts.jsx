@@ -6,6 +6,7 @@ import Swal from "sweetalert2";
 import ContactModal from "../../components/modals/ContactModal";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import toast from "react-hot-toast"; // Ensure toast is imported
 
 const Contacts = () => {
   const [leads, setLeads] = useState([]);
@@ -32,6 +33,7 @@ const Contacts = () => {
 
   const columns = [
     { label: "Contact Name", key: "name", className: "font-medium text-gray-800" },
+    { label: "Created Date", key: "displayDate" }, // 👈 Added Date column
     { label: "Description", key: "description" },
     {
       label: "Email",
@@ -55,6 +57,18 @@ const Contacts = () => {
       );
       if (response.data && response.data.data) {
         const { leads, total } = response.data.data;
+        
+        // 👉 Format date for each lead
+        leads.forEach((lead) => {
+          lead.displayDate = lead.createdAt 
+            ? new Date(lead.createdAt).toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })
+            : "N/A";
+        });
+
         setLeads(leads || []);
         setTotalCount(total || 0);
       }
@@ -70,7 +84,7 @@ const Contacts = () => {
     return () => clearTimeout(delayDebounce);
   }, [page, searchTerm]);
 
-  // ✅ Handle Download CSV (Fixed Phone Number Formatting)
+  // ✅ Handle Download PDF
   const handleDownload = () => {
     if (leads.length === 0) {
       toast.error("No data available to download");
@@ -84,9 +98,11 @@ const Contacts = () => {
     doc.setFontSize(10);
     doc.text(`Total Records: ${totalCount} | Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
 
-    const tableColumn = ["Name", "Description", "Email", "Phone", "Location", "Purpose", "Source", "Priority", "Amount"];
+    // Added Date to PDF columns
+    const tableColumn = ["Name", "Created Date", "Description", "Email", "Phone", "Location", "Purpose", "Source", "Priority", "Amount"];
     const tableRows = leads.map((lead) => [
       lead.name,
+      lead.displayDate, // 👈 Added to PDF rows
       lead.description,
       lead.email,
       lead.phone,
@@ -97,7 +113,6 @@ const Contacts = () => {
       lead.amount,
     ]);
 
-    // Use the function directly instead of doc.autoTable
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,

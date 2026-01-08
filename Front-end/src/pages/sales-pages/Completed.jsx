@@ -32,6 +32,7 @@ const Completed = () => {
 
   const columns = [
     { label: "Lead Name", key: "name", className: "font-medium text-gray-800" },
+    { label: "Created Date", key: "displayDate" }, // 👈 Added Date column
     { label: "Description", key: "description" },
     {
       label: "Email",
@@ -57,11 +58,21 @@ const Completed = () => {
       if (response.data && response.data.data) {
         const { leads, total } = response.data.data;
         leads.forEach((lead) => {
+          // Priority formatting logic
           if (lead.priority === "WaitingPeriod")
             lead.priority = "Waiting Period";
           else if (lead.priority === "NoUpdates") lead.priority = "No Updates";
           else if (lead.priority === "NotAnClient")
             lead.priority = "Not a Client";
+
+          // 👉 Format Date to "30 Oct 2025"
+          lead.displayDate = lead.createdAt 
+            ? new Date(lead.createdAt).toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })
+            : "N/A";
         });
         setLeads(leads || []);
         setTotalCount(total || 0);
@@ -93,9 +104,10 @@ const Completed = () => {
     doc.setFontSize(10);
     doc.text(`Total Records: ${totalCount} | Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
 
-    const tableColumn = ["Name", "Description", "Email", "Phone", "Location", "Purpose", "Source", "Priority", "Amount"];
+    const tableColumn = [ "Name", "Created Date", "Description", "Email", "Phone", "Location", "Purpose", "Source", "Priority", "Amount"];
     const tableRows = leads.map((lead) => [
       lead.name,
+      lead.displayDate, // 👈 Added to PDF
       lead.description,
       lead.email,
       lead.phone,

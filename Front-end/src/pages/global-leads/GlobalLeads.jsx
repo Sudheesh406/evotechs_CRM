@@ -15,6 +15,7 @@ const GlobalLeads = () => {
 
   const columns = [
     { label: "Lead Name", key: "name", className: "font-medium text-gray-800" },
+    { label: "Created Date", key: "displayDate" }, // 👈 Added Date column
     { label: "Description", key: "description" },
     { label: "Email", key: "email", className: "text-indigo-600" },
     { label: "Phone", key: "phone" },
@@ -23,8 +24,8 @@ const GlobalLeads = () => {
     { label: "Lead Source", key: "source" },
     { label: "Priority", key: "priority" },
     { label: "Amount", key: "amount" },
-    { label: "Follower Name", key: "followerName" }, // mapped field
-    { label: "Role", key: "staffRole" }, // mapped field
+    { label: "Follower Name", key: "followerName" },
+    { label: "Role", key: "staffRole" },
   ];
 
   // Fetch leads
@@ -37,7 +38,7 @@ const GlobalLeads = () => {
       if (response.data && response.data.data) {
         const { leads, total } = response.data.data;
 
-        // Format priority values for readability
+        // Format leads for display
         const formattedLeads = leads.map((lead) => {
           // Format priority
           let priority = lead.priority;
@@ -45,11 +46,21 @@ const GlobalLeads = () => {
           else if (priority === "NoUpdates") priority = "No Updates";
           else if (priority === "NotAnClient") priority = "Not a Client";
 
+          // 👉 Format Date to "30 Oct 2025"
+          const displayDate = lead.createdAt 
+            ? new Date(lead.createdAt).toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })
+            : "-";
+
           return {
             ...lead,
             priority,
-            followerName: lead.assignedStaff?.name || "-", // Use assignedStaff name
-            staffRole: lead.assignedStaff?.role || "-", // Use assignedStaff role
+            displayDate, // 👈 Added formatted date key
+            followerName: lead.assignedStaff?.name || "-",
+            staffRole: lead.assignedStaff?.role || "-",
           };
         });
 
@@ -69,8 +80,7 @@ const GlobalLeads = () => {
     return () => clearTimeout(delayDebounce);
   }, [page, searchTerm]);
 
-  // --- Export to Excel Function ---
-
+  // --- Export to PDF Function ---
   const handleDownload = () => {
     if (leads.length === 0) {
       toast.error("No data available to download");
@@ -84,9 +94,11 @@ const GlobalLeads = () => {
     doc.setFontSize(10);
     doc.text(`Total Records: ${totalCount} | Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
 
-    const tableColumn = ["Name", "Description", "Email", "Phone", "Location", "Purpose", "Source", "Priority", "Amount"];
+    // Added Date column to table
+    const tableColumn = ["Name", "Created Date", "Description", "Email", "Phone", "Location", "Purpose", "Source", "Priority", "Amount"];
     const tableRows = leads.map((lead) => [
       lead.name,
+      lead.displayDate, // 👈 Added to PDF rows
       lead.description,
       lead.email,
       lead.phone,
@@ -97,7 +109,6 @@ const GlobalLeads = () => {
       lead.amount,
     ]);
 
-    // Use the function directly instead of doc.autoTable
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
@@ -106,7 +117,7 @@ const GlobalLeads = () => {
       headStyles: { fillColor: [79, 70, 229] },
     });
 
-    const fileName = `Leads_List_${new Date().toISOString().split("T")[0]}.pdf`;
+    const fileName = `Global_Leads_List_${new Date().toISOString().split("T")[0]}.pdf`;
     doc.save(fileName);
     toast.success("Downloading PDF list...");
   };
@@ -171,19 +182,12 @@ const GlobalLeads = () => {
           }
 
           if (key === "staffRole") {
-            if (row.staffRole === "admin") {
-              return (
-                <span className="inline-block px-2 py-1 text-xs font-medium bg-red-300 text-indigo-700 rounded-full">
-                  {row.staffRole || "-"}
-                </span>
-              );
-            } else {
-              return (
-                <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-300 text-indigo-700 rounded-full">
-                  {row.staffRole || "-"}
-                </span>
-              );
-            }
+            const roleColor = row.staffRole === "admin" ? "bg-red-300" : "bg-blue-300";
+            return (
+              <span className={`inline-block px-2 py-1 text-xs font-medium ${roleColor} text-indigo-700 rounded-full`}>
+                {row.staffRole || "-"}
+              </span>
+            );
           }
 
           return row[key];

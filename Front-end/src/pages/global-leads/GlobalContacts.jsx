@@ -19,6 +19,7 @@ const GlobalContacts = () => {
       key: "name",
       className: "font-medium text-gray-800",
     },
+    { label: "Created Date", key: "displayDate" }, // 👈 Added Date column
     { label: "Description", key: "description" },
     { label: "Email", key: "email", className: "text-indigo-600" },
     { label: "Phone", key: "phone" },
@@ -40,13 +41,25 @@ const GlobalContacts = () => {
       if (response.data?.data) {
         const { contacts: apiContacts, total } = response.data.data;
 
-        // Map contacts and extract followerName & role from assignedStaff
-        const formattedContacts = apiContacts.map((contact) => ({
-          ...contact,
-          followerName: contact.assignedStaff?.name || "-",
-          role: contact.assignedStaff?.role || "-",
-          priority: contact.priority || "-",
-        }));
+        // Map contacts and extract followerName, role, and formatted displayDate
+        const formattedContacts = apiContacts.map((contact) => {
+          // 👉 Format Date to "30 Oct 2025"
+          const displayDate = contact.createdAt
+            ? new Date(contact.createdAt).toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })
+            : "-";
+
+          return {
+            ...contact,
+            displayDate, // 👈 Added formatted date
+            followerName: contact.assignedStaff?.name || "-",
+            role: contact.assignedStaff?.role || "-",
+            priority: contact.priority || "-",
+          };
+        });
 
         setContacts(formattedContacts);
         setTotalCount(total || 0);
@@ -80,8 +93,10 @@ const GlobalContacts = () => {
       22
     );
 
+    // Added "Date" to tableColumn
     const tableColumn = [
       "Name",
+      "Created Date",
       "Description",
       "Email",
       "Phone",
@@ -91,19 +106,20 @@ const GlobalContacts = () => {
       "Priority",
       "Amount",
     ];
-    const tableRows = contacts.map((lead) => [
-      lead.name || "-", // Use 'lead', not 'contacts'
-      lead.description || "-",
-      lead.email || "-",
-      lead.phone || "-",
-      lead.location || "-",
-      lead.purpose || "-",
-      lead.source || "-",
-      lead.priority || "-",
-      lead.amount || "-",
+
+    const tableRows = contacts.map((contact) => [
+      contact.name || "-",
+      contact.displayDate || "-", // 👈 Added formatted date to rows
+      contact.description || "-",
+      contact.email || "-",
+      contact.phone || "-",
+      contact.location || "-",
+      contact.purpose || "-",
+      contact.source || "-",
+      contact.priority || "-",
+      contact.amount || "-",
     ]);
 
-    // Use the function directly instead of doc.autoTable
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
@@ -179,19 +195,12 @@ const GlobalContacts = () => {
           }
 
           if (key === "role") {
-            if (row.role === "admin") {
-              return (
-                <span className="inline-block px-2 py-1 text-xs font-medium bg-red-300 text-indigo-700 rounded-full">
-                  {row.role || "-"}
-                </span>
-              );
-            } else {
-              return (
-                <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-300 text-indigo-700 rounded-full">
-                  {row.role || "-"}
-                </span>
-              );
-            }
+            const roleColor = row.role === "admin" ? "bg-red-300" : "bg-blue-300";
+            return (
+              <span className={`inline-block px-2 py-1 text-xs font-medium ${roleColor} text-indigo-700 rounded-full`}>
+                {row.role || "-"}
+              </span>
+            );
           }
 
           return row[key];

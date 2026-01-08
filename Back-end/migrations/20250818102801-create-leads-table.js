@@ -1,8 +1,8 @@
-'use strict';
+"use strict";
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('leads', {
+    await queryInterface.createTable("leads", {
       id: {
         type: Sequelize.INTEGER,
         autoIncrement: true,
@@ -29,9 +29,14 @@ module.exports = {
         allowNull: true,
       },
       priority: {
-        type: Sequelize.ENUM('NotAnClient', 'Client', 'NoUpdates', 'WaitingPeriod'),
+        type: Sequelize.ENUM(
+          "NotAnClient",
+          "Client",
+          "NoUpdates",
+          "WaitingPeriod"
+        ),
         allowNull: true,
-        defaultValue: 'WaitingPeriod',
+        defaultValue: "WaitingPeriod",
       },
       location: {
         type: Sequelize.STRING,
@@ -49,26 +54,26 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: true,
         references: {
-          model: 'signup', // This should match the table name in DB
-          key: 'id',
+          model: "signup", // This should match the table name in DB
+          key: "id",
         },
-        onUpdate: 'CASCADE',
-        onDelete: 'SET NULL',
+        onUpdate: "CASCADE",
+        onDelete: "SET NULL",
       },
       createdAt: {
         type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
+        defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
       },
       updatedAt: {
         type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
+        defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
       },
     });
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('leads');
+    await queryInterface.dropTable("leads");
   },
 };

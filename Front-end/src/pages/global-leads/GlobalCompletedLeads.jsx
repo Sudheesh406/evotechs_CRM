@@ -15,6 +15,7 @@ const Completed = () => {
 
   const columns = [
     { label: "Lead Name", key: "name", className: "font-medium text-gray-800" },
+    { label: "Created Date", key: "displayDate" }, // 👈 Added Date column
     { label: "Description", key: "description" },
     { label: "Email", key: "email", className: "text-indigo-600" },
     { label: "Phone", key: "phone" },
@@ -42,9 +43,19 @@ const Completed = () => {
           else if (priority === "NoUpdates") priority = "No Updates";
           else if (priority === "NotAnClient") priority = "Not a Client";
 
+          // 👉 Format Date to "30 Oct 2025"
+          const displayDate = lead.createdAt 
+            ? new Date(lead.createdAt).toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })
+            : "-";
+
           return {
             ...lead,
             priority,
+            displayDate, // 👈 Added formatted date
             followerName: lead.assignedStaff?.name || "-",
             staffRole: lead.assignedStaff?.role || "-",
           };
@@ -80,9 +91,11 @@ const Completed = () => {
     doc.setFontSize(10);
     doc.text(`Total Records: ${totalCount} | Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
 
-    const tableColumn = ["Name", "Description", "Email", "Phone", "Location", "Purpose", "Source", "Priority", "Amount"];
+    // Added Date to tableColumn
+    const tableColumn = [ "Name", "Created Date", "Description", "Email", "Phone", "Location", "Purpose", "Source", "Priority", "Amount"];
     const tableRows = leads.map((lead) => [
       lead.name,
+      lead.displayDate, // 👈 Added displayDate to rows
       lead.description,
       lead.email,
       lead.phone,
@@ -93,7 +106,6 @@ const Completed = () => {
       lead.amount,
     ]);
 
-    // Use the function directly instead of doc.autoTable
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,

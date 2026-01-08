@@ -6,18 +6,18 @@ import Swal from "sweetalert2";
 import toast from "react-hot-toast";
 
 import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable"; // Import the function directly
+import autoTable from "jspdf-autotable";
 
 const Leads = () => {
   const [leads, setLeads] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
   const limit = 10;
-  const [searchTerm, setSearchTerm] = useState(""); // 🔍 search input
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [originalData, setOriginalData] = useState(null); // store original row for edit validation
+  const [originalData, setOriginalData] = useState(null);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -33,6 +33,7 @@ const Leads = () => {
 
   const columns = [
     { label: "Lead Name", key: "name", className: "font-medium text-gray-800" },
+    { label: "Created Date", key: "createdAt" }, // 👈 Added column
     { label: "Description", key: "description" },
     {
       label: "Email",
@@ -56,14 +57,29 @@ const Leads = () => {
       );
       if (response.data && response.data.data) {
         const { leads, total } = response.data.data;
-        leads.forEach((lead) => {
-          if (lead.priority === "WaitingPeriod")
-            lead.priority = "Waiting Period";
-          else if (lead.priority === "NoUpdates") lead.priority = "No Updates";
-          else if (lead.priority === "NotAnClient")
-            lead.priority = "Not a Client";
+        
+        const formattedLeads = leads.map((lead) => {
+          // Format Priority Labels
+          let formattedPriority = lead.priority;
+          if (lead.priority === "WaitingPeriod") formattedPriority = "Waiting Period";
+          else if (lead.priority === "NoUpdates") formattedPriority = "No Updates";
+          else if (lead.priority === "NotAnClient") formattedPriority = "Not a Client";
+
+          return {
+            ...lead,
+            priority: formattedPriority,
+            // 👈 Format the createdAt date string
+            createdAt: lead.createdAt 
+              ? new Date(lead.createdAt).toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                }) 
+              : "N/A",
+          };
         });
-        setLeads(leads || []);
+
+        setLeads(formattedLeads || []);
         setTotalCount(total || 0);
       }
     } catch (error) {
@@ -74,7 +90,7 @@ const Leads = () => {
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       getLeads(page, searchTerm);
-    }, 500); // debounce search
+    }, 500);
 
     return () => clearTimeout(delayDebounce);
   }, [page, searchTerm]);
@@ -92,9 +108,11 @@ const Leads = () => {
     doc.setFontSize(10);
     doc.text(`Total Records: ${totalCount} | Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
 
-    const tableColumn = ["Name", "Description", "Email", "Phone", "Location", "Purpose", "Source", "Priority", "Amount"];
+    // Added "Date" to tableColumn
+    const tableColumn = ["Name", "Date", "Description", "Email", "Phone", "Location", "Purpose", "Source", "Priority", "Amount"];
     const tableRows = leads.map((lead) => [
       lead.name,
+      lead.createdAt, // 👈 Included in PDF
       lead.description,
       lead.email,
       lead.phone,
@@ -105,7 +123,6 @@ const Leads = () => {
       lead.amount,
     ]);
 
-    // Use the function directly instead of doc.autoTable
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
@@ -119,7 +136,6 @@ const Leads = () => {
     toast.success("Downloading PDF list...");
   };
 
-  // Open modal for create or edit
   const openModal = (lead = null) => {
     if (lead) {
       setEditingId(lead.id);
@@ -135,7 +151,7 @@ const Leads = () => {
         amount: lead.amount || "",
       };
       setFormData(leadData);
-      setOriginalData(leadData); // store original
+      setOriginalData(leadData);
     } else {
       setEditingId(null);
       setFormData({
@@ -160,14 +176,12 @@ const Leads = () => {
     setErrors({});
   };
 
-  // Handle form input
   const handleChange = (e) => {
     const { name, value } = e.target;
     let newValue = value;
 
-    // Strictly allow only numbers for phone & amount
     if (name === "phone" || name === "amount") {
-      newValue = value.replace(/[^0-9]/g, ""); // remove anything that's not a digit
+      newValue = value.replace(/[^0-9]/g, "");
     }
     setFormData((prev) => ({ ...prev, [name]: newValue }));
 
@@ -177,7 +191,6 @@ const Leads = () => {
         [name]: newValue.trim() === "" ? "This field is required" : "",
       }));
     } else {
-      // Clear error if previously set
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
@@ -187,7 +200,6 @@ const Leads = () => {
 
     const newErrors = {};
     Object.keys(formData).forEach((key) => {
-      // Skip validation for email and priority
       if (key !== "email" && key !== "priority" && !formData[key].trim()) {
         newErrors[key] = "This field is required";
       }
@@ -197,7 +209,6 @@ const Leads = () => {
       return;
     }
 
-    // 🔍 Validate no changes when editing
     if (
       editingId &&
       JSON.stringify(formData) === JSON.stringify(originalData)
@@ -217,7 +228,6 @@ const Leads = () => {
           `/customer/lead/update/${editingId}`,
           formData
         );
-        // ✅ SweetAlert after successful edit
         Swal.fire({
           title: "Updated!",
           text: "Lead has been successfully updated.",
@@ -238,7 +248,6 @@ const Leads = () => {
         });
       }
 
-      // Reset form & close modal
       setIsModalOpen(false);
       setEditingId(null);
       setFormData({
@@ -256,20 +265,15 @@ const Leads = () => {
       getLeads(page);
     } catch (error) {
       console.log("error found in save", error);
-
-      // Check for specific status
       if (error.response?.status === 409) {
-        // use error.response.status for axios
         Swal.fire({
           title: "Error!",
           text: "This record already exists. Please check leads and trash.",
           icon: "error",
           confirmButtonColor: "#d33",
         });
-        return; // exit so the generic alert doesn't show
+        return;
       }
-
-      // Generic error
       Swal.fire({
         title: "Error!",
         text: "Something went wrong while saving.",
@@ -279,7 +283,6 @@ const Leads = () => {
     }
   };
 
-  // Delete Lead
   const handleDelete = async (id) => {
     Swal.fire({
       title: "Are you sure?",
@@ -294,18 +297,15 @@ const Leads = () => {
       if (result.isConfirmed) {
         try {
           await axios.delete(`/customer/lead/delete/${id}`);
-
           Swal.fire({
             title: "Deleted!",
             text: "The lead has been moved to Trash.",
             icon: "success",
             confirmButtonColor: "#3085d6",
           });
-
-          getLeads(page); // refresh the list
+          getLeads(page);
         } catch (error) {
           console.log("Error deleting lead", error);
-
           Swal.fire({
             title: "Error!",
             text: "Something went wrong while deleting.",
@@ -317,51 +317,10 @@ const Leads = () => {
     });
   };
 
-  const handleApprove = async (id) => {
-    try {
-      const result = await Swal.fire({
-        title: "Approve this lead?",
-        text: "This will convert the lead into a contact.",
-        icon: "question",
-        showCancelButton: true,
-        confirmButtonColor: "#3085d6",
-        cancelButtonColor: "#d33",
-        confirmButtonText: "Yes, approve it!",
-      });
-
-      if (result.isConfirmed) {
-        // Wait for the API to finish so errors can be caught
-        await axios.patch(`/customer/lead/confirm/${id}`);
-        // Refresh your list
-        getLeads(page);
-
-        // Optional success message
-        Swal.fire(
-          "Approved!",
-          "The lead has been converted into a contact.",
-          "success"
-        );
-      }
-    } catch (error) {
-      if (error?.response?.status === 400) {
-        Swal.fire({
-          title: "Already Exists",
-          text: "This record already exists. Please check contacts and trash.",
-          icon: "error",
-          confirmButtonText: "OK",
-        });
-      } else {
-        console.error("error found in handleApprove", error);
-        Swal.fire("Error", "Something went wrong.", "error");
-      }
-    }
-  };
-
   const totalPages = Math.ceil(totalCount / limit);
 
   return (
     <div className="bg-gray-50 min-h-[680px] p-4">
-      {/* Top bar */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
         <div className="flex flex-wrap items-center gap-2">
           <input
@@ -390,11 +349,14 @@ const Leads = () => {
           </button>
         </div>
       </div>
-      {/* DataTable */}
+      
       <DataTable
         columns={columns}
         data={leads}
         renderCell={(key, row) => {
+          if (key === "createdAt") {
+            return <span className="text-gray-500 whitespace-nowrap">{row.createdAt}</span>;
+          }
           if (key === "phone") {
             return (
               <div className="flex items-center gap-2 text-gray-600">
@@ -428,11 +390,10 @@ const Leads = () => {
               </div>
             );
           }
-
           return row[key];
         }}
       />
-      {/* Pagination */}
+
       <div className="flex justify-between items-center mt-4 text-sm text-gray-600">
         <span>{limit} Records Per Page</span>
         <div className="flex items-center gap-2">
@@ -455,28 +416,23 @@ const Leads = () => {
           </button>
         </div>
       </div>
-      {/* Modal */}{" "}
+
       {isModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 overflow-y-auto">
-          {" "}
           <div className="bg-white rounded-lg w-[95%] sm:w-full max-w-3xl p-6 mt-10 mb-10 relative overflow-y-auto max-h-[90vh]">
-            {" "}
             <button
               onClick={closeModal}
               className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
             >
-              {" "}
-              <X />{" "}
-            </button>{" "}
+              <X />
+            </button>
             <h2 className="text-xl font-semibold mb-4">
-              {" "}
-              {editingId ? "Edit Lead" : "Create New Lead"}{" "}
-            </h2>{" "}
+              {editingId ? "Edit Lead" : "Create New Lead"}
+            </h2>
             <form
               onSubmit={handleSubmit}
               className="grid grid-cols-1 md:grid-cols-2 gap-4"
             >
-              {" "}
               {[
                 { label: "Name", key: "name" },
                 { label: "Description", key: "description" },
@@ -489,8 +445,7 @@ const Leads = () => {
                 { label: "Amount", key: "amount" },
               ].map((field) => (
                 <div key={field.key} className="flex flex-col">
-                  {" "}
-                  <label className="text-gray-700">{field.label}</label>{" "}
+                  <label className="text-gray-700">{field.label}</label>
                   {field.key === "priority" ? (
                     <select
                       name="priority"
@@ -500,12 +455,11 @@ const Leads = () => {
                         errors.priority ? "border-red-500" : "border-gray-300"
                       }`}
                     >
-                      {" "}
-                      <option value="">Select Priority</option>{" "}
-                      <option value="WaitingPeriod">Waiting Period</option>{" "}
-                      <option value="NoUpdates">No Updates</option>{" "}
-                      <option value="Client">Client</option>{" "}
-                      <option value="NotAnClient">Not a Client</option>{" "}
+                      <option value="">Select Priority</option>
+                      <option value="WaitingPeriod">Waiting Period</option>
+                      <option value="NoUpdates">No Updates</option>
+                      <option value="Client">Client</option>
+                      <option value="NotAnClient">Not a Client</option>
                     </select>
                   ) : (
                     <input
@@ -517,27 +471,24 @@ const Leads = () => {
                         errors[field.key] ? "border-red-500" : "border-gray-300"
                       }`}
                     />
-                  )}{" "}
+                  )}
                   {errors[field.key] && (
                     <span className="text-red-500 text-sm mt-1">
-                      {" "}
-                      {errors[field.key]}{" "}
+                      {errors[field.key]}
                     </span>
-                  )}{" "}
+                  )}
                 </div>
-              ))}{" "}
+              ))}
               <div className="col-span-1 md:col-span-2 flex justify-end mt-4">
-                {" "}
                 <button
                   type="submit"
                   className="bg-blue-600 text-white px-4 py-2 rounded"
                 >
-                  {" "}
-                  {editingId ? "Update Lead" : "Save Lead"}{" "}
-                </button>{" "}
-              </div>{" "}
-            </form>{" "}
-          </div>{" "}
+                  {editingId ? "Update Lead" : "Save Lead"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
