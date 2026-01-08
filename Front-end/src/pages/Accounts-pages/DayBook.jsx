@@ -8,15 +8,9 @@ import autoTable from "jspdf-autotable";
 import { Phone, Download } from "lucide-react";
 
 
-// Define the column headers with nesting structure
+// Define the column headers with nesting structure (Transaction ID removed)
 const columnStructure = [
   { key: "date", header: "DATE", rowspan: 2, isDataCol: true },
-  {
-    key: "transactionId",
-    header: "TRANSACTION_ID",
-    rowspan: 2,
-    isDataCol: true,
-  },
   { key: "particulars", header: "PARTICULARS", rowspan: 2, isDataCol: true },
   {
     key: "payments",
@@ -89,14 +83,9 @@ const getDataColumnKeys = (structure) => {
       : [
           {
             key: col.key,
-            align:
-              col.key === "particulars" || col.key === "transactionId"
-                ? "left"
-                : "right",
+            align: col.key === "particulars" ? "left" : "right",
             dataType:
-              col.key === "date" ||
-              col.key === "particulars" ||
-              col.key === "transactionId"
+              col.key === "date" || col.key === "particulars"
                 ? "text"
                 : "number",
           },
@@ -208,6 +197,15 @@ const DayBook = () => {
     return () => clearTimeout(delay);
   }, [selectedYear, selectedMonth, selectedType]);
 
+  // --- ADDED: Auto-resize Effect for Textareas on Data Load ---
+  useEffect(() => {
+    const textareas = document.querySelectorAll('textarea');
+    textareas.forEach((textarea) => {
+      textarea.style.height = "auto";
+      textarea.style.height = textarea.scrollHeight + "px";
+    });
+  }, [data]);
+
   const triggerToast = () => {
     setShowToast(true);
     setTimeout(() => setShowToast(false), 2000);
@@ -306,7 +304,6 @@ const DayBook = () => {
   };
 
   const handleDownload = () => {
-    // Filter out completely empty rows for the PDF
     const rowsToExport = data.filter((row) =>
       Object.keys(row).some(
         (key) => key !== "coloumnId" && row[key] !== null && row[key] !== ""
@@ -324,22 +321,15 @@ const DayBook = () => {
       format: "a4",
     });
 
-    // Add Title
     doc.setFontSize(16);
     doc.text(`Day Book - ${selectedType}`, 14, 15);
     doc.setFontSize(10);
     doc.text(`Period: ${selectedMonth} ${selectedYear}`, 14, 22);
 
-    // Define the headers manually to handle the nested structure
     const head = [
       [
         {
           content: "DATE",
-          rowSpan: 2,
-          styles: { halign: "center", valign: "middle" },
-        },
-        {
-          content: "TRANSACTION_ID",
           rowSpan: 2,
           styles: { halign: "center", valign: "middle" },
         },
@@ -362,10 +352,8 @@ const DayBook = () => {
       ],
     ];
 
-    // Map data to table rows
     const body = rowsToExport.map((row) => [
       row.date || "",
-      row.transactionId || "",
       row.particulars || "",
       row.payments_cash !== null ? row.payments_cash.toLocaleString() : "",
       row.payments_bank !== null ? row.payments_bank.toLocaleString() : "",
@@ -381,17 +369,16 @@ const DayBook = () => {
       startY: 30,
       theme: "grid",
       styles: { fontSize: 8, cellPadding: 2 },
-      headStyles: { fillColor: [79, 70, 229], textColor: 255 }, // Indigo theme
+      headStyles: { fillColor: [79, 70, 229], textColor: 255 },
       columnStyles: {
-        0: { cellWidth: 25 }, // Date
-        1: { cellWidth: 30 }, // Transaction ID
-        2: { cellWidth: "auto" }, // Particulars (flex)
+        0: { cellWidth: 25 },
+        1: { cellWidth: "auto" },
+        2: { halign: "right" },
         3: { halign: "right" },
         4: { halign: "right" },
         5: { halign: "right" },
-        6: { halign: "right" },
+        6: { halign: "right", fontStyle: "bold" },
         7: { halign: "right", fontStyle: "bold" },
-        8: { halign: "right", fontStyle: "bold" },
       },
     });
 
@@ -411,18 +398,8 @@ const DayBook = () => {
             className="px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-md font-semibold text-gray-700 hover:border-gray-400 transition duration-150"
           >
             {[
-              "January",
-              "February",
-              "March",
-              "April",
-              "May",
-              "June",
-              "July",
-              "August",
-              "September",
-              "October",
-              "November",
-              "December",
+              "January", "February", "March", "April", "May", "June",
+              "July", "August", "September", "October", "November", "December",
             ].map((m) => (
               <option key={m} value={m}>
                 {m}
@@ -479,7 +456,7 @@ const DayBook = () => {
         </div>
       </div>
 
-      <div className="overflow-x-auto w-full">
+     <div className="overflow-x-auto w-full">
         <div className="shadow-lg rounded-lg min-w-max border border-gray-300">
           <table className="min-w-full divide-y divide-gray-300">
             <thead className="bg-gray-200 sticky top-0 z-10">
@@ -516,17 +493,13 @@ const DayBook = () => {
                 <tr key={row.coloumnId} className="hover:bg-yellow-50">
                   {dataColumnKeys.map((col) => {
                     const isNumeric = col.dataType === "number";
-                    // Now handles both Particulars and Comments as textareas
-                    const isTextArea =
-                      col.key === "particulars" || col.key === "transactionId";
+                    const isTextArea = col.key === "particulars";
                     const isReadOnly = col.key.startsWith("balance");
 
                     return (
                       <td
                         key={col.key}
-                        className={`p-0 text-sm border border-gray-200 align-top ${
-                          col.align === "right" ? "text-right" : "text-left"
-                        }`}
+                        className="p-0 text-sm border border-gray-200 align-middle text-center font-medium" 
                       >
                         {isTextArea ? (
                           <textarea
@@ -539,20 +512,13 @@ const DayBook = () => {
                               )
                             }
                             rows={1}
-                            className={`w-full px-2 py-1 resize-none overflow-y-hidden focus:outline-none border-none bg-transparent text-left ${
-                              col.key === "particulars"
-                                ? "min-w-[400px]"
-                                : "min-w-[200px]"
-                            } ${
-                              isReadOnly
-                                ? "cursor-not-allowed text-gray-700"
-                                : ""
+                            className={`w-full px-2 py-1 resize-none overflow-y-hidden focus:outline-none border-none bg-transparent text-center min-w-[300px] ${
+                              isReadOnly ? "cursor-not-allowed text-gray-700" : ""
                             }`}
                             readOnly={isReadOnly}
                             onInput={(e) => {
                               e.target.style.height = "auto";
-                              e.target.style.height =
-                                e.target.scrollHeight + "px";
+                              e.target.style.height = e.target.scrollHeight + "px";
                             }}
                           />
                         ) : (
@@ -566,12 +532,10 @@ const DayBook = () => {
                                 e.target.value
                               )
                             }
-                            className={`w-full h-full min-w-[75px] px-2 py-1 focus:outline-none border-none bg-transparent ${
-                              isNumeric ? "text-right font-medium" : "text-left"
+                            className={`w-full h-full min-w-[100px] px-2 py-2 focus:outline-none border-none bg-transparent text-center ${
+                              isNumeric ? "font-medium" : ""
                             } ${
-                              isReadOnly
-                                ? "cursor-not-allowed text-gray-700"
-                                : ""
+                              isReadOnly ? "cursor-not-allowed text-gray-700" : ""
                             }`}
                             readOnly={isReadOnly}
                             placeholder={
