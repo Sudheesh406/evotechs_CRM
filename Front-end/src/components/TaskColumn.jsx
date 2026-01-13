@@ -1,5 +1,13 @@
 import React, { useRef, useEffect } from "react";
-import { MoreVertical, Eye, Edit, Trash2, Layers, RefreshCw, UserCircle } from "lucide-react";
+import {
+  MoreVertical,
+  Eye,
+  Edit,
+  Trash2,
+  Layers,
+  RefreshCw,
+  UserCircle,
+} from "lucide-react";
 
 // Helper function to get initials for the placeholder profile
 const getInitials = (name) => {
@@ -37,7 +45,9 @@ const TaskColumn = ({
   const DetailRow = ({ label, value, className = "" }) => {
     if (!value) return null;
     return (
-      <div className={`flex justify-between text-sm py-1 border-b border-gray-100 last:border-b-0 ${className}`}>
+      <div
+        className={`flex justify-between text-sm py-1 border-b border-gray-100 last:border-b-0 ${className}`}
+      >
         <span className="font-medium text-gray-500">{label}</span>
         <span className="font-semibold text-gray-800">{value}</span>
       </div>
@@ -52,16 +62,19 @@ const TaskColumn = ({
           <span className="text-green-600">●</span> {status}
         </h2>
         <span className="text-sm font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-         Total : {cards.length}
+          Total : {cards.length}
         </span>
-         <button className="px-2 py-1 bg-indigo-600  text-sm text-white rounded-md" onClick={()=>onCardClick(status, "Reveal")}>
-         Reveal
+        <button
+          className="px-2 py-1 bg-indigo-600  text-sm text-white rounded-md"
+          onClick={() => onCardClick(status, "Reveal")}
+        >
+          Reveal
         </button>
       </div>
 
-      {/* Tasks */} 
+      {/* Tasks */}
       <div className="space-y-4 overflow-y-auto max-h-[70vh] pr-1 custom-scrollbar">
-         {cards.length > 0 ? (
+        {cards.length > 0 ? (
           cards.map((task) => {
             const taskName = task?.customer?.name || "Untitled Task";
             const finishByDate = task.finishBy
@@ -87,7 +100,7 @@ const TaskColumn = ({
               >
                 {/* Profile-style Header Section */}
                 <div className="flex justify-between items-center mb-3">
-                  <div 
+                  <div
                     className="flex items-center gap-3 cursor-pointer"
                     onClick={() => onCardClick(task, "view")}
                   >
@@ -136,7 +149,15 @@ const TaskColumn = ({
                       className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 transition"
                       onClick={() => onCardClick(task, "taskUpdate")}
                     >
-                      <RefreshCw size={16} className="text-blue-600" /> Stage Update
+                      <RefreshCw size={16} className="text-blue-600" /> Stage
+                      Update
+                    </button>
+                    <button
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 transition"
+                      onClick={() => onCardClick(task, "Invoice")}
+                    >
+                      <UserCircle size={16} className="text-blue-600" /> Invoice
+                      Update
                     </button>
                     <button
                       className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 transition"
@@ -166,20 +187,26 @@ const TaskColumn = ({
                   <DetailRow label="Finish By" value={finishByDate} />
                   <DetailRow label="Amount" value={formattedAmount} />
                   <DetailRow label="Phone" value={task.phone} />
-                  
+
                   {/* Priority and Description are styled slightly differently */}
                   {task.priority && (
                     <div className="flex justify-between text-sm py-1">
-                      <span className="font-medium text-gray-500">Priority</span>
+                      <span className="font-medium text-gray-500">
+                        Priority
+                      </span>
                       <span className={priorityClass}>{task.priority}</span>
                     </div>
                   )}
 
                   {task.description && (
-                      <div className="text-sm pt-2">
-                        <p className="font-medium text-gray-500 mb-1">Description:</p>
-                        <p className="text-gray-700 line-clamp-2">{task.description}</p>
-                      </div>
+                    <div className="text-sm pt-2">
+                      <p className="font-medium text-gray-500 mb-1">
+                        Description:
+                      </p>
+                      <p className="text-gray-700 line-clamp-2">
+                        {task.description}
+                      </p>
+                    </div>
                   )}
                 </div>
               </div>

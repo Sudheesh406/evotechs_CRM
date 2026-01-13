@@ -5,6 +5,7 @@ const { signup } = require("../../models/v1");
 const Signup = require("../../models/v1/Authentication/authModel");
 const roleChecker = require("../../utils/v1/roleChecker");
 const leaves = require("../../models/v1/Work_space/Leave");
+// const request = require("../../models/v1/Work_space/attendanceRequest");
 // Helper to convert 12-hour to 24-hour format
 
 function convertTo24Hour(time12h) {
@@ -116,8 +117,12 @@ const attendanceRegister = async (req, res) => {
         }
 
         if (
-          todayLeave.leaveType === "morning" && !todayLeave.HalfTime || todayLeave.leaveType === "morning" && todayLeave.HalfTime === "Leave" ||
-          todayLeave.leaveType === "afternoon" && !todayLeave.HalfTime || todayLeave.leaveType === "afternoon" && todayLeave.HalfTime === "Leave"
+          (todayLeave.leaveType === "morning" && !todayLeave.HalfTime) ||
+          (todayLeave.leaveType === "morning" &&
+            todayLeave.HalfTime === "Leave") ||
+          (todayLeave.leaveType === "afternoon" && !todayLeave.HalfTime) ||
+          (todayLeave.leaveType === "afternoon" &&
+            todayLeave.HalfTime === "Leave")
         ) {
           if (details.shedule === "exit") {
             const todaysAttendance = await Attendance.findOne({
@@ -180,7 +185,6 @@ const attendanceRegister = async (req, res) => {
     return httpError(res, 500, "Internal Server Error");
   }
 };
-
 
 // Helper to convert 12-hour to 24-hour format
 function convertTo24Hour(time12h) {
@@ -429,8 +433,6 @@ function formatMinutesToHoursMins(minutes) {
   return `${mins} mins`;
 }
 
-
-
 const getStaffAttendance = async (req, res) => {
   try {
     const user = req.user;
@@ -504,8 +506,54 @@ const getStaffAttendance = async (req, res) => {
     );
   } catch (error) {
     console.error("error found in get staff attendance", error);
-    return httpError(res, 500, "Internal Server Error",error);
+    return httpError(res, 500, "Internal Server Error", error);
   }
+};
+
+const attendanceRequest = async (req, res) => {
+  // try {
+  //   const user = req.user;
+  //   const { date, entry, exit, reason } = req.body;
+  //   if (!date || !entry || !exit || !reason) {
+  //     return httpError(res, 400, "date, entry, exit and reason are required");
+  //   }
+
+  //   console.log("Request Body:", date);
+
+  //   await request.destroy({
+  //     where: {
+  //       staffId: user.id,
+  //       attendanceDate: date,
+  //       softDelete: 0, // ✅ correct
+  //     },
+  //   });
+
+  //   const newRequest = await request.create({
+  //     staffId: user.id,
+  //     attendanceDate: date,
+  //     type: "entry",
+  //     time: convertTo24Hour(entry),
+  //   });
+
+  //   const exitRequest = await request.create({
+  //     staffId: user.id,
+  //     attendanceDate: date,
+  //     type: "exit",
+  //     time: convertTo24Hour(exit),
+  //   });
+
+  //   if (!newRequest || !exitRequest) {
+  //     return httpError(res, 500, `Failed to create attendance request`);
+  //   }
+
+  //   return httpSuccess(res, 200, `Attendance request created successfully`, {
+  //     newRequest,
+  //     exitRequest,
+  //   });
+  // } catch (error) {
+  //   console.error("error found in attendance request posting", error);
+  //   return httpError(res, 500, "Internal Server Error", error);
+  // }
 };
 
 module.exports = {
@@ -516,4 +564,5 @@ module.exports = {
   getStaffAttendance,
   getStaffList,
   getStaffList,
+  attendanceRequest,
 };

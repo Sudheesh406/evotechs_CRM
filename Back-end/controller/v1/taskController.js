@@ -9,6 +9,7 @@ const signup = require("../../models/v1/Authentication/authModel");
 const trash = require("../../models/v1/Trash/trash");
 const document = require("../../models/v1/Project/documents");
 const workAssign = require("../../models/v1/Work_space/workAssign");
+const Invoice = require("../../models/v1/Project/Invoice");
 
 const { getIo } = require("../../utils/v1/socket");
 const {
@@ -53,27 +54,46 @@ const createTask = async (req, res) => {
   }
 };
 
+
 const getTask = async (req, res) => {
   const user = req.user;
   try {
+    // 1. Fetch tasks first
     const allTask = await task.findAll({
       where: { staffId: user.id, softDelete: false },
       order: [["createdAt", "DESC"]],
       include: [
         {
           model: contacts,
-          as: "customer", // must match the alias
+          as: "customer",
           attributes: ["id", "name", "phone", "amount"],
         },
       ],
     });
 
-    return httpSuccess(res, 200, "Tasks retrieved successfully", allTask);
+    // 2. Extract all task IDs
+    const taskIds = allTask.map(t => t.id);
+
+    // 3. Fetch all invoices matching those task IDs separately
+    const allInvoices = await Invoice.findAll({
+      where: { taskId: taskIds }
+    });
+
+    // 4. Map invoices back to their respective tasks
+    const tasksWithInvoices = allTask.map(t => {
+      const taskJson = t.toJSON();
+      // Filter invoices that belong to this specific task
+      taskJson.invoices = allInvoices.filter(inv => inv.taskId === t.id);
+      return taskJson;
+    });
+
+    return httpSuccess(res, 200, "Tasks retrieved successfully", tasksWithInvoices);
   } catch (error) {
     console.error("Error in getTask:", error);
     return httpError(res, 500, "Server error", error.message || error);
   }
 };
+
 
 const getTaskByStatus = async (req, res) => {
   try {
@@ -150,12 +170,30 @@ const getTaskByStage = async (req, res) => {
       return httpError(res, 404, "No tasks found");
     }
 
-    return httpSuccess(res, 200, "Tasks retrieved successfully", allTask);
+       // 2. Extract all task IDs
+    const taskIds = allTask.map(t => t.id);
+
+    // 3. Fetch all invoices matching those task IDs separately
+    const allInvoices = await Invoice.findAll({
+      where: { taskId: taskIds }
+    });
+
+    // 4. Map invoices back to their respective tasks
+    const tasksWithInvoices = allTask.map(t => {
+      const taskJson = t.toJSON();
+      // Filter invoices that belong to this specific task
+      taskJson.invoices = allInvoices.filter(inv => inv.taskId === t.id);
+      return taskJson;
+    });
+
+    return httpSuccess(res, 200, "Tasks retrieved successfully", tasksWithInvoices);
+
   } catch (error) {
     console.error("Error in getTask:", error);
     return httpError(res, 500, "Server error", error.message || error);
   }
 };
+
 
 const editTask = async (req, res) => {
   try {
@@ -1047,6 +1085,65 @@ const getAdminTask = async (req, res) => {
   }
 };
 
+
+const invoiceUpdate = async (req, res) => {
+  try {
+    const { link, amount, paid, taskId } = req.body;
+    const user = req.user;
+
+    // 1. Validation
+    if (!taskId) {
+      return res.status(400).json({
+        success: false,
+        message: "taskId is required",
+      });
+    }
+
+    // 2. Find invoice by taskId
+    let invoice = await Invoice.findOne({
+      where: { taskId },
+    });
+
+    // 3. If exists → update, else → create
+    if (invoice) {
+      invoice.link = link;
+      invoice.amount = amount;
+      invoice.paid = paid;
+
+      await invoice.save();
+
+      return res.status(200).json({
+        success: true,
+        message: "Invoice updated successfully",
+        data: invoice,
+      });
+    } else {
+      invoice = await Invoice.create({
+        taskId,
+        staffId: user.id,
+        link,
+        amount,
+        paid,
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: "Invoice created successfully",
+        data: invoice,
+      });
+    }
+
+  } catch (error) {
+    console.error('error found in invoice update', error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message || error,
+    });
+  }
+};
+
+
 module.exports = {
   createTask,
   getTask,
@@ -1067,4 +1164,5 @@ module.exports = {
   getTaskByStatus,
   getAdminTask,
   againReworkUpdate,
+  invoiceUpdate
 };

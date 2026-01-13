@@ -492,10 +492,17 @@ const updateLeave = async (req, res) => {
     leave.endDate = end;
     leave.description = description;
 
-    if (HalfTime !== undefined) {
+    if (HalfTime !== undefined ) {
       leave.HalfTime = HalfTime; // Only set if provided
     }
 
+    if(HalfTime === ''){
+      leave.HalfTime = null; // Only set if provided
+    }
+
+    if(category === 'leave' || leaveType === 'fullday'){
+      leave.HalfTime = null; // Only set if provided
+    }
     await leave.save();
 
     return res.status(200).json({

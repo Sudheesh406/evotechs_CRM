@@ -40,6 +40,14 @@ const TaskStatusDetail = () => {
   const [errors, setErrors] = useState({});
   const [requirements, setRequirements] = useState([]);
 
+  const [invoiceModal, setInvoiceModal] = useState(false);
+  const [invoiceData, setInvoiceData] = useState({
+    link: "",
+    amount: "",
+    paid: false,
+    taskId: null,
+  });
+
   // -------------------- Fetch --------------------
   const fetchRequirements = async () => {
     try {
@@ -59,7 +67,6 @@ const TaskStatusDetail = () => {
       });
 
       const res = await axios.get(`/task/get/${data}`);
-      console.log("res", res);
       const fetchedTasks = res.data.data || [];
       setTasks(fetchedTasks);
 
@@ -114,6 +121,16 @@ const TaskStatusDetail = () => {
       setActiveCardId(null);
     } else if (action === "subtask") {
       navigate(`/activities/tasks/subtask/${task.id}`);
+      setActiveCardId(null);
+    }else if (action === "Invoice"){
+    const existingInvoice = task.invoices && task.invoices.length > 0 ? task.invoices[0] : null;
+      setInvoiceData({
+        link: existingInvoice ? existingInvoice.link : "",
+        amount: existingInvoice ? existingInvoice.amount : "",
+        paid: existingInvoice ? existingInvoice.paid : false,
+        taskId: task.id,
+      });
+      setInvoiceModal(true);
       setActiveCardId(null);
     } else if (action === "view") {
       navigate(
@@ -259,6 +276,40 @@ const TaskStatusDetail = () => {
     </div>
   );
 
+
+   // --- Invoice Submission ---
+  const handleInvoiceSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      Swal.fire({
+        title: "Saving Invoice...",
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading(),
+      });
+
+      // API Call for Invoice
+      await axios.post(`/task/invoice/${invoiceData.taskId}`, invoiceData);
+
+      Swal.close();
+      await Swal.fire({
+        icon: "success",
+        title: "Invoice Saved!",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+      setInvoiceModal(false);
+      fetchTasks(); // Refresh to ensure UI reflects the latest invoice data
+    } catch (err) {
+      console.error(err);
+      Swal.close();
+      Swal.fire({
+        icon: "error",
+        title: "Failed!",
+        text: "Could not save invoice.",
+      });
+    }
+  };
+
   return (
     <div className="p-6">
       {/* Header */}
@@ -327,6 +378,13 @@ const TaskStatusDetail = () => {
                       <Edit size={16} className="text-gray-700" /> Edit
                     </button>
 
+                    <button
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 transition"
+                      onClick={() => handleCardClick(task, "Invoice")}
+                    >
+                      <UserCircle size={16} className="text-gray-700" /> Invoice
+                      Update
+                    </button>
                     <button
                       className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 transition"
                       onClick={() => handleCardClick(task, "taskUpdate")}
@@ -427,6 +485,97 @@ const TaskStatusDetail = () => {
         handleTaskUpdate={handleTaskUpdate}
         fetchTasks={fetchTasks}
       />
+
+      {/* --- Invoice Modal UI --- */}
+      {invoiceModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 overflow-hidden">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">
+                Invoice Details
+              </h2>
+              <button
+                onClick={() => setInvoiceModal(false)}
+                className="text-gray-400 hover:text-gray-600 text-xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleInvoiceSubmit} className="space-y-5">
+              {/* Link Input */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Invoice/Link
+                </label>
+                <input
+                  type="text"
+                  placeholder="Paste link here..."
+                  className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  value={invoiceData.link}
+                  onChange={(e) =>
+                    setInvoiceData({ ...invoiceData, link: e.target.value })
+                  }
+                  required
+                />
+              </div>
+
+              {/* Amount Input */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Amount
+                </label>
+                <input
+                  type="number"
+                  placeholder="Enter amount"
+                  className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  value={invoiceData.amount}
+                  onChange={(e) =>
+                    setInvoiceData({ ...invoiceData, amount: e.target.value })
+                  }
+                  required
+                />
+              </div>
+
+              {/* Paid Checkbox */}
+              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                <input
+                  type="checkbox"
+                  id="paidStatus"
+                  className="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer"
+                  checked={invoiceData.paid}
+                  onChange={(e) =>
+                    setInvoiceData({ ...invoiceData, paid: e.target.checked })
+                  }
+                />
+                <label
+                  htmlFor="paidStatus"
+                  className="text-sm font-medium text-gray-700 cursor-pointer"
+                >
+                  Mark as Paid
+                </label>
+              </div>
+
+              {/* Modal Actions */}
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setInvoiceModal(false)}
+                  className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-bold"
+                >
+                  Save Invoice
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
