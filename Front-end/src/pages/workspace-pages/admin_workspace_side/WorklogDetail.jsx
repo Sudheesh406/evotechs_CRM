@@ -10,6 +10,8 @@ const WorklogDetail = () => {
   const [staffs, setStaffs] = useState([]);
   const [staffId, setStaffId] = useState(""); // changed to string (single id)
 
+  const [modalOpen, setModalOpen] = useState(false);
+  const [activeComment, setActiveComment] = useState("");
   const [holidaysData, setHolidaysData] = useState([]);
   const [leavesData, setLeavesData] = useState([]);
 
@@ -223,14 +225,12 @@ const WorklogDetail = () => {
   // -----------------------------
   const handleCellDoubleClick = (rowIndex, cellIndex) => {
     const comment = tableData[rowIndex][cellIndex]?.comment || "";
-
     if (comment) {
-      Swal.fire({
-        title: "Comment",
-        text: comment,
-        confirmButtonText: "Close",
-        confirmButtonColor: "#4F46E5", // indigo tone
-      });
+      setActiveComment(comment);
+      setModalOpen(true);
+    } else {
+      // Optional: Show a small toast if there's no comment to show
+      console.log("No comment for this cell");
     }
   };
 
@@ -339,7 +339,8 @@ const WorklogDetail = () => {
               WFH-Half
             </div>
             <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
-              <div className="w-3 h-3 rounded bg-red-500"></div> Holiday / Sunday
+              <div className="w-3 h-3 rounded bg-red-500"></div> Holiday /
+              Sunday
             </div>
             <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
               <div className="w-3 h-3 rounded bg-purple-500"></div> Maintenance
@@ -481,7 +482,23 @@ const WorklogDetail = () => {
                         />
                         {/* Tooltip */}
                         {comment && (
-                          <span className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-full bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-pre-line pointer-events-none">
+                          <span
+                            className="
+    absolute left-1/2 bottom-8
+    -translate-x-1/2 translate-y-full
+    bg-gray-900 text-white text-xs
+    px-3 py-2 rounded-md shadow-lg
+    opacity-0 group-hover:opacity-100
+    transition-opacity duration-200
+    z-50
+    whitespace-pre-wrap
+    pointer-events-none
+    w-64
+    max-h-24
+    overflow-y-auto
+    custom-scrollbar
+  "
+                          >
                             {comment}
                           </span>
                         )}
@@ -527,6 +544,50 @@ const WorklogDetail = () => {
               </tr>
             </tbody>
           </table>
+          {/* COMMENT MODAL */}
+          {modalOpen && (
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[100]">
+              <div
+                className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md border border-gray-100
+                    animate-in fade-in zoom-in duration-200
+                    max-h-[80vh] overflow-hidden"
+              >
+                {/* Header */}
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-bold text-gray-900">
+                    Worklog Comment
+                  </h3>
+                  <button
+                    onClick={() => setModalOpen(false)}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Scrollable content */}
+                <div
+                  className="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-200
+                      max-h-[50vh] overflow-y-auto"
+                >
+                  <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                    {activeComment}
+                  </p>
+                </div>
+
+                {/* Footer */}
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => setModalOpen(false)}
+                    className="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg
+                     hover:bg-indigo-700 transition-all shadow-md active:scale-95"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center text-gray-500 text-lg font-medium py-10">

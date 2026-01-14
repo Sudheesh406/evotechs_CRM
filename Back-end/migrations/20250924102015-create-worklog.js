@@ -32,7 +32,7 @@ module.exports = {
         allowNull: false,
       },
       comment: {
-        type: Sequelize.STRING,
+        type: Sequelize.TEXT,
         allowNull: true,
       },
       time: {

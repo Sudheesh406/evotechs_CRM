@@ -649,8 +649,6 @@ const updateTeamStagesAndNotes = async (req, res) => {
 
 //---------------pending task-----------------//
 
-//-----admin---------//
-
 const getPendingTask = async (req, res) => {
   try {
     const user = req.user;

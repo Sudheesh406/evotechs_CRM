@@ -516,7 +516,8 @@ const Worklog = () => {
               WFH-Half
             </div>
             <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
-              <div className="w-3 h-3 rounded bg-red-500"></div> Holiday / Sunday
+              <div className="w-3 h-3 rounded bg-red-500"></div> Holiday /
+              Sunday
             </div>
             <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
               <div className="w-3 h-3 rounded bg-purple-500"></div> Maintenance
@@ -657,7 +658,23 @@ const Worklog = () => {
                       />
                       {/* Tooltip */}
                       {comment && (
-                        <span className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-full bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-pre-line pointer-events-none">
+                        <span
+                          className="
+    absolute left-1/2 bottom-8
+    -translate-x-1/2 translate-y-full
+    bg-gray-900 text-white text-xs
+    px-3 py-2 rounded-md shadow-lg
+    opacity-0 group-hover:opacity-100
+    transition-opacity duration-200
+    z-50
+    whitespace-pre-wrap
+    pointer-events-none
+    w-64
+    max-h-24
+    overflow-y-auto
+    custom-scrollbar
+  "
+                        >
                           {comment}
                         </span>
                       )}
@@ -711,7 +728,7 @@ const Worklog = () => {
           <div className="bg-white rounded-lg shadow-lg p-6 w-96">
             <h3 className="text-lg font-semibold mb-2">Add Comment</h3>
             <textarea
-              className="w-full h-24 border border-gray-300 rounded p-2 mb-4 focus:outline-none focus:ring-1 focus:ring-blue-400"
+              className="w-full h-64 border border-gray-300 rounded p-2 mb-4 focus:outline-none focus:ring-1 focus:ring-blue-400"
               value={modalComment}
               onChange={(e) => setModalComment(e.target.value)}
               placeholder="Type your comment..."
