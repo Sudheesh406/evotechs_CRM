@@ -22,9 +22,11 @@ export default function TaskDetailDemo() {
   const [update, setUpdate] = useState(false);
   const [completeSubmition, setCompleteSubmition] = useState(true);
   const [completeUpdate, setCompleteUpdate] = useState(true);
+  const [invoiceDetails, setInvoiceDetails] = useState(true);
 
   const { data } = useParams();
   const navigate = useNavigate();
+
 
   let parsed = null;
   if (data) {
@@ -45,6 +47,9 @@ export default function TaskDetailDemo() {
     setLoading(true);
     try {
       const response = await axios.post("task/admin/details/get", { parsed });
+      // console.log('response',response?.data?.data.taskDetails[0]?.invoices)
+      setInvoiceDetails(response?.data?.data.taskDetails[0]?.invoices)
+
       if (response.data.success) {
         setTaskData(response.data.data);
         if (response?.data?.data?.taskDetails[0]?.stage == "4") {
@@ -290,6 +295,27 @@ export default function TaskDetailDemo() {
                 <Detail label="Budgeted Amount" value={customer.amount} />
                 <Detail label="Priority Level" value={taskDetails.priority} />
                 <Detail label="Project Type" value={taskDetails.requirement} />
+              {invoiceDetails?.length > 0 && (
+  <>
+    {/* FIXED LINK COMPONENT CALL BELOW */}
+    <DetailUpdate
+      label="Link"
+      value={invoiceDetails[0]?.link}
+      isLink={true}
+    />
+
+    <Detail
+      label="Payment"
+      value={invoiceDetails[0]?.paid ? "Paid" : "Unpaid"}
+    />
+
+    <Detail
+      label="Paid Amount"
+      value={invoiceDetails[0]?.amount || "N/A"}
+    />
+  </>
+)}
+
               </div>
 
               {/* Work Description */}
@@ -594,6 +620,34 @@ function Detail({ label, value }) {
       <span className="text-sm font-bold text-gray-800 truncate">
         {value || "N/A"}
       </span>
+    </div>
+  );
+}
+
+function DetailUpdate({ label, value, isLink = false }) {
+  // Check if link is valid
+  const hasValue = value && value !== "N/A";
+
+  return (
+    <div className="flex flex-col bg-gray-50 p-3 rounded-lg border border-gray-200">
+      <span className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+        {label}
+      </span>
+
+      {isLink && hasValue ? (
+        <a
+          href={value.startsWith("http") ? value : `https://${value}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm font-semibold text-blue-600 underline truncate hover:text-blue-800"
+        >
+          {value}
+        </a>
+      ) : (
+        <span className="text-sm font-semibold text-gray-800 truncate">
+          {value || "N/A"}
+        </span>
+      )}
     </div>
   );
 }

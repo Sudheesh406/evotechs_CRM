@@ -369,6 +369,8 @@ const getTaskDetails = async (req, res) => {
       ? taskDetails.filter((t) => t.id === Number(taskId))
       : taskDetails;
 
+      const invoiceDetails = await Invoice.findAll({where:{taskId:taskId}})
+      console.log('invoice',invoiceDetails)
     // Send response
     return httpSuccess(res, 200, "task details getted successfully", {
       customerDetails,
@@ -376,6 +378,7 @@ const getTaskDetails = async (req, res) => {
       callDetails,
       taskDetails: filteredTaskDetails,
       documents,
+      invoiceDetails
     });
   } catch (error) {
     console.error("Error in getTaskDetails:", error);
@@ -512,6 +515,9 @@ const getTeamTaskDetails = async (req, res) => {
       ? taskDetails.filter((t) => t.id === Number(taskId))
       : taskDetails;
 
+       const invoiceDetails = await Invoice.findAll({where:{taskId:taskId}})
+
+       
     // Send response
     return httpSuccess(res, 200, "team task details getted successfully", {
       customerDetails,
@@ -519,6 +525,7 @@ const getTeamTaskDetails = async (req, res) => {
       callDetails,
       taskDetails: filteredTaskDetails,
       documents,
+      invoiceDetails
     });
   } catch (error) {
     console.error("Error in get team task details:", error);
@@ -723,12 +730,29 @@ const getTaskDetailForAdmin = async (req, res) => {
       ? taskDetails.filter((t) => t.id === Number(taskId))
       : taskDetails;
 
+
+       const taskIds = filteredTaskDetails.map(t => t.id);
+
+    // 3. Fetch all invoices matching those task IDs separately
+    const allInvoices = await Invoice.findAll({
+      where: { taskId: taskIds }
+    });
+
+    // 4. Map invoices back to their respective tasks
+    const tasksWithInvoices = filteredTaskDetails.map(t => {
+      const taskJson = t.toJSON();
+      // Filter invoices that belong to this specific task
+      taskJson.invoices = allInvoices.filter(inv => inv.taskId === t.id);
+      return taskJson;
+    });
+
+
     // Send response
     return httpSuccess(res, 200, "task details getted successfully", {
       customerDetails,
       meetingDetails,
       callDetails,
-      taskDetails: filteredTaskDetails,
+      taskDetails: tasksWithInvoices,
       documents,
     });
   } catch (error) {

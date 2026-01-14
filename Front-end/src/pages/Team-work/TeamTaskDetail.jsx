@@ -68,6 +68,7 @@ export default function TaskDetail() {
   const [attachments, setAttachments] = useState();
   const [taskDetails, setTaskDetails] = useState([]);
   const [teamWorkDetails, setTeamWorkDetails] = useState();
+  const [invoiceDetails, setInvoiceDetails] = useState();
 
   // Stage state
   const [workStages, setWorkStages] = useState({
@@ -120,7 +121,8 @@ export default function TaskDetail() {
       // NOTE: The parsed object is sent directly here as per the original code.
       const response = await axios.post("task/team/details/get", { parsed });
       const apiData = response.data?.data || {};
-      console.log(apiData?.taskDetails[0]);
+      // console.log(apiData?.invoiceDetails);
+      setInvoiceDetails(apiData?.invoiceDetails);
 
       setRework(apiData?.taskDetails[0]?.rework);
       setNewUpdate(apiData?.taskDetails[0]?.newUpdate);
@@ -256,6 +258,7 @@ export default function TaskDetail() {
     }
   };
 
+
   return (
     <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8 space-y-6">
       <div className="max-w-7xl mx-auto">
@@ -320,6 +323,26 @@ export default function TaskDetail() {
                   label="Project Type"
                   value={taskDetails[0]?.requirement || "N/A"}
                 />
+
+                {invoiceDetails?.length > 0 && (
+                  <>
+                    <DetailUpdate
+                      label="Invoice Link"
+                      value={invoiceDetails[0]?.link}
+                      isLink={true}
+                    />
+
+                    <Detail
+                      label="Payment"
+                      value={invoiceDetails[0]?.paid ? "Paid" : "Unpaid"}
+                    />
+
+                    <Detail
+                      label="Paid Amount"
+                      value={invoiceDetails[0]?.amount || "N/A"}
+                    />
+                  </>
+                )}
               </div>
 
               {/* Work Description */}
@@ -787,6 +810,34 @@ function Detail({ label, value }) {
         {label}
       </span>
       <span className="text-sm font-bold text-gray-800 truncate">{value}</span>
+    </div>
+  );
+}
+
+function DetailUpdate({ label, value, isLink = false }) {
+  // Check if link is valid
+  const hasValue = value && value !== "N/A";
+
+  return (
+    <div className="flex flex-col bg-gray-50 p-3 rounded-lg border border-gray-200">
+      <span className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+        {label}
+      </span>
+
+      {isLink && hasValue ? (
+        <a
+          href={value.startsWith("http") ? value : `https://${value}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm font-semibold text-blue-600 underline truncate hover:text-blue-800"
+        >
+          {value}
+        </a>
+      ) : (
+        <span className="text-sm font-semibold text-gray-800 truncate">
+          {value || "N/A"}
+        </span>
+      )}
     </div>
   );
 }

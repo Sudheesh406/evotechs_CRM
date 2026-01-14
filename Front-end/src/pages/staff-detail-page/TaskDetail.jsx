@@ -32,6 +32,7 @@ export default function TaskDetail() {
   const [showDocumentModal, setShowDocumentModal] = useState(false);
   const [documentTaskId, setDocumentTaskId] = useState(null);
   const [refresh, setRefresh] = useState(false);
+  const [invoiceDetails, setInvoiceDetails] = useState();
 
   // Parse URL data
   let parsed = null;
@@ -97,6 +98,7 @@ export default function TaskDetail() {
     try {
       const response = await axios.post("task/details/get", { parsed });
 
+      
       const apiData = response.data?.data || {};
       setCustomer(apiData.customerDetails || null);
       setCalls(apiData.callDetails || []);
@@ -104,6 +106,7 @@ export default function TaskDetail() {
       setTaskDetails(apiData.taskDetails || []);
       setAttachments(apiData.documents[0]); // Still empty as per your comment
       setNotes(apiData.taskDetails?.[0]?.notes || "");
+      setInvoiceDetails(apiData.invoiceDetails?.[0] || []);
     } catch (error) {
       Swal.fire("Error", "Failed to get customer details.", "error");
       console.log("error found in fetching customer details", error);
@@ -186,7 +189,6 @@ export default function TaskDetail() {
         showConfirmButton: false,
       });
 
-      console.log("response", response);
       return response.data;
     } catch (error) {
       console.error("Error updating stages and notes", error);
@@ -259,6 +261,7 @@ export default function TaskDetail() {
     }
   };
 
+
   // Helper component to display work stage labels with an icon
   const workStageLabels = [
     { label: "Not Started", key: "pending1", color: "text-red-500" },
@@ -323,6 +326,27 @@ export default function TaskDetail() {
                 label="Project Type"
                 value={taskDetails[0]?.requirement || "N/A"}
               />
+
+              {invoiceDetails?.length > 0 && (
+                <>
+                  {/* FIXED LINK COMPONENT CALL BELOW */}
+                  <DetailUpdate
+                    label="Link"
+                    value={invoiceDetails[0]?.link}
+                    isLink={true}
+                  />
+
+                  <Detail
+                    label="Payment"
+                    value={invoiceDetails[0]?.paid ? "Paid" : "Unpaid"}
+                  />
+
+                  <Detail
+                    label="Paid Amount"
+                    value={invoiceDetails[0]?.amount || "N/A"}
+                  />
+                </>
+              )}
             </div>
 
             {/* Work Description */}
@@ -707,16 +731,6 @@ export default function TaskDetail() {
               )}
             </section>
           </div>
-
-          {/* Connected Records (Empty State) */}
-          {/* <div className="bg-white rounded-xl shadow-xl p-6">
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">
-              Connected Records
-            </h3>
-            <div className="border border-gray-300 border-dashed rounded-lg p-6 text-center text-gray-500 italic bg-gray-50">
-              No additional connected records found.
-            </div>
-          </div> */}
         </div>
       </div>
 
@@ -761,6 +775,34 @@ function Detail({ label, value }) {
       <span className="text-sm font-semibold text-gray-800 truncate">
         {value || "N/A"}
       </span>
+    </div>
+  );
+}
+
+function DetailUpdate({ label, value, isLink = false }) {
+  // Check if link is valid
+  const hasValue = value && value !== "N/A";
+
+  return (
+    <div className="flex flex-col bg-gray-50 p-3 rounded-lg border border-gray-200">
+      <span className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+        {label}
+      </span>
+
+      {isLink && hasValue ? (
+        <a
+          href={value.startsWith("http") ? value : `https://${value}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm font-semibold text-blue-600 underline truncate hover:text-blue-800"
+        >
+          {value}
+        </a>
+      ) : (
+        <span className="text-sm font-semibold text-gray-800 truncate">
+          {value || "N/A"}
+        </span>
+      )}
     </div>
   );
 }
