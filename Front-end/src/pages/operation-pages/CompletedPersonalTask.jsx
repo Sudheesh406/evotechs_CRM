@@ -24,7 +24,7 @@ export default function CompletedPersonalTask() {
     { key: "staffName", label: "Staff Name" },
     { key: "priority", label: "Priority" },
     { key: "source", label: "Source" },
-    { key: "status", label: "Status" },
+    // { key: "status", label: "Status" },
     { key: "action", label: "Action" }, 
   ];
 
@@ -45,7 +45,7 @@ export default function CompletedPersonalTask() {
         staffName: t.staff?.name || "",
         priority: t.priority,
         source: t.customer?.source || "",
-        status: t.newUpdate ? "Completed" : "Pending",
+        // status: t.newUpdate ? "Completed" : "Pending",
         reject: t.reject
       }));
 
