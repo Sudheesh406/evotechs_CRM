@@ -27,7 +27,6 @@ export default function TaskDetailDemo() {
   const { data } = useParams();
   const navigate = useNavigate();
 
-
   let parsed = null;
   if (data) {
     try {
@@ -48,7 +47,7 @@ export default function TaskDetailDemo() {
     try {
       const response = await axios.post("task/admin/details/get", { parsed });
       // console.log('response',response?.data?.data.taskDetails[0]?.invoices)
-      setInvoiceDetails(response?.data?.data.taskDetails[0]?.invoices)
+      setInvoiceDetails(response?.data?.data.taskDetails[0]?.invoices);
 
       if (response.data.success) {
         setTaskData(response.data.data);
@@ -92,6 +91,8 @@ export default function TaskDetailDemo() {
         No data found
       </div>
     );
+
+    console.log('invoiceDetails',invoiceDetails)
 
   const customer = taskData.customerDetails || {};
   const taskDetails = taskData.taskDetails?.[0] || {};
@@ -295,27 +296,26 @@ export default function TaskDetailDemo() {
                 <Detail label="Budgeted Amount" value={customer.amount} />
                 <Detail label="Priority Level" value={taskDetails.priority} />
                 <Detail label="Project Type" value={taskDetails.requirement} />
-              {invoiceDetails?.length > 0 && (
-  <>
-    {/* FIXED LINK COMPONENT CALL BELOW */}
-    <DetailUpdate
-      label="Link"
-      value={invoiceDetails[0]?.link}
-      isLink={true}
-    />
+                {invoiceDetails?.length > 0 && (
+                  <>
+                    {/* FIXED LINK COMPONENT CALL BELOW */}
+                    <DetailUpdate
+                      label="Link"
+                      value={invoiceDetails[0]?.link}
+                      isLink={true}
+                    />
 
-    <Detail
-      label="Payment"
-      value={invoiceDetails[0]?.paid ? "Paid" : "Unpaid"}
-    />
+                    <Detail
+                      label="Payment"
+                      value={invoiceDetails[0]?.paid ? "Paid" : "Unpaid"}
+                    />
 
-    <Detail
-      label="Paid Amount"
-      value={invoiceDetails[0]?.amount || "N/A"}
-    />
-  </>
-)}
-
+                    <Detail
+                      label="Paid Amount"
+                      value={invoiceDetails[0]?.amount || "N/A"}
+                    />
+                  </>
+                )}
               </div>
 
               {/* Work Description */}

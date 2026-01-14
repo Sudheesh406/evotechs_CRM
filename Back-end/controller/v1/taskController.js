@@ -370,8 +370,8 @@ const getTaskDetails = async (req, res) => {
       : taskDetails;
 
       const invoiceDetails = await Invoice.findAll({where:{taskId:taskId}})
-      console.log('invoice',invoiceDetails)
-    // Send response
+
+      // Send response
     return httpSuccess(res, 200, "task details getted successfully", {
       customerDetails,
       meetingDetails,

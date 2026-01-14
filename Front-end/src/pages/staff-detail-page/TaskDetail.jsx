@@ -97,8 +97,7 @@ export default function TaskDetail() {
   const fetchCustomerDetails = async () => {
     try {
       const response = await axios.post("task/details/get", { parsed });
-
-      
+ console.log(response)
       const apiData = response.data?.data || {};
       setCustomer(apiData.customerDetails || null);
       setCalls(apiData.callDetails || []);
@@ -261,6 +260,8 @@ export default function TaskDetail() {
     }
   };
 
+  // console.log(invoiceDetails)
+
 
   // Helper component to display work stage labels with an icon
   const workStageLabels = [
@@ -327,23 +328,23 @@ export default function TaskDetail() {
                 value={taskDetails[0]?.requirement || "N/A"}
               />
 
-              {invoiceDetails?.length > 0 && (
+              {invoiceDetails && (
                 <>
                   {/* FIXED LINK COMPONENT CALL BELOW */}
                   <DetailUpdate
                     label="Link"
-                    value={invoiceDetails[0]?.link}
+                    value={invoiceDetails?.link}
                     isLink={true}
                   />
 
                   <Detail
                     label="Payment"
-                    value={invoiceDetails[0]?.paid ? "Paid" : "Unpaid"}
+                    value={invoiceDetails?.paid ? "Paid" : "Unpaid"}
                   />
 
                   <Detail
                     label="Paid Amount"
-                    value={invoiceDetails[0]?.amount || "N/A"}
+                    value={invoiceDetails?.amount || "N/A"}
                   />
                 </>
               )}
