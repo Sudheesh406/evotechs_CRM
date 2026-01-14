@@ -660,7 +660,7 @@ const Worklog = () => {
                       {comment && (
                         <span
                           className="
-    absolute left-1/2 bottom-8
+    absolute left-1/2 bottom-4
     -translate-x-1/2 translate-y-full
     bg-gray-900 text-white text-xs
     px-3 py-2 rounded-md shadow-lg
