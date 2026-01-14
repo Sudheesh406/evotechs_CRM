@@ -21,7 +21,7 @@ export default function CompletedPersonalTask() {
     { key: "stage", label: "Stage" },
     { key: "requirement", label: "Requirement" },
     { key: "finishBy", label: "Finish By" },
-    { key: "staffName", label: "Staff Name" },
+    // { key: "staffName", label: "Staff Name" },
     { key: "priority", label: "Priority" },
     { key: "source", label: "Source" },
     // { key: "status", label: "Status" },
@@ -45,7 +45,7 @@ export default function CompletedPersonalTask() {
         staffName: t.staff?.name || "",
         priority: t.priority,
         source: t.customer?.source || "",
-        // status: t.newUpdate ? "Completed" : "Pending",
+        status: t.newUpdate ? "Completed" : "Pending",
         reject: t.reject
       }));
 
@@ -160,10 +160,10 @@ export default function CompletedPersonalTask() {
       row.stage,
       row.requirement,
       row.finishBy,
-      row.staffName,
+      // row.staffName,
       row.priority,
       row.source,
-      row.status
+      // row.status
     ]);
 
     // Create the table
