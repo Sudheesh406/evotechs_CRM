@@ -48,7 +48,6 @@ function timeToMinutes(timeStr) {
   if (!timeStr || typeof timeStr !== "string") return 0; // Return 0 or throw an error based on preference
 
   const [time, modifier] = timeStr.trim().split(" ");
-  console.log("modifier", modifier);
   if (!modifier) {
     console.error("Time string is missing AM/PM modifier:", timeStr);
     return 0;

@@ -464,7 +464,6 @@ export default function TeamWorkOverview({ role }) {
     initializeData();
   }, [refresh]);
 
-      console.log(staffData)
 
 
   return (

@@ -63,7 +63,6 @@ export const usePipelineData = () => {
     const fetchAndBuild = async () => {
       try {
         const { data } = await axios.get("home/connection");
-        console.log("Fetched pipeline data:", data.pipelines);
 
         if (!data || !data.pipelines) {
           setNodes([]);

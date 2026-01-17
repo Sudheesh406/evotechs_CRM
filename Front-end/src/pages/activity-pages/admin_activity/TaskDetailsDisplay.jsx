@@ -104,8 +104,8 @@ const TaskCard = ({ task, role, navigate }) => {
     if(task.stage < 3){
       navigate(`/activities/tasks/team/${dataToSend}`);
     }else if(task.stage >= 3){
-      console.log('hjhsjs')
-       const data = {
+
+      const data = {
       taskId: task.id,
       contactId: task.contactId,
       staffId: task.staffId,

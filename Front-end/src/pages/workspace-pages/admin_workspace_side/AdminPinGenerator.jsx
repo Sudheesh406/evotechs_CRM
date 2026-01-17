@@ -263,7 +263,6 @@ export default function AdminPinGenerator() {
 
     if (hasError) return;
 
-    console.log("Password Change Data:", passwordData);
     changePassword(passwordData);
     setShowModal(false);
     setPasswordData({ email: "", pin: "", newPassword: "" });

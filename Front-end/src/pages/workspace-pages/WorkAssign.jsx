@@ -71,7 +71,6 @@ export default function WorkAssign() {
       });
 
       const response = await axios.get("/work/assign/work_details");
-      console.log('response',response)
       const apiData = response.data.data || [];
 
       const apiTasks = apiData.map((item) => {

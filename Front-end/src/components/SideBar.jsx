@@ -307,8 +307,13 @@ const Sidebar = ({ closeSidebar }) => {
           icon: Receipt,
         },
         {
-          title: "Income Sheet",
-          path: "/accounts/income-sheet",
+          title: "Finance Income Sheet",
+          path: "/accounts/fin/income-sheet",
+          icon: Wallet,
+        },
+        {
+          title: "IT Income Sheet",
+          path: "/accounts/it/income-sheet",
           icon: Wallet,
         },
       ],

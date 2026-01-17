@@ -275,7 +275,6 @@ const Meetings = () => {
       });
 
 
-      console.log(response);
       const data = Array.isArray(response.data.data) ? response.data.data : [];
       setMeetings(data);
 

@@ -92,7 +92,6 @@ export default function TaskDetailDemo() {
       </div>
     );
 
-    console.log('invoiceDetails',invoiceDetails)
 
   const customer = taskData.customerDetails || {};
   const taskDetails = taskData.taskDetails?.[0] || {};

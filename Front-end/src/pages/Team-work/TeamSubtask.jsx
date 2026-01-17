@@ -13,8 +13,6 @@ export default function TeamSubtask() {
 
   const navigate = useNavigate()
 
-  console.log("id", id);
-
   // --- Fetch Sub Tasks ---
   const getSubTask = async () => {
     try {

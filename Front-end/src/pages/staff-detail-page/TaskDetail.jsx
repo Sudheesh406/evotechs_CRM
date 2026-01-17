@@ -97,7 +97,6 @@ export default function TaskDetail() {
   const fetchCustomerDetails = async () => {
     try {
       const response = await axios.post("task/details/get", { parsed });
- console.log(response)
       const apiData = response.data?.data || {};
       setCustomer(apiData.customerDetails || null);
       setCalls(apiData.callDetails || []);

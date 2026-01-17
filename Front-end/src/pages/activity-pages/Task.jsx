@@ -77,8 +77,6 @@ const Task = () => {
       const res = await axios.get("/task/get");
       const fetchedTasks = res.data.data || [];
 
-      console.log(fetchedTasks)
-
       const mappedTasks = {
         "Not Started": [],
         "In Progress": [],

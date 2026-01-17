@@ -133,16 +133,24 @@ const handleCellChange = useCallback((rowId, key, value) => {
       if (row.coloumnId === rowId) {
         const columnInfo = dataColumnKeys.find((col) => col.key === key);
         
-        // Format as number if the column type is numeric, else keep as text
-        const formattedValue =
-          columnInfo.dataType === "number"
-            ? value === ""
-              ? null
-              : Number(value.replace(/[^0-9.]/g, ""))
-            : value;
+        if (columnInfo.dataType === "number") {
+          // 1. Allow empty string
+          if (value === "") return { ...row, [key]: null };
+          
+          // 2. Allow lone minus sign or decimal point while typing
+          if (value === "-" || value === ".") return { ...row, [key]: value };
 
-        // Simply return the row with the new value, no auto-calculation logic
-        return { ...row, [key]: formattedValue };
+          // 3. Clean the input but keep minus and dot
+          const sanitized = value.replace(/[^0-9.-]/g, "");
+          
+          // 4. If it's a valid number, store it; otherwise store the sanitized string
+          const parsed = parseFloat(sanitized);
+          const finalValue = isNaN(parsed) ? sanitized : parsed;
+          
+          return { ...row, [key]: finalValue };
+        }
+
+        return { ...row, [key]: value };
       }
       return row;
     });
@@ -210,11 +218,11 @@ const handleCellChange = useCallback((rowId, key, value) => {
   };
 
   const totals = {
-    totalAmount: data.reduce((sum, row) => sum + (row.totalAmount || 0), 0),
-    received: data.reduce((sum, row) => sum + (row.received || 0), 0),
-    credit: data.reduce((sum, row) => sum + (row.credit || 0), 0),
-    balance: data.reduce((sum, row) => sum + (row.balance || 0), 0),
-  };
+  totalAmount: data.reduce((sum, row) => sum + (parseFloat(row.totalAmount) || 0), 0),
+  received: data.reduce((sum, row) => sum + (parseFloat(row.received) || 0), 0),
+  credit: data.reduce((sum, row) => sum + (parseFloat(row.credit) || 0), 0),
+  balance: data.reduce((sum, row) => sum + (parseFloat(row.balance) || 0), 0),
+};
 
   const handleDownload = () => {
     const doc = new jsPDF("l", "mm", "a4");
@@ -287,7 +295,7 @@ const handleCellChange = useCallback((rowId, key, value) => {
     <div className="p-4 overflow-x-auto ">
       <div className="flex justify-between items-center mb-6 border-b pb-3 border-gray-300">
         <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">
-          <span className="text-indigo-600">Income</span> Sheet
+          <span className="text-indigo-600">Finance</span> Income Sheet
         </h1>
 
         <div className="flex space-x-6">
@@ -307,7 +315,7 @@ const handleCellChange = useCallback((rowId, key, value) => {
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(e.target.value)}
-            className="px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-md font-semibold text-gray-700 hover:border-gray-400 transition"
+            className="px-2 py-2 bg-white border border-gray-300 rounded-lg shadow-md font-semibold text-gray-700 hover:border-gray-400 transition"
           >
             {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((y) => (
               <option key={y} value={y}>{y}</option>
@@ -317,7 +325,7 @@ const handleCellChange = useCallback((rowId, key, value) => {
           <select
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
-            className="px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-md font-semibold text-gray-700 hover:border-gray-400 transition"
+            className="px-2 py-2 bg-white border border-gray-300 rounded-lg shadow-md font-semibold text-gray-700 hover:border-gray-400 transition"
           >
             <option value="Pathanamthitta">Pathanamthitta</option>
             <option value="Thiruvananthapuram">Thiruvananthapuram</option>
@@ -325,7 +333,7 @@ const handleCellChange = useCallback((rowId, key, value) => {
 
           <button
             onClick={handleAddRows}
-            className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-md hover:bg-blue-700 transition"
+            className="px-2 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-md hover:bg-blue-700 transition"
           >
             Add Rows (Current Rows: {data.length})
           </button>
@@ -341,7 +349,7 @@ const handleCellChange = useCallback((rowId, key, value) => {
               onClick={handleSaveChanges}
               className="px-4 py-2 bg-green-600 text-white font-bold rounded-lg shadow-md hover:bg-green-700 transition"
             >
-              Save Changes
+              Save
             </button>
 
             {showToast && (

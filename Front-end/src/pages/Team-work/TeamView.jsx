@@ -60,7 +60,6 @@ async function getTeam() {
     const response = await axios.post('/team/history/post', { selectedTeam });
 
     if (response) {
-      console.log(response);
       navigate(`/team/work/${selectedTeam.id}`);
     }
   } catch (error) {

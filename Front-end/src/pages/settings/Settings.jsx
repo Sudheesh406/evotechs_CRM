@@ -185,6 +185,7 @@ const Settings = () => {
 
     useEffect(() => {
         getDetails();
+        triggerSidebarRefresh();
     }, [refresh]);
 
     const imageFileName = profileImageUrl ? profileImageUrl.split('/').pop() : "";

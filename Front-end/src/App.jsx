@@ -75,7 +75,8 @@ import Pipeline from "./pages/home-page/adminSide/Pipeline";
 import EmployeeAbsence from "./pages/workspace-pages/EmployeeAbsence";
 
 import DayBook from "./pages/Accounts-pages/DayBook";
-import IncomeSheet from "./pages/Accounts-pages/IncomeSheet";
+import FinIncomeSheet from "./pages/Accounts-pages/FinIncomeSheet";
+import ITIncomeSheet from "./pages/Accounts-pages/ITIncomeSheet";
 
 import ProtectedRoute from "./components/Routes/ProtectedRoute";
 import Sidebar from "./components/SideBar";
@@ -606,10 +607,18 @@ function Layout() {
             }
           />
           <Route
-            path="/accounts/income-sheet"
+            path="/accounts/fin/income-sheet"
             element={
               <ProtectedRoute allowedRoles={["staff", "admin"]}>
-                <IncomeSheet />
+                <FinIncomeSheet />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/accounts/it/income-sheet"
+            element={
+              <ProtectedRoute allowedRoles={["staff", "admin"]}>
+                <ITIncomeSheet />
               </ProtectedRoute>
             }
           />

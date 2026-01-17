@@ -121,7 +121,6 @@ export default function TaskDetail() {
       // NOTE: The parsed object is sent directly here as per the original code.
       const response = await axios.post("task/team/details/get", { parsed });
       const apiData = response.data?.data || {};
-      // console.log(apiData?.invoiceDetails);
       setInvoiceDetails(apiData?.invoiceDetails);
 
       setRework(apiData?.taskDetails[0]?.rework);

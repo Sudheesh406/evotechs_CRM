@@ -198,7 +198,6 @@ const EmployeeAbsence = () => {
     );
 
     if (allocationChangesPayload.length === 0) {
-      console.log("No allocation changes to save.");
       Swal.fire({
         icon: "info",
         title: "No Changes",
@@ -210,7 +209,6 @@ const EmployeeAbsence = () => {
     try {
       await axios.post("/calendar/leave-WFH-record", allocationChangesPayload);
 
-      console.log("Save successful. Payload sent:", allocationChangesPayload);
 
       // Commit changes to staffData
       setStaffData((prevData) => {
@@ -260,7 +258,6 @@ const EmployeeAbsence = () => {
     try {
       const { data } = await axios.get("/calendar/leave-WFH-record");
 
-      console.log("Fetched data from server:", data.data);
 
       if (data.data && Array.isArray(data.data)) {
         const transformedData = transformStaffData(data.data);
