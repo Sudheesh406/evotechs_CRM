@@ -1,6 +1,7 @@
 const { httpError, httpSuccess } = require("../../utils/v1/httpResponse");
 const DayBook = require("../../models/v1/Accounts/dayBookModel");
-const IncomeSheet = require("../../models/v1/Accounts/incomeSheetModal");
+const FinanceIncomeSheet = require("../../models/v1/Accounts/incomeSheetModal");
+const ITIncomeSheet = require("../../models/v1/Accounts/ItIncomeSheetModal");
 
 const CreateDayBookRecord = async (req, res) => {
   try {
@@ -91,7 +92,7 @@ const CreateIncomeSheetRecord = async (req, res) => {
     }
 
     // Find existing DayBook record
-    let incomeSheetRecord = await IncomeSheet.findOne({
+    let incomeSheetRecord = await FinanceIncomeSheet.findOne({
       where: { month, year, type },
     });
 
@@ -106,7 +107,52 @@ const CreateIncomeSheetRecord = async (req, res) => {
       );
     } else {
       // Create new income Sheet record
-      const newRecord = await IncomeSheet.create({
+      const newRecord = await FinanceIncomeSheet.create({
+        month,
+        year,
+        type,
+        entries,
+        userId: user?.id || null,
+      });
+      return httpSuccess(
+        res,
+        201,
+        "income Sheet created successfully",
+        newRecord
+      );
+    }
+  } catch (error) {
+    console.error("Error in creating/updating income sheet", error);
+    return httpError(res, 500, "Internal Server Error Please Try Again", error);
+  }
+};
+
+const CreateITIncomeSheetRecord = async (req, res) => {
+  try {
+    const user = req.user;
+    const { month, year, type, entries } = req.body;
+
+    if (!month || !year || !type || !entries) {
+      return httpError(res, 400, "month, year, type, and entries are required");
+    }
+
+    // Find existing DayBook record
+    let incomeSheetRecord = await ITIncomeSheet.findOne({
+      where: { month, year, type },
+    });
+
+    if (incomeSheetRecord) {
+      // Replace existing entries with new ones
+      await incomeSheetRecord.update({ entries });
+      return httpSuccess(
+        res,
+        200,
+        "income Sheet Record entries replaced successfully",
+        incomeSheetRecord
+      );
+    } else {
+      // Create new income Sheet record
+      const newRecord = await ITIncomeSheet.create({
         month,
         year,
         type,
@@ -134,7 +180,7 @@ const getIncomeSheetRecord = async (req, res) => {
   }
 
   try {
-    const incomeSheetRecord = await IncomeSheet.findOne({
+    const incomeSheetRecord = await FinanceIncomeSheet.findOne({
       where: {
         year: selectedYear,
         month: selectedMonth,
@@ -163,9 +209,51 @@ const getIncomeSheetRecord = async (req, res) => {
   }
 };
 
+
+const getITIncomeSheetRecord = async (req, res) => {
+  const { selectedYear, selectedMonth, selectedType } = req.body;
+
+  if (!selectedYear || !selectedMonth || !selectedType) {
+    return httpError(res, 400, "Missing required fields: year, month, or type");
+  }
+
+  try {
+    const incomeSheetRecord = await ITIncomeSheet.findOne({
+      where: {
+        year: selectedYear,
+        month: selectedMonth,
+        type: selectedType,
+      },
+    });
+
+    if (!incomeSheetRecord) {
+      return httpSuccess(res, 200, "No income sheet record found", null);
+    }
+
+    return httpSuccess(
+      res,
+      200,
+      "income sheet record fetched successfully",
+      incomeSheetRecord
+    );
+  } catch (error) {
+    console.error("Error fetching income sheet record:", error);
+    return httpError(
+      res,
+      500,
+      "Internal Server Error. Please try again later.",
+      error
+    );
+  }
+};
+
+
+
 module.exports = {
   CreateDayBookRecord,
   getDayBookRecord,
   CreateIncomeSheetRecord,
   getIncomeSheetRecord,
+  getITIncomeSheetRecord,
+  CreateITIncomeSheetRecord
 };

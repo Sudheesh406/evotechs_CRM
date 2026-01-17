@@ -12,6 +12,7 @@ const createCompany = async (req, res) => {
   try {
     const data = { ...req.body };
     const user = req.user;
+
     const access = await roleChecker(user.id);
     if (!access) {
       return httpError(res, 403, "Access denied. Admins only.");
@@ -23,13 +24,27 @@ const createCompany = async (req, res) => {
       if (data[field] === "") data[field] = null;
     });
 
-    // Optional: If you want to delete existing company records before creating a new one
-    await company.destroy({ where: {}, truncate: true });
+    // Find existing company (assuming only ONE company record)
+    const existingCompany = await company.findOne();
 
-    const companyData = await company.create(data);
-    res.status(201).json({ success: true, data: companyData });
+    let companyData;
+
+    if (existingCompany) {
+      // 🔹 UPDATE instead of replace
+      await existingCompany.update(data);
+      companyData = existingCompany;
+    } else {
+      // 🔹 CREATE only if not exists
+      companyData = await company.create(data);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Company details saved successfully",
+      data: companyData,
+    });
   } catch (error) {
-    console.error("Error in create company details:", error);
+    console.error("Error in create/update company details:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };

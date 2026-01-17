@@ -205,7 +205,7 @@ const getLeaveRequest = async (req, res) => {
           attributes: ["id", "name", "email"],
         },
       ],
-      order: [["leaveDate", "ASC"]],
+      order: [["leaveDate", "DESC"]],
     });
 
     return res.status(200).json(allLeaveRequest);
@@ -309,7 +309,7 @@ const getLeaves = async (req, res) => {
           attributes: ["id", "name", "email"],
         },
       ],
-      order: [["leaveDate", "ASC"]],
+      order: [["leaveDate", "DESC"]],
     });
 
     return res.status(200).json(allLeave);
