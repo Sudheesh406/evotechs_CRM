@@ -5,6 +5,8 @@ const { signup } = require("../../models/v1");
 const Signup = require("../../models/v1/Authentication/authModel");
 const roleChecker = require("../../utils/v1/roleChecker");
 const leaves = require("../../models/v1/Work_space/Leave");
+const worklog = require("../../models/v1/Work_space/worklog");
+
 // const request = require("../../models/v1/Work_space/attendanceRequest");
 // Helper to convert 12-hour to 24-hour format
 
@@ -95,17 +97,14 @@ const attendanceRegister = async (req, res) => {
       return httpError(
         res,
         400,
-        `Attendance ${details.shedule} already marked for today`
+        `Attendance ${details.shedule} already marked for today`,
       );
     }
 
-    // ✅ Get this month's leaves for this specific staff
     const allLeaves = await getThisMonthLeaves();
 
-    // ✅ Filter only this user's leaves
     const userLeaves = allLeaves.filter((leave) => leave.staffId === user.id);
 
-    // ✅ Get today's leaves for this user
     const todaysLeaves = getTodayLeaves(userLeaves);
 
     if (todaysLeaves && todaysLeaves.length > 0) {
@@ -135,14 +134,14 @@ const attendanceRegister = async (req, res) => {
 
             const difference = calculateHours(
               todaysAttendance.time,
-              details.exitTime
+              details.exitTime,
             );
 
             if (difference != "4") {
               return httpError(
                 res,
                 401,
-                "Half day leave allows only 4 hours of work"
+                "Half day leave allows only 4 hours of work",
               );
             }
           }
@@ -163,6 +162,24 @@ const attendanceRegister = async (req, res) => {
     // Convert to 24-hour format before saving
     const time24 = convertTo24Hour(timeValue);
 
+
+    if (details.shedule === "exit") {
+      const today = new Date().toISOString().split("T")[0];
+      const worklogDetails = await worklog.findOne({
+        where: {
+          date: today,
+        },
+      });
+
+      if(!worklogDetails){
+         return httpError(
+                res,
+                401,
+                "Please update your work log before marking your exit.",
+         );
+      }
+    }
+
     const newAttendance = await Attendance.create({
       staffId: user.id,
       attendanceDate: details.date,
@@ -178,7 +195,7 @@ const attendanceRegister = async (req, res) => {
       res,
       200,
       `${details.shedule} time registered successfully`,
-      newAttendance
+      newAttendance,
     );
   } catch (error) {
     console.error("Error in attendanceRegister:", error);
@@ -215,7 +232,7 @@ const attendanceEdit = async (req, res) => {
       return httpError(
         res,
         403,
-        "You can only edit attendance for the current date"
+        "You can only edit attendance for the current date",
       );
     }
 
@@ -239,7 +256,7 @@ const attendanceEdit = async (req, res) => {
         return httpError(
           res,
           404,
-          "Entry attendance record not found for today"
+          "Entry attendance record not found for today",
         );
       }
 
@@ -249,7 +266,7 @@ const attendanceEdit = async (req, res) => {
         res,
         200,
         "Entry time updated successfully",
-        attendanceRecord
+        attendanceRecord,
       );
     } else if (shedule === "exit") {
       attendanceRecord = await Attendance.findOne({
@@ -265,7 +282,7 @@ const attendanceEdit = async (req, res) => {
         return httpError(
           res,
           404,
-          "Exit attendance record not found for today"
+          "Exit attendance record not found for today",
         );
       }
 
@@ -275,7 +292,7 @@ const attendanceEdit = async (req, res) => {
         res,
         200,
         "Exit time updated successfully",
-        attendanceRecord
+        attendanceRecord,
       );
     } else {
       return httpError(res, 400, "Invalid schedule type");
@@ -301,7 +318,7 @@ const handleDelete = async (req, res) => {
       return httpError(
         res,
         403,
-        "You can only delete attendance for the current date"
+        "You can only delete attendance for the current date",
       );
     }
 
@@ -371,7 +388,7 @@ const attendanceGet = async (req, res) => {
       res,
       200,
       "Attendance records fetched successfully",
-      formattedRecords
+      formattedRecords,
     );
   } catch (error) {
     console.error("Error in attendanceGet:", error);
@@ -502,7 +519,7 @@ const getStaffAttendance = async (req, res) => {
       res,
       200,
       "Attendance fetched successfully",
-      finalResult
+      finalResult,
     );
   } catch (error) {
     console.error("error found in get staff attendance", error);
@@ -517,9 +534,7 @@ const attendanceRequest = async (req, res) => {
   //   if (!date || !entry || !exit || !reason) {
   //     return httpError(res, 400, "date, entry, exit and reason are required");
   //   }
-
   //   console.log("Request Body:", date);
-
   //   await request.destroy({
   //     where: {
   //       staffId: user.id,
@@ -527,25 +542,21 @@ const attendanceRequest = async (req, res) => {
   //       softDelete: 0, // ✅ correct
   //     },
   //   });
-
   //   const newRequest = await request.create({
   //     staffId: user.id,
   //     attendanceDate: date,
   //     type: "entry",
   //     time: convertTo24Hour(entry),
   //   });
-
   //   const exitRequest = await request.create({
   //     staffId: user.id,
   //     attendanceDate: date,
   //     type: "exit",
   //     time: convertTo24Hour(exit),
   //   });
-
   //   if (!newRequest || !exitRequest) {
   //     return httpError(res, 500, `Failed to create attendance request`);
   //   }
-
   //   return httpSuccess(res, 200, `Attendance request created successfully`, {
   //     newRequest,
   //     exitRequest,
