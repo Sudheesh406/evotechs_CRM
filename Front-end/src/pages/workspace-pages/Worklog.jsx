@@ -43,7 +43,7 @@ const Worklog = () => {
         Array(numCols).fill({
           value: "",
           comment: "",
-        })
+        }),
       );
       initialAttendance.push("");
     }
@@ -61,7 +61,7 @@ const Worklog = () => {
           weekday: "short",
           day: "2-digit",
           month: "short",
-        })
+        }),
       );
     }
     setDates(generatedDates);
@@ -69,7 +69,7 @@ const Worklog = () => {
     // Initial load will use the default structure, then getWorklog will overwrite
     const { generatedData, initialAttendance } = generateInitialData(
       daysInMonth,
-      numColumns
+      numColumns,
     );
     setTableData(generatedData);
     setAttendance(initialAttendance);
@@ -105,21 +105,25 @@ const Worklog = () => {
 
   // 🐛 FIX 1: Ensure cell data is always an object to hold the comment
   const handleCellChange = (rowIndex, colIndex, value) => {
+    // Logic to check if the rowIndex matches today's date
+    const today = new Date();
+    const isToday =
+      today.getDate() === rowIndex + 1 &&
+      today.getMonth() === currentMonth &&
+      today.getFullYear() === currentYear;
+
+    if (!isToday) {
+      // Optional: show a small warning if they try to type in another day
+      return;
+    }
+
     const updatedData = [...tableData];
     const currentCell = updatedData[rowIndex][colIndex];
 
-    // Ensure we are working with an object structure
     if (typeof currentCell === "object") {
-      updatedData[rowIndex][colIndex] = {
-        ...currentCell,
-        value: value,
-      };
+      updatedData[rowIndex][colIndex] = { ...currentCell, value: value };
     } else {
-      // This handles the case where the cell was unexpectedly a string (shouldn't happen with new init)
-      updatedData[rowIndex][colIndex] = {
-        value: value,
-        comment: "", // Default empty comment
-      };
+      updatedData[rowIndex][colIndex] = { value: value, comment: "" };
     }
 
     setTableData(updatedData);
@@ -164,7 +168,7 @@ const Worklog = () => {
       const daysInMonth = getDaysInMonth(year, month - 1);
       const { generatedData, initialAttendance } = generateInitialData(
         daysInMonth,
-        numColumns
+        numColumns,
       );
 
       const newTableData = generatedData;
@@ -204,9 +208,8 @@ const Worklog = () => {
         const rowIndex = day - 1;
 
         if (rowIndex >= 0 && rowIndex < daysInMonth) {
-          newAttendance[
-            rowIndex
-          ] = `${att.totalHours}h ${att.totalMinutes}m (${att.workTime})`;
+          newAttendance[rowIndex] =
+            `${att.totalHours}h ${att.totalMinutes}m (${att.workTime})`;
         }
       });
 
@@ -238,7 +241,7 @@ const Worklog = () => {
         setTasks(
           Array(numColumns)
             .fill("")
-            .map((_, i) => `Task ${i + 1}`)
+            .map((_, i) => `Task ${i + 1}`),
         );
       }
     }
@@ -400,10 +403,19 @@ const Worklog = () => {
   };
 
   const handleSaveComment = () => {
-    const updatedData = [...tableData];
     const { row, col } = modalCell;
+    if (row === null) return;
 
-    // Cell is guaranteed to be an object with 'value' and 'comment' keys
+    const today = new Date();
+    const isToday =
+      today.getDate() === row + 1 &&
+      today.getMonth() === currentMonth &&
+      today.getFullYear() === currentYear;
+
+    // Prevent saving if it's not today
+    if (!isToday) return;
+
+    const updatedData = [...tableData];
     updatedData[row][col] = {
       ...updatedData[row][col],
       comment: modalComment,
@@ -637,6 +649,12 @@ const Worklog = () => {
                   const value = cellData.value || "";
                   const comment = cellData.comment || "";
 
+                  const today = new Date();
+                  const isToday =
+                    today.getDate() === rowIndex + 1 &&
+                    today.getMonth() === currentMonth &&
+                    today.getFullYear() === currentYear;
+
                   return (
                     <td
                       key={cellIndex}
@@ -653,9 +671,16 @@ const Worklog = () => {
                         onChange={(e) =>
                           handleCellChange(rowIndex, cellIndex, e.target.value)
                         }
-                        className="w-full p-1 text-sm text-black font-bold focus:outline-none focus:ring-1 focus:ring-blue-400"
-                        placeholder="00:00:00"
+                        // Added: logic to make it read-only if it's not today
+                        readOnly={!isToday}
+                        className={`w-full p-1 text-sm font-bold focus:outline-none ${
+                          !isToday
+                            ? "bg-gray-50 cursor-not-allowed text-gray-400"
+                            : "text-black focus:ring-1 focus:ring-blue-400"
+                        }`}
+                        placeholder={isToday ? "00:00:00" : ""}
                       />
+
                       {/* Tooltip */}
                       {comment && (
                         <span
@@ -723,33 +748,55 @@ const Worklog = () => {
       </div>
 
       {/* COMMENT MODAL */}
-      {modalOpen && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-96">
-            <h3 className="text-lg font-semibold mb-2">Add Comment</h3>
-            <textarea
-              className="w-full h-64 border border-gray-300 rounded p-2 mb-4 focus:outline-none focus:ring-1 focus:ring-blue-400"
-              value={modalComment}
-              onChange={(e) => setModalComment(e.target.value)}
-              placeholder="Type your comment..."
-            />
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setModalOpen(false)}
-                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveComment}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                Set Comment
-              </button>
+      {modalOpen &&
+        (() => {
+          // Calculate if the opened modal belongs to today
+          const today = new Date();
+          const isToday =
+            today.getDate() === modalCell.row + 1 &&
+            today.getMonth() === currentMonth &&
+            today.getFullYear() === currentYear;
+
+          return (
+            <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg shadow-lg p-6 w-96">
+                <h3 className="text-lg font-semibold mb-2">
+                  {isToday ? "Add Comment" : "View Comment"}
+                </h3>
+                <textarea
+                  className={`w-full h-64 border border-gray-300 rounded p-2 mb-4 focus:outline-none 
+            ${!isToday ? "bg-gray-100 cursor-not-allowed" : "focus:ring-1 focus:ring-blue-400"}`}
+                  value={modalComment}
+                  onChange={(e) => setModalComment(e.target.value)}
+                  readOnly={!isToday} // Disable typing for previous days
+                  placeholder={
+                    isToday
+                      ? "Type your comment..."
+                      : "No comment for this day."
+                  }
+                />
+                <div className="flex justify-end gap-2">
+                  <button
+                    onClick={() => setModalOpen(false)}
+                    className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                  >
+                    {isToday ? "Cancel" : "Close"}
+                  </button>
+
+                  {/* Disable the button if it's not today */}
+                  {isToday && (
+                    <button
+                      onClick={handleSaveComment}
+                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    >
+                      Set Comment
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          );
+        })()}
 
       <style>
         {`
