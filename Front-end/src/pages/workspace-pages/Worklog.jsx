@@ -20,7 +20,6 @@ const Worklog = () => {
 
   // menu state
   const [showOptions, setShowOptions] = useState(false);
-  const [importChoice, setImportChoice] = useState("");
 
   // modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -37,8 +36,6 @@ const Worklog = () => {
     const generatedData = [];
     const initialAttendance = [];
     for (let row = 0; row < daysInMonth; row++) {
-      // Initialize cells as an object with empty value and comment
-      // This is crucial for consistently handling comments on empty cells
       generatedData.push(
         Array(numCols).fill({
           value: "",
@@ -66,7 +63,6 @@ const Worklog = () => {
     }
     setDates(generatedDates);
 
-    // Initial load will use the default structure, then getWorklog will overwrite
     const { generatedData, initialAttendance } = generateInitialData(
       daysInMonth,
       numColumns,
@@ -74,7 +70,6 @@ const Worklog = () => {
     setTableData(generatedData);
     setAttendance(initialAttendance);
 
-    // Only set default task names if 'tasks' is empty (to avoid overwriting imported tasks immediately)
     if (tasks.length === 0) {
       const initialTasks = Array(numColumns)
         .fill("")
@@ -83,9 +78,8 @@ const Worklog = () => {
     }
 
     getWorklog(currentMonth + 1, currentYear);
-  }, [currentMonth, currentYear]); // tasks is intentionally left out to avoid infinite loop
+  }, [currentMonth, currentYear]);
 
-  // close menu when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -103,20 +97,8 @@ const Worklog = () => {
     setTimeout(() => setShowToast(false), 2000);
   };
 
-  // 🐛 FIX 1: Ensure cell data is always an object to hold the comment
   const handleCellChange = (rowIndex, colIndex, value) => {
-    // Logic to check if the rowIndex matches today's date
-    const today = new Date();
-    const isToday =
-      today.getDate() === rowIndex + 1 &&
-      today.getMonth() === currentMonth &&
-      today.getFullYear() === currentYear;
-
-    if (!isToday) {
-      // Optional: show a small warning if they try to type in another day
-      return;
-    }
-
+    // FIX: Removed "isToday" guard to allow editing any day
     const updatedData = [...tableData];
     const currentCell = updatedData[rowIndex][colIndex];
 
@@ -156,9 +138,8 @@ const Worklog = () => {
       });
 
       const response = await axios.post("/worklog/get", { month, year });
-
-      const worklogs = response.data.data.worklogs; // your array of worklogs
-      const dailyWorkHours = response.data.data.dailyWorkHours || []; // new attendance array
+      const worklogs = response.data.data.worklogs;
+      const dailyWorkHours = response.data.data.dailyWorkHours || [];
       const holidays = response.data.data.holidays || [];
       const leaves = response.data.data.leaves || [];
 
@@ -173,15 +154,12 @@ const Worklog = () => {
 
       const newTableData = generatedData;
       const newAttendance = initialAttendance;
-
-      // Temporary array to hold retrieved task names
       const retrievedTasks = Array(numColumns).fill(null);
 
-      // Fill worklog tasks
       worklogs.forEach((log) => {
         const dateObj = new Date(log.date);
         const day = dateObj.getDate();
-        const rowIndex = day - 1; // 1st day -> index 0
+        const rowIndex = day - 1;
 
         if (rowIndex >= 0 && rowIndex < daysInMonth) {
           const taskMatch = log.taskNumber.match(/task(\d+)/i);
@@ -201,7 +179,6 @@ const Worklog = () => {
         }
       });
 
-      // Fill attendance from dailyWorkHours
       dailyWorkHours.forEach((att) => {
         const dateObj = new Date(att.date);
         const day = dateObj.getDate();
@@ -225,31 +202,20 @@ const Worklog = () => {
       });
 
       setTasks(finalTasks);
-
       Swal.close();
     } catch (error) {
       Swal.close();
       console.error("Error found in getWorklog", error);
-
       Swal.fire({
         icon: "error",
         title: "Oops...",
         text: "Failed to fetch worklogs. Please try again.",
       });
-
-      if (tasks.length === 0) {
-        setTasks(
-          Array(numColumns)
-            .fill("")
-            .map((_, i) => `Task ${i + 1}`),
-        );
-      }
     }
   };
 
   const handleSave = async () => {
     try {
-      // Show loading popup
       Swal.fire({
         title: "Saving Worklogs...",
         text: "Please wait while we save your data",
@@ -278,10 +244,10 @@ const Worklog = () => {
             })
             .filter(Boolean);
 
-          if (typedTasks.length > 0 || attendance[rowIndex] !== "") {
+          if (typedTasks.length > 0 || (attendance[rowIndex] && attendance[rowIndex] !== "")) {
             const dateString = `${dates[rowIndex]}, ${currentYear}`;
             const date = new Date(dateString);
-            const formatted = date.toLocaleDateString("en-CA"); // YYYY-MM-DD
+            const formatted = date.toLocaleDateString("en-CA");
 
             return {
               date: formatted,
@@ -293,13 +259,8 @@ const Worklog = () => {
         })
         .filter(Boolean);
 
-      // Send payload to backend
       await axios.post("/worklog/create", { worklogs: payload });
-
-      // Close loading popup
       Swal.close();
-
-      // Show success popup
       Swal.fire({
         icon: "success",
         title: "Worklogs Saved!",
@@ -310,8 +271,6 @@ const Worklog = () => {
     } catch (error) {
       console.error("Error saving data:", error);
       Swal.close();
-
-      // Show error popup
       Swal.fire({
         icon: "error",
         title: "Save Failed",
@@ -320,21 +279,21 @@ const Worklog = () => {
     }
   };
 
-  // Helper: convert "HH:MM:SS" → total minutes
   const parseTimeToMinutes = (timeStr) => {
     if (!timeStr) return 0;
-    const [h, m, s] = timeStr.split(":").map(Number);
-    return (h || 0) * 60 + (m || 0) + Math.floor((s || 0) / 60);
+    const parts = timeStr.split(":").map(Number);
+    if (parts.length === 3) {
+      return parts[0] * 60 + parts[1] + Math.floor(parts[2] / 60);
+    }
+    return 0;
   };
 
-  // Helper: convert total minutes → "Xh Ym"
   const formatMinutes = (totalMinutes) => {
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
     return `${hours}h ${minutes}m`;
   };
 
-  // ✅ Column totals
   const columnTotals = tasks.map((_, colIndex) => {
     const totalMinutes = tableData.reduce((sum, row) => {
       const val = row[colIndex]?.value || "";
@@ -343,7 +302,6 @@ const Worklog = () => {
     return formatMinutes(totalMinutes);
   });
 
-  // ✅ Row totals
   const rowTotals = tableData.map((row) => {
     const totalMinutes = row.reduce((sum, cell) => {
       const val = cell?.value || "";
@@ -352,7 +310,6 @@ const Worklog = () => {
     return formatMinutes(totalMinutes);
   });
 
-  // ✅ Grand total
   const grandTotal = (() => {
     const totalMinutes = tableData.flat().reduce((sum, cell) => {
       const val = cell?.value || "";
@@ -374,7 +331,6 @@ const Worklog = () => {
 
   const attendanceTotal = formatMinutes(totalAttendanceMinutes);
 
-  // month navigation
   const goToPreviousMonth = () => {
     if (currentMonth === 0) {
       setCurrentMonth(11);
@@ -393,11 +349,9 @@ const Worklog = () => {
     }
   };
 
-  // handle double-click to open comment modal
   const handleCellDoubleClick = (rowIndex, colIndex) => {
     setModalCell({ row: rowIndex, col: colIndex });
     const cell = tableData[rowIndex][colIndex];
-    // Cell is now guaranteed to be an object
     setModalComment(cell.comment || "");
     setModalOpen(true);
   };
@@ -405,16 +359,8 @@ const Worklog = () => {
   const handleSaveComment = () => {
     const { row, col } = modalCell;
     if (row === null) return;
-
-    const today = new Date();
-    const isToday =
-      today.getDate() === row + 1 &&
-      today.getMonth() === currentMonth &&
-      today.getFullYear() === currentYear;
-
-    // Prevent saving if it's not today
-    if (!isToday) return;
-
+    
+    // FIX: Removed "isToday" guard here
     const updatedData = [...tableData];
     updatedData[row][col] = {
       ...updatedData[row][col],
@@ -429,67 +375,36 @@ const Worklog = () => {
   const getDateInfo = (rowIndex) => {
     const dateObj = new Date(currentYear, currentMonth, rowIndex + 1);
     const formattedDate = dateObj.toLocaleDateString("en-CA");
-    const dayOfWeek = dateObj.getDay(); // 0 is Sunday, 1 is Monday, etc.
+    const dayOfWeek = dateObj.getDay();
 
-    let info = {
-      className: "bg-white text-gray-700",
-      label: "",
-    };
+    let info = { className: "bg-white text-gray-700", label: "" };
 
-    // 1. Check Holiday (Prioritize Holidays over Sundays)
     const holiday = holidaysData.find((h) => h.holidayDate === formattedDate);
-
     if (holiday) {
       const hName = holiday.holidayName || "";
       const lowerName = hName.toLowerCase();
-
-      const isMaint = lowerName === "maintenance";
-      info.className = isMaint
-        ? "bg-purple-500 text-white font-bold"
-        : "bg-red-500 text-white font-bold";
-
-      if (lowerName === "companyholiday") {
-        info.label = "Company Holiday";
-      } else if (lowerName === "publicholiday") {
-        info.label = "Public Holiday";
-      } else {
-        info.label = hName;
-      }
-
+      info.className = lowerName === "maintenance" ? "bg-purple-500 text-white font-bold" : "bg-red-500 text-white font-bold";
+      info.label = lowerName === "companyholiday" ? "Company Holiday" : lowerName === "publicholiday" ? "Public Holiday" : hName;
       return info;
     }
 
-    // 2. Check if it's Sunday (New Logic)
     if (dayOfWeek === 0) {
       info.className = "bg-red-500 text-white font-bold";
       info.label = "Sunday";
       return info;
     }
 
-    // 3. Check Leave
     const leaf = leavesData.find((l) => l.leaveDate === formattedDate);
     if (leaf) {
       const { category, leaveType, HalfTime } = leaf;
-      info.label =
-        category === "WFH" ? `WFH (${HalfTime})` : `${category} (${leaveType})`;
-
-      if (HalfTime === "Leave" && category === "WFH")
-        info.className = "bg-yellow-300 text-black";
-      else if (HalfTime === "Offline" && category === "WFH")
-        info.className = "bg-gray-500 text-white";
-      else if (category === "Leave" && leaveType === "fullday")
-        info.className = "bg-blue-800 text-white";
-      else if (category === "WFH" && leaveType === "fullday")
-        info.className = "bg-gray-500 text-white";
-      else if (
-        category === "Leave" &&
-        (leaveType === "morning" || leaveType === "afternoon")
-      ) {
-        info.className = "bg-orange-500 text-white";
-      }
+      info.label = category === "WFH" ? `WFH (${HalfTime})` : `${category} (${leaveType})`;
+      if (HalfTime === "Leave" && category === "WFH") info.className = "bg-yellow-300 text-black";
+      else if (HalfTime === "Offline" && category === "WFH") info.className = "bg-gray-500 text-white";
+      else if (category === "Leave" && leaveType === "fullday") info.className = "bg-blue-800 text-white";
+      else if (category === "WFH" && leaveType === "fullday") info.className = "bg-gray-500 text-white";
+      else if (category === "Leave" && (leaveType === "morning" || leaveType === "afternoon")) info.className = "bg-orange-500 text-white";
       return info;
     }
-
     return info;
   };
 
@@ -508,309 +423,116 @@ const Worklog = () => {
               })}
             </span>
           </div>
-
-          {/* Quick Legend Details */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
-            <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
-              <div className="w-3 h-3 rounded bg-blue-800"></div> Full Leave
-            </div>
-            <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
-              <div className="w-3 h-3 rounded bg-orange-500"></div> Half Leave
-            </div>
-            <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
-              <div className="w-3 h-3 rounded bg-gray-500"></div> WFH
-            </div>
-            <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
-              <div className="w-3 h-3 rounded bg-gray-500"></div> WFH-Off
-            </div>
-            <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
-              <div className="w-3 h-3 rounded bg-yellow-300 border border-gray-300"></div>{" "}
-              WFH-Half
-            </div>
-            <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
-              <div className="w-3 h-3 rounded bg-red-500"></div> Holiday /
-              Sunday
-            </div>
-            <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
-              <div className="w-3 h-3 rounded bg-purple-500"></div> Maintenance
-            </div>
+            <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500"><div className="w-3 h-3 rounded bg-blue-800"></div> Full Leave</div>
+            <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500"><div className="w-3 h-3 rounded bg-orange-500"></div> Half Leave</div>
+            <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500"><div className="w-3 h-3 rounded bg-gray-500"></div> WFH</div>
+            <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500"><div className="w-3 h-3 rounded bg-yellow-300 border border-gray-300"></div> WFH-Half</div>
+            <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500"><div className="w-3 h-3 rounded bg-red-500"></div> Holiday/Sunday</div>
+            <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500"><div className="w-3 h-3 rounded bg-purple-500"></div> Maintenance</div>
           </div>
         </div>
 
         <div className="relative flex items-center gap-2">
-          {/* Save Button */}
-          <button
-            ref={saveButtonRef}
-            onClick={handleSave}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-          >
-            Save
-          </button>
-
-          {/* 3-dot Menu */}
+          <button ref={saveButtonRef} onClick={handleSave} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none">Save</button>
           <div className="relative" ref={menuRef}>
-            <button
-              onClick={() => setShowOptions((prev) => !prev)}
-              className="px-3 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-            >
-              ⋮
-            </button>
-
+            <button onClick={() => setShowOptions((prev) => !prev)} className="px-3 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">⋮</button>
             {showOptions && (
-              <div
-                ref={menuRef}
-                className="absolute top-full right-0 mt-2 w-56 bg-white border border-gray-200 shadow-lg rounded-xl z-50 animate-[fadeInScale_.15s_ease-out]"
-              >
-                <div className="px-4 py-3 border-b border-gray-100">
-                  <h3 className="text-sm font-medium text-gray-700">
-                    Quick Actions
-                  </h3>
-                </div>
-
+              <div className="absolute top-full right-0 mt-2 w-56 bg-white border border-gray-200 shadow-lg rounded-xl z-50">
                 <div className="py-2 flex">
-                  <button
-                    onClick={() => goToPreviousMonth()}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors"
-                  >
-                    ← Previous
-                  </button>
-                  <button
-                    onClick={() => goToNextMonth()}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors"
-                  >
-                    Next →
-                  </button>
+                  <button onClick={() => goToPreviousMonth()} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">← Previous</button>
+                  <button onClick={() => goToNextMonth()} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Next →</button>
                 </div>
               </div>
             )}
           </div>
-
           {showToast && (
             <div className="absolute top-full mt-2 right-0 w-[170px] bg-red-500 text-black font-bold text-sm px-4 py-3 rounded shadow-md animate-slideDown z-50">
-              ⚠️ Don’t forget to click the Save button after making changes.
+              ⚠️ Don’t forget to click the Save button.
             </div>
           )}
         </div>
       </header>
 
-      {/* TABLE */}
       <div className="flex-1 overflow-auto">
         <table className="min-w-[5000px] divide-y divide-gray-200 border-collapse">
           <thead className="bg-gray-100">
             <tr>
-              <th className="sticky left-0 bg-gray-100 p-3 text-left text-sm font-semibold text-gray-600 border-r border-gray-200 z-20">
-                Date
-              </th>
+              <th className="sticky left-0 bg-gray-100 p-3 text-left text-sm font-semibold text-gray-600 border-r border-gray-200 z-20">Date</th>
               {tasks.map((task, colIndex) => (
-                <th
-                  key={colIndex}
-                  className="p-3 text-left text-sm font-semibold text-gray-600 whitespace-nowrap border-r border-gray-200"
-                >
-                  <input
-                    type="text"
-                    value={task}
-                    onChange={(e) => handleTaskChange(colIndex, e.target.value)}
-                    className="w-full p-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
-                    placeholder={`Task ${colIndex + 1}`}
-                  />
+                <th key={colIndex} className="p-3 text-left text-sm font-semibold text-gray-600 border-r border-gray-200 whitespace-nowrap">
+                  <input type="text" value={task} onChange={(e) => handleTaskChange(colIndex, e.target.value)} className="w-full p-1 text-sm focus:outline-none" placeholder={`Task ${colIndex + 1}`} />
                 </th>
               ))}
-              <th className="p-3 text-left text-sm font-semibold text-gray-600 border-r border-gray-200 whitespace-nowrap">
-                Total
-              </th>
-              <th className="p-3 text-left text-sm font-semibold text-gray-600 border-r border-gray-200 whitespace-nowrap">
-                Attendance
-              </th>
+              <th className="p-3 text-left text-sm font-semibold text-gray-600 border-r border-gray-200 whitespace-nowrap">Total</th>
+              <th className="p-3 text-left text-sm font-semibold text-gray-600 border-r border-gray-200 whitespace-nowrap">Attendance</th>
             </tr>
           </thead>
 
           <tbody className="bg-white divide-y divide-gray-100">
             {tableData.map((rowData, rowIndex) => (
               <tr key={rowIndex}>
-                <td
-                  className={`sticky left-0 p-2 text-sm font-medium whitespace-nowrap border-r border-gray-200 z-10 group transition-all duration-200 ${
-                    getDateInfo(rowIndex).className
-                  }`}
-                  title={getDateInfo(rowIndex).label} // Standard hover tooltip
-                >
+                <td className={`sticky left-0 p-2 text-sm font-medium whitespace-nowrap border-r border-gray-200 z-10 ${getDateInfo(rowIndex).className}`} title={getDateInfo(rowIndex).label}>
                   <div className="flex flex-col items-start leading-tight">
                     <span>{dates[rowIndex]}</span>
-
-                    {/* Display the Detail Label (e.g., "Maintenance") */}
-                    {getDateInfo(rowIndex).label && (
-                      <span className="text-[9px] font-bold uppercase tracking-tighter opacity-80 mt-0.5 pointer-events-none">
-                        {getDateInfo(rowIndex).label}
-                      </span>
-                    )}
+                    {getDateInfo(rowIndex).label && <span className="text-[9px] font-bold uppercase tracking-tighter opacity-80 mt-0.5">{getDateInfo(rowIndex).label}</span>}
                   </div>
                 </td>
-                {rowData.map((cellData, cellIndex) => {
-                  // CellData is always an object: {value, comment}
-                  const value = cellData.value || "";
-                  const comment = cellData.comment || "";
-
-                  const today = new Date();
-                  const isToday =
-                    today.getDate() === rowIndex + 1 &&
-                    today.getMonth() === currentMonth &&
-                    today.getFullYear() === currentYear;
-
-                  return (
-                    <td
-                      key={cellIndex}
-                      className={`relative group p-3 text-sm border-r border-gray-200 ${
-                        comment ? "bg-yellow-100" : "" // Highlight cells with a comment
-                      }`}
-                      onDoubleClick={() =>
-                        handleCellDoubleClick(rowIndex, cellIndex)
-                      }
-                    >
-                      <input
-                        type="text"
-                        value={value}
-                        onChange={(e) =>
-                          handleCellChange(rowIndex, cellIndex, e.target.value)
-                        }
-                        // Added: logic to make it read-only if it's not today
-                        readOnly={!isToday}
-                        className={`w-full p-1 text-sm font-bold focus:outline-none ${
-                          !isToday
-                            ? "bg-gray-50 cursor-not-allowed text-gray-400"
-                            : "text-black focus:ring-1 focus:ring-blue-400"
-                        }`}
-                        placeholder={isToday ? "00:00:00" : ""}
-                      />
-
-                      {/* Tooltip */}
-                      {comment && (
-                        <span
-                          className="
-    absolute left-1/2 bottom-4
-    -translate-x-1/2 translate-y-full
-    bg-gray-900 text-white text-xs
-    px-3 py-2 rounded-md shadow-lg
-    opacity-0 group-hover:opacity-100
-    transition-opacity duration-200
-    z-50
-    whitespace-pre-wrap
-    pointer-events-none
-    w-64
-    max-h-24
-    overflow-y-auto
-    custom-scrollbar
-  "
-                        >
-                          {comment}
-                        </span>
-                      )}
-                    </td>
-                  );
-                })}
-
-                <td className="p-3 text-sm text-gray-700 whitespace-nowrap border-r border-gray-300 font-semibold">
-                  {rowTotals[rowIndex]}
-                </td>
+                {rowData.map((cellData, cellIndex) => (
+                  <td key={cellIndex} className={`relative group p-3 text-sm border-r border-gray-200 ${cellData.comment ? "bg-yellow-100" : ""}`} onDoubleClick={() => handleCellDoubleClick(rowIndex, cellIndex)}>
+                    <input
+                      type="text"
+                      value={cellData.value || ""}
+                      onChange={(e) => handleCellChange(rowIndex, cellIndex, e.target.value)}
+                      // FIX: readOnly removed to allow editing any day
+                      className="w-full p-1 text-sm font-bold focus:outline-none text-black focus:ring-1 focus:ring-blue-400"
+                      placeholder="00:00:00"
+                    />
+                    {cellData.comment && (
+                      <span className="absolute left-1/2 bottom-4 -translate-x-1/2 translate-y-full bg-gray-900 text-white text-xs px-3 py-2 rounded-md shadow-lg opacity-0 group-hover:opacity-100 z-50 whitespace-pre-wrap w-64 max-h-24 overflow-y-auto">
+                        {cellData.comment}
+                      </span>
+                    )}
+                  </td>
+                ))}
+                <td className="p-3 text-sm text-gray-700 whitespace-nowrap border-r border-gray-300 font-semibold">{rowTotals[rowIndex]}</td>
                 <td className="p-3 text-sm text-gray-700 whitespace-nowrap border-r border-gray-300">
-                  <input
-                    type="text"
-                    value={attendance[rowIndex]}
-                    onChange={(e) =>
-                      handleAttendanceChange(rowIndex, e.target.value)
-                    }
-                    className="w-full p-1 text-sm font-bold text-black focus:outline-none focus:ring-1 focus:ring-blue-400"
-                    placeholder="0"
-                  />
+                  <input type="text" value={attendance[rowIndex]} onChange={(e) => handleAttendanceChange(rowIndex, e.target.value)} className="w-full p-1 text-sm font-bold text-black focus:outline-none" placeholder="0" />
                 </td>
               </tr>
             ))}
-
             <tr className="bg-gray-200 font-bold">
-              <td className="sticky left-0 bg-gray-200 p-3 text-sm border-r border-gray-300 z-10">
-                Total
-              </td>
-              {columnTotals.map((total, colIndex) => (
-                <td
-                  key={colIndex}
-                  className="p-3 text-sm text-gray-700 whitespace-nowrap border-r border-gray-300"
-                >
-                  {total}
-                </td>
-              ))}
-              <td className="p-3 text-sm text-blue-700 whitespace-nowrap border-r border-gray-300">
-                {grandTotal}
-              </td>
-              <td className="p-3 text-sm text-blue-700 whitespace-nowrap border-r border-gray-300">
-                {attendanceTotal}
-              </td>
+              <td className="sticky left-0 bg-gray-200 p-3 text-sm border-r border-gray-300 z-10">Total</td>
+              {columnTotals.map((total, colIndex) => <td key={colIndex} className="p-3 text-sm text-gray-700 whitespace-nowrap border-r border-gray-300">{total}</td>)}
+              <td className="p-3 text-sm text-blue-700 whitespace-nowrap border-r border-gray-300">{grandTotal}</td>
+              <td className="p-3 text-sm text-blue-700 whitespace-nowrap border-r border-gray-300">{attendanceTotal}</td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      {/* COMMENT MODAL */}
-      {modalOpen &&
-        (() => {
-          // Calculate if the opened modal belongs to today
-          const today = new Date();
-          const isToday =
-            today.getDate() === modalCell.row + 1 &&
-            today.getMonth() === currentMonth &&
-            today.getFullYear() === currentYear;
-
-          return (
-            <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg shadow-lg p-6 w-96">
-                <h3 className="text-lg font-semibold mb-2">
-                  {isToday ? "Add Comment" : "View Comment"}
-                </h3>
-                <textarea
-                  className={`w-full h-64 border border-gray-300 rounded p-2 mb-4 focus:outline-none 
-            ${!isToday ? "bg-gray-100 cursor-not-allowed" : "focus:ring-1 focus:ring-blue-400"}`}
-                  value={modalComment}
-                  onChange={(e) => setModalComment(e.target.value)}
-                  readOnly={!isToday} // Disable typing for previous days
-                  placeholder={
-                    isToday
-                      ? "Type your comment..."
-                      : "No comment for this day."
-                  }
-                />
-                <div className="flex justify-end gap-2">
-                  <button
-                    onClick={() => setModalOpen(false)}
-                    className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-                  >
-                    {isToday ? "Cancel" : "Close"}
-                  </button>
-
-                  {/* Disable the button if it's not today */}
-                  {isToday && (
-                    <button
-                      onClick={handleSaveComment}
-                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                    >
-                      Set Comment
-                    </button>
-                  )}
-                </div>
-              </div>
+      {modalOpen && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-96">
+            <h3 className="text-lg font-semibold mb-2">Edit Comment</h3>
+            <textarea
+              className="w-full h-64 border border-gray-300 rounded p-2 mb-4 focus:outline-none focus:ring-1 focus:ring-blue-400"
+              value={modalComment}
+              onChange={(e) => setModalComment(e.target.value)}
+              placeholder="Type your comment..."
+            />
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setModalOpen(false)} className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Cancel</button>
+              <button onClick={handleSaveComment} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Set Comment</button>
             </div>
-          );
-        })()}
+          </div>
+        </div>
+      )}
 
-      <style>
-        {`
-          @keyframes slideDown {
-            0% { transform: translateY(-10px); opacity: 0; }
-            10% { transform: translateY(0); opacity: 1; }
-            90% { transform: translateY(0); opacity: 1; }
-            100% { transform: translateY(-10px); opacity: 0; }
-          }
-          .animate-slideDown {
-            animation: slideDown 2s ease-in-out forwards;
-          }
-        `}
-      </style>
+      <style>{`
+        @keyframes slideDown { 0% { transform: translateY(-10px); opacity: 0; } 10% { transform: translateY(0); opacity: 1; } 90% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-10px); opacity: 0; } }
+        .animate-slideDown { animation: slideDown 2s ease-in-out forwards; }
+      `}</style>
     </div>
   );
 };
