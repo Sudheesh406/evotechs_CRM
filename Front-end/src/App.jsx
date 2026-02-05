@@ -70,6 +70,7 @@ import RejectedWorks from './pages/rejection/RejectedWorks';
 import AdminRejectedWork from './pages/rejection/adminRejectedWork/AdminRejectedWork';
 import WorklogDetail from "./pages/workspace-pages/admin_workspace_side/WorklogDetail";
 import SubTaskForAdmin from './pages/activity-pages/admin_activity/SubTaskForAdmin';
+import InvoiceModel from './pages/operation-pages/InvoiceModel';
 
 import Pipeline from "./pages/home-page/adminSide/Pipeline";
 import EmployeeAbsence from "./pages/workspace-pages/EmployeeAbsence";
@@ -376,6 +377,14 @@ function Layout() {
             element={
               <ProtectedRoute allowedRoles={["staff"]}>
                 <Accounts />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/operations/invoice"
+            element={
+              <ProtectedRoute allowedRoles={["staff"]}>
+                <InvoiceModel />
               </ProtectedRoute>
             }
           />

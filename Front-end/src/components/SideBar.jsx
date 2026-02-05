@@ -86,6 +86,7 @@ const Sidebar = ({ closeSidebar }) => {
       subMenu: [
         { title: "Contacts", path: "/operations/contacts", icon: Users },
         { title: "Check list", path: "/operations/personalize", icon: Shield },
+        { title: "Invoice model", path: "/operations/invoice", icon: ClipboardList },
         { title: "Pending", path: "/operations/pendings", icon: Hourglass },
         { title: "Rework", path: "/operations/reworks", icon: RotateCcw },
         {
