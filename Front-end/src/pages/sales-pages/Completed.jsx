@@ -52,7 +52,7 @@ const Completed = () => {
   const getLeads = async (pageNo = 1, search = "") => {
     try {
       const response = await axios.get(
-        `/customer/lead/complete/get?page=${pageNo}&limit=${limit}&search=${search}`
+        `/customer/lead/complete/get?page=${pageNo}&limit=${limit}&search=${search}`,
       );
 
       if (response.data && response.data.data) {
@@ -66,7 +66,7 @@ const Completed = () => {
             lead.priority = "Not a Client";
 
           // 👉 Format Date to "30 Oct 2025"
-          lead.displayDate = lead.createdAt 
+          lead.displayDate = lead.createdAt
             ? new Date(lead.createdAt).toLocaleDateString("en-GB", {
                 day: "2-digit",
                 month: "short",
@@ -102,9 +102,24 @@ const Completed = () => {
     doc.setFontSize(16);
     doc.text("Leads List", 14, 15);
     doc.setFontSize(10);
-    doc.text(`Total Records: ${totalCount} | Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
+    doc.text(
+      `Total Records: ${totalCount} | Generated on: ${new Date().toLocaleDateString()}`,
+      14,
+      22,
+    );
 
-    const tableColumn = [ "Name", "Created Date", "Description", "Email", "Phone", "Location", "Purpose", "Source", "Priority", "Amount"];
+    const tableColumn = [
+      "Name",
+      "Created Date",
+      "Description",
+      "Email",
+      "Phone",
+      "Location",
+      "Purpose",
+      "Source",
+      "Priority",
+      "Amount",
+    ];
     const tableRows = leads.map((lead) => [
       lead.name,
       lead.displayDate, // 👈 Added to PDF
@@ -346,7 +361,7 @@ const Completed = () => {
         Swal.fire(
           "Approved!",
           "The lead has been converted into a contact.",
-          "success"
+          "success",
         );
       }
     } catch (error) {
@@ -428,23 +443,46 @@ const Completed = () => {
         }}
       />
       {/* Pagination */}
-      <div className="flex justify-between items-center mt-4 text-sm text-gray-600">
-        <span>{limit} Records Per Page</span>
+      <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-4 text-sm text-gray-600">
         <div className="flex items-center gap-2">
+          <span className="font-semibold text-gray-800">{limit}</span>
+          <span>Records Per Page</span>
+        </div>
+
+        <div className="flex items-center gap-1">
+          {/* Previous Button */}
           <button
             disabled={page === 1}
             onClick={() => setPage((p) => p - 1)}
-            className="px-3 py-1 border rounded disabled:opacity-50"
+            className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 transition-colors"
           >
             Prev
           </button>
-          <span>
-            Page {page} of {totalPages}
-          </span>
+
+          {/* Dynamic Page Number Buttons */}
+          <div className="flex items-center gap-1">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+              (pageNum) => (
+                <button
+                  key={pageNum}
+                  onClick={() => setPage(pageNum)}
+                  className={`px-3 py-1 border rounded min-w-[32px] transition-all ${
+                    page === pageNum
+                      ? "bg-indigo-600 text-white border-indigo-600 font-bold shadow-sm"
+                      : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              ),
+            )}
+          </div>
+
+          {/* Next Button */}
           <button
-            disabled={page === totalPages}
+            disabled={page === totalPages || totalPages === 0}
             onClick={() => setPage((p) => p + 1)}
-            className="px-3 py-1 border rounded disabled:opacity-50"
+            className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 transition-colors"
           >
             Next
           </button>

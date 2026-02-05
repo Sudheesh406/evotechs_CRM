@@ -11,11 +11,13 @@ const GlobalLeads = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filter, setFilter] = useState([]); // Array of unique staff
+  const [selectedStaffId, setSelectedStaffId] = useState(""); // State for selection
   const limit = 10;
 
   const columns = [
     { label: "Lead Name", key: "name", className: "font-medium text-gray-800" },
-    { label: "Created Date", key: "displayDate" }, // 👈 Added Date column
+    { label: "Created Date", key: "displayDate" },
     { label: "Description", key: "description" },
     { label: "Email", key: "email", className: "text-indigo-600" },
     { label: "Phone", key: "phone" },
@@ -28,26 +30,30 @@ const GlobalLeads = () => {
     { label: "Role", key: "staffRole" },
   ];
 
-  // Fetch leads
-  const getLeads = async (pageNo = 1, search = "") => {
+  const getLeads = async (pageNo = 1, search = "", staffId = "") => {
     try {
-      const response = await axios.get(
-        `/customer/lead/global/get?page=${pageNo}&limit=${limit}&search=${search}`
+      const response = await axios.post(
+        `/customer/lead/global/get?page=${pageNo}&limit=${limit}&search=${search}`,
+        { staffId: staffId } // Sending the selected staff ID in the request body
       );
 
       if (response.data && response.data.data) {
-        const { leads, total } = response.data.data;
+        const { leads, total, filterList } = response.data.data;
 
-        // Format leads for display
+        const staffMap = new Map();
+        setFilter(filterList)
+
         const formattedLeads = leads.map((lead) => {
-          // Format priority
+          if (lead.assignedStaff && lead.assignedStaff.id) {
+            staffMap.set(lead.assignedStaff.id, lead.assignedStaff);
+          }
+
           let priority = lead.priority;
           if (priority === "WaitingPeriod") priority = "Waiting Period";
           else if (priority === "NoUpdates") priority = "No Updates";
           else if (priority === "NotAnClient") priority = "Not a Client";
 
-          // 👉 Format Date to "30 Oct 2025"
-          const displayDate = lead.createdAt 
+          const displayDate = lead.createdAt
             ? new Date(lead.createdAt).toLocaleDateString("en-GB", {
                 day: "2-digit",
                 month: "short",
@@ -58,7 +64,7 @@ const GlobalLeads = () => {
           return {
             ...lead,
             priority,
-            displayDate, // 👈 Added formatted date key
+            displayDate,
             followerName: lead.assignedStaff?.name || "-",
             staffRole: lead.assignedStaff?.role || "-",
           };
@@ -72,33 +78,45 @@ const GlobalLeads = () => {
     }
   };
 
-  // Fetch on load and search
+  // Fetch on load, search, or filter change
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
-      getLeads(page, searchTerm);
+      getLeads(page, searchTerm, selectedStaffId);
     }, 500);
     return () => clearTimeout(delayDebounce);
-  }, [page, searchTerm]);
+  }, [page, searchTerm, selectedStaffId]);
 
-  // --- Export to PDF Function ---
   const handleDownload = () => {
     if (leads.length === 0) {
       toast.error("No data available to download");
       return;
     }
-
     const doc = new jsPDF({ orientation: "landscape" });
 
     doc.setFontSize(16);
     doc.text("Leads List", 14, 15);
     doc.setFontSize(10);
-    doc.text(`Total Records: ${totalCount} | Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
+    doc.text(
+      `Total Records: ${totalCount} | Generated on: ${new Date().toLocaleDateString()}`,
+      14,
+      22
+    );
 
-    // Added Date column to table
-    const tableColumn = ["Name", "Created Date", "Description", "Email", "Phone", "Location", "Purpose", "Source", "Priority", "Amount"];
+    const tableColumn = [
+      "Name",
+      "Created Date",
+      "Description",
+      "Email",
+      "Phone",
+      "Location",
+      "Purpose",
+      "Source",
+      "Priority",
+      "Amount",
+    ];
     const tableRows = leads.map((lead) => [
       lead.name,
-      lead.displayDate, // 👈 Added to PDF rows
+      lead.displayDate,
       lead.description,
       lead.email,
       lead.phone,
@@ -126,7 +144,6 @@ const GlobalLeads = () => {
 
   return (
     <div className="bg-gray-50 min-h-[680px] p-4">
-      {/* Top bar */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
         <div className="flex flex-wrap items-center gap-2">
           <input
@@ -140,7 +157,25 @@ const GlobalLeads = () => {
             Total Records: {totalCount}
           </span>
         </div>
+
         <div className="flex flex-wrap items-center gap-2">
+          {/* Staff Selection Dropdown */}
+          <select
+            value={selectedStaffId}
+            onChange={(e) => {
+              setSelectedStaffId(e.target.value);
+              setPage(1); // Reset to first page on filter change
+            }}
+            className="border rounded px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm min-w-[150px]"
+          >
+            <option value="">All Members</option>
+            {filter.map((staff) => (
+              <option key={staff.id} value={staff.id}>
+                {staff.name} ({staff.role})
+              </option>
+            ))}
+          </select>
+
           <button
             onClick={handleDownload}
             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow w-full sm:w-auto flex items-center justify-center gap-2 transition-colors"
@@ -151,7 +186,6 @@ const GlobalLeads = () => {
         </div>
       </div>
 
-      {/* DataTable */}
       <DataTable
         columns={columns}
         data={leads}
@@ -182,9 +216,12 @@ const GlobalLeads = () => {
           }
 
           if (key === "staffRole") {
-            const roleColor = row.staffRole === "admin" ? "bg-red-300" : "bg-blue-300";
+            const roleColor =
+              row.staffRole === "admin" ? "bg-red-300" : "bg-blue-300";
             return (
-              <span className={`inline-block px-2 py-1 text-xs font-medium ${roleColor} text-indigo-700 rounded-full`}>
+              <span
+                className={`inline-block px-2 py-1 text-xs font-medium ${roleColor} text-indigo-700 rounded-full`}
+              >
                 {row.staffRole || "-"}
               </span>
             );
@@ -194,24 +231,40 @@ const GlobalLeads = () => {
         }}
       />
 
-      {/* Pagination */}
-      <div className="flex justify-between items-center mt-4 text-sm text-gray-600">
+      <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-4 text-sm text-gray-600">
         <span>{limit} Records Per Page</span>
-        <div className="flex items-center gap-2">
+
+        <div className="flex items-center gap-1">
           <button
             disabled={page === 1}
             onClick={() => setPage((p) => p - 1)}
-            className="px-3 py-1 border rounded disabled:opacity-50"
+            className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:hover:bg-white transition-colors"
           >
             Prev
           </button>
-          <span>
-            Page {page} of {totalPages}
-          </span>
+
+          <div className="flex items-center gap-1">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+              (pageNum) => (
+                <button
+                  key={pageNum}
+                  onClick={() => setPage(pageNum)}
+                  className={`px-3 py-1 border rounded transition-colors ${
+                    page === pageNum
+                      ? "bg-indigo-600 text-white border-indigo-600"
+                      : "hover:bg-gray-100 text-gray-700"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              )
+            )}
+          </div>
+
           <button
-            disabled={page === totalPages}
+            disabled={page === totalPages || totalPages === 0}
             onClick={() => setPage((p) => p + 1)}
-            className="px-3 py-1 border rounded disabled:opacity-50"
+            className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:hover:bg-white transition-colors"
           >
             Next
           </button>

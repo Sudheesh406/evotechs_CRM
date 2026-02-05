@@ -20,11 +20,11 @@ Router.get("/pending/lead/get",authenticate, getPendingLeads);
 Router.get("/reject/lead/get",authenticate, getRejectLeads);
 Router.get("/lead/complete/get",authenticate, getCompletedLeads);
 
-Router.get("/pending/global/lead/get",authenticate, getGlobalPendingLeads);
-Router.get("/lead/global/complete/get",authenticate, getGlobalCompletedLeads);
-Router.get("/rejected/global/lead/get",authenticate, getGlobalRejectLeads);
+Router.post("/pending/global/lead/get",authenticate, getGlobalPendingLeads);
+Router.post("/lead/global/complete/get",authenticate, getGlobalCompletedLeads);
+Router.post("/rejected/global/lead/get",authenticate, getGlobalRejectLeads);
 
-Router.get("/lead/global/get",authenticate, getGlobalLeads);
+Router.post("/lead/global/get",authenticate, getGlobalLeads);
 
 //contacts
 Router.post("/contact/create",authenticate, createContact);
@@ -34,7 +34,7 @@ Router.get("/contact/get",authenticate, getContact);
 Router.post("/contact/assign",authenticate, assignContact);
 
 
-Router.get("/contact/global/get",authenticate, getGlobalContact);
+Router.post("/contact/global/get",authenticate, getGlobalContact);
 
 
 // Router.post("/login", handleLogin);

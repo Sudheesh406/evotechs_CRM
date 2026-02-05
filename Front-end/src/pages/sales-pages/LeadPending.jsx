@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { ChevronDown, Phone, X, Edit, Trash, CheckCircle, Download } from "lucide-react";
+import {
+  ChevronDown,
+  Phone,
+  X,
+  Edit,
+  Trash,
+  CheckCircle,
+  Download,
+} from "lucide-react";
 import DataTable from "../../components/Table2";
 import axios from "../../instance/Axios";
 import Swal from "sweetalert2";
@@ -52,11 +60,11 @@ const LeadsPending = () => {
   const getLeads = async (pageNo = 1, search = "") => {
     try {
       const response = await axios.get(
-        `/customer/pending/lead/get?page=${pageNo}&limit=${limit}&search=${search}`
+        `/customer/pending/lead/get?page=${pageNo}&limit=${limit}&search=${search}`,
       );
       if (response.data && response.data.data) {
         const { leads, total } = response.data.data;
-        
+
         // Map and format leads
         const formattedLeads = leads.map((lead) => {
           let priority = lead.priority;
@@ -68,12 +76,12 @@ const LeadsPending = () => {
             ...lead,
             priority,
             // 👈 Formatting the createdAt date string
-            createdAt: lead.createdAt 
+            createdAt: lead.createdAt
               ? new Date(lead.createdAt).toLocaleDateString("en-GB", {
                   day: "2-digit",
                   month: "short",
                   year: "numeric",
-                }) 
+                })
               : "N/A",
           };
         });
@@ -106,7 +114,11 @@ const LeadsPending = () => {
     doc.setFontSize(16);
     doc.text("Pending Leads List", 14, 15); // Corrected title
     doc.setFontSize(10);
-    doc.text(`Total Records: ${totalCount} | Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
+    doc.text(
+      `Total Records: ${totalCount} | Generated on: ${new Date().toLocaleDateString()}`,
+      14,
+      22,
+    );
 
     const tableColumn = [
       "Name",
@@ -194,7 +206,7 @@ const LeadsPending = () => {
     let newValue = value;
 
     if (name === "phone" || name === "amount") {
-      newValue = value.replace(/[^0-9]/g, ""); 
+      newValue = value.replace(/[^0-9]/g, "");
     }
     setFormData((prev) => ({ ...prev, [name]: newValue }));
 
@@ -346,18 +358,22 @@ const LeadsPending = () => {
             onClick={handleDownload}
             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow w-full sm:w-auto transition-colors flex items-center justify-center gap-2"
           >
-            <Download size={16}/> Download
+            <Download size={16} /> Download
           </button>
         </div>
       </div>
-      
+
       <DataTable
         columns={columns}
         data={leads}
         renderCell={(key, row) => {
           // 👈 Added handler for CreatedAt display
           if (key === "createdAt") {
-            return <span className="text-gray-500 whitespace-nowrap">{row.createdAt}</span>;
+            return (
+              <span className="text-gray-500 whitespace-nowrap">
+                {row.createdAt}
+              </span>
+            );
           }
           if (key === "phone") {
             return (
@@ -396,23 +412,47 @@ const LeadsPending = () => {
         }}
       />
 
-      <div className="flex justify-between items-center mt-4 text-sm text-gray-600">
-        <span>{limit} Records Per Page</span>
+      {/* Pagination */}
+      <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-4 text-sm text-gray-600">
         <div className="flex items-center gap-2">
+          <span className="font-semibold text-gray-800">{limit}</span>
+          <span>Records Per Page</span>
+        </div>
+
+        <div className="flex items-center gap-1">
+          {/* Previous Button */}
           <button
             disabled={page === 1}
             onClick={() => setPage((p) => p - 1)}
-            className="px-3 py-1 border rounded disabled:opacity-50"
+            className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 transition-colors"
           >
             Prev
           </button>
-          <span>
-            Page {page} of {totalPages}
-          </span>
+
+          {/* Dynamic Page Number Buttons */}
+          <div className="flex items-center gap-1">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+              (pageNum) => (
+                <button
+                  key={pageNum}
+                  onClick={() => setPage(pageNum)}
+                  className={`px-3 py-1 border rounded min-w-[32px] transition-all ${
+                    page === pageNum
+                      ? "bg-indigo-600 text-white border-indigo-600 font-bold shadow-sm"
+                      : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              ),
+            )}
+          </div>
+
+          {/* Next Button */}
           <button
-            disabled={page === totalPages}
+            disabled={page === totalPages || totalPages === 0}
             onClick={() => setPage((p) => p + 1)}
-            className="px-3 py-1 border rounded disabled:opacity-50"
+            className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 transition-colors"
           >
             Next
           </button>

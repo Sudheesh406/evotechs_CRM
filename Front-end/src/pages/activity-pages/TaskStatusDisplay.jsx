@@ -10,6 +10,8 @@ import {
   Layers,
   RefreshCw,
   UserCircle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 import TaskModal from "../../components/modals/TaskModal";
@@ -25,6 +27,11 @@ const TaskStatusDetail = () => {
   const [stageModal, setStageModal] = useState(false);
   const [stage, setStage] = useState(null);
   const [taskById, setTaskById] = useState(null);
+
+  // Pagination States
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const itemsPerPage = 12;
 
   const [showForm, setShowForm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -58,7 +65,7 @@ const TaskStatusDetail = () => {
     }
   };
 
-  const fetchTasks = async () => {
+  const fetchTasks = async (page = 1) => {
     try {
       Swal.fire({
         title: "Loading Tasks...",
@@ -66,16 +73,20 @@ const TaskStatusDetail = () => {
         didOpen: () => Swal.showLoading(),
       });
 
-      const res = await axios.get(`/task/get/${data}`);
-      const fetchedTasks = res.data.data || [];
-      setTasks(fetchedTasks);
+      const res = await axios.get(`/task/get/${data}?page=${page}&limit=${itemsPerPage}`);
+      const { tasks: fetchedTasks, totalPages: total } = res.data.data;
+      
+      setTasks(fetchedTasks || []);
+      setTotalPages(total || 1);
+      setCurrentPage(page);
 
       Swal.close();
     } catch (err) {
       console.error(err);
-
-      // If 404 (No Data Found)
+      Swal.close();
       if (err.response && err.response.status === 404) {
+        setTasks([]);
+        setTotalPages(1);
         Swal.fire({
           icon: "info",
           title: "No Data Found",
@@ -87,7 +98,6 @@ const TaskStatusDetail = () => {
           }
         });
       } else {
-        // Other errors
         Swal.fire({
           icon: "error",
           title: "Failed!",
@@ -100,10 +110,16 @@ const TaskStatusDetail = () => {
 
   useEffect(() => {
     fetchRequirements();
-    fetchTasks();
+    fetchTasks(1);
   }, [data]);
 
   // -------------------- Handlers --------------------
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      fetchTasks(newPage);
+    }
+  };
+
   const handleCardClick = (task, action) => {
     if (action === "edit") {
       setFormData({ ...task, id: task.id });
@@ -122,8 +138,9 @@ const TaskStatusDetail = () => {
     } else if (action === "subtask") {
       navigate(`/activities/tasks/subtask/${task.id}`);
       setActiveCardId(null);
-    }else if (action === "Invoice"){
-    const existingInvoice = task.invoices && task.invoices.length > 0 ? task.invoices[0] : null;
+    } else if (action === "Invoice") {
+      const existingInvoice =
+        task.invoices && task.invoices.length > 0 ? task.invoices[0] : null;
       setInvoiceData({
         link: existingInvoice ? existingInvoice.link : "",
         amount: existingInvoice ? existingInvoice.amount : "",
@@ -137,8 +154,8 @@ const TaskStatusDetail = () => {
         `/activities/tasks/person/${encodeURIComponent(
           JSON.stringify({
             data: { taskId: task.id, contactId: task.contactId },
-          })
-        )}`
+          }),
+        )}`,
       );
       setActiveCardId(null);
     }
@@ -163,7 +180,7 @@ const TaskStatusDetail = () => {
           timer: 1500,
           showConfirmButton: false,
         }).then(() => {
-          fetchTasks();
+          fetchTasks(currentPage);
         });
       } catch (err) {
         console.error(err);
@@ -235,7 +252,7 @@ const TaskStatusDetail = () => {
 
     if (isEditing) {
       const hasChanged = Object.keys(formData).some(
-        (key) => formData[key] !== originalData[key]
+        (key) => formData[key] !== originalData[key],
       );
       if (!hasChanged) {
         await Swal.fire({ icon: "warning", title: "No Changes Detected" });
@@ -253,7 +270,7 @@ const TaskStatusDetail = () => {
         title: isEditing ? "Task Updated!" : "Task Created!",
       });
       closeForm();
-      fetchTasks();
+      fetchTasks(currentPage);
     } catch (err) {
       console.error(err);
       Swal.fire({
@@ -264,7 +281,6 @@ const TaskStatusDetail = () => {
     }
   };
 
-  // --- Helper component for a single detail row ---
   const DetailRow = ({
     label,
     value,
@@ -276,8 +292,6 @@ const TaskStatusDetail = () => {
     </div>
   );
 
-
-   // --- Invoice Submission ---
   const handleInvoiceSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -287,7 +301,6 @@ const TaskStatusDetail = () => {
         didOpen: () => Swal.showLoading(),
       });
 
-      // API Call for Invoice
       await axios.post(`/task/invoice/${invoiceData.taskId}`, invoiceData);
 
       Swal.close();
@@ -298,7 +311,7 @@ const TaskStatusDetail = () => {
         showConfirmButton: false,
       });
       setInvoiceModal(false);
-      fetchTasks(); // Refresh to ensure UI reflects the latest invoice data
+      fetchTasks(currentPage);
     } catch (err) {
       console.error(err);
       Swal.close();
@@ -321,7 +334,6 @@ const TaskStatusDetail = () => {
           onClick={() => navigate(-1)}
           className="px-3 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors flex items-center gap-2"
         >
-          {/* Optional: Back Arrow Icon */}
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="h-5 w-5"
@@ -341,9 +353,7 @@ const TaskStatusDetail = () => {
       {/* Task Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {tasks.map((task) => {
-          // Determine the display name
           const displayName = task.customer?.name || "Unnamed Task";
-          // Get first letter for avatar
           const firstLetter = displayName.charAt(0).toUpperCase();
 
           return (
@@ -358,39 +368,28 @@ const TaskStatusDetail = () => {
                     setActiveCardId(activeCardId === task.id ? null : task.id)
                   }
                   className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition-colors"
-                  aria-expanded={activeCardId === task.id}
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                  </svg>
+                  <MoreVertical size={20} />
                 </button>
                 {activeCardId === task.id && (
-                  <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded-2xl shadow-lg z-50 overflow-hidden animate-fadeIn">
+                  <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded-2xl shadow-lg z-50 overflow-hidden">
                     <button
                       className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 transition"
                       onClick={() => handleCardClick(task, "edit")}
                     >
                       <Edit size={16} className="text-gray-700" /> Edit
                     </button>
-
                     <button
                       className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 transition"
                       onClick={() => handleCardClick(task, "Invoice")}
                     >
-                      <UserCircle size={16} className="text-gray-700" /> Invoice
-                      Update
+                      <UserCircle size={16} className="text-gray-700" /> Invoice Update
                     </button>
                     <button
                       className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 transition"
                       onClick={() => handleCardClick(task, "taskUpdate")}
                     >
-                      <RefreshCw size={16} className="text-gray-700" /> Stage
-                      Update
+                      <RefreshCw size={16} className="text-gray-700" /> Stage Update
                     </button>
                     <button
                       className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 transition"
@@ -398,14 +397,12 @@ const TaskStatusDetail = () => {
                     >
                       <Eye size={16} className="text-gray-700" /> View Details
                     </button>
-
                     <button
                       className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 transition"
                       onClick={() => handleCardClick(task, "subtask")}
                     >
                       <Layers size={16} className="text-yellow-600" /> Subtask
                     </button>
-
                     <button
                       className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition rounded-b-2xl"
                       onClick={() => handleCardClick(task, "delete")}
@@ -433,15 +430,12 @@ const TaskStatusDetail = () => {
 
               {/* Task Details */}
               <div className="text-sm space-y-2">
-                {/* <DetailRow label="Stage" value={task.stage} /> */}
                 <DetailRow label="Finish By" value={task.finishBy} />
                 <DetailRow
                   label="Amount"
                   value={task.customer?.amount || "-"}
                 />
                 <DetailRow label="Phone" value={task.phone || "-"} />
-
-                {/* Priority Row with dynamic styling */}
                 <DetailRow
                   label="Priority"
                   value={task.priority || "-"}
@@ -449,8 +443,8 @@ const TaskStatusDetail = () => {
                     task.priority === "High"
                       ? "text-red-600"
                       : task.priority === "Medium"
-                      ? "text-yellow-600"
-                      : "text-green-600"
+                        ? "text-yellow-600"
+                        : "text-green-600"
                   }`}
                 />
               </div>
@@ -466,6 +460,48 @@ const TaskStatusDetail = () => {
           );
         })}
       </div>
+
+      {/* Pagination Controls */}
+      {tasks.length > 0 && (
+        <div className="mt-12 flex flex-col items-center gap-4">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="flex items-center gap-1 px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition text-gray-700 font-medium"
+            >
+              <ChevronLeft className="w-4 h-4" /> Previous
+            </button>
+
+            <div className="flex items-center gap-1">
+              {[...Array(totalPages)].map((_, index) => (
+                <button
+                  key={index + 1}
+                  onClick={() => handlePageChange(index + 1)}
+                  className={`w-10 h-10 rounded-lg border transition font-medium ${
+                    currentPage === index + 1
+                      ? "bg-indigo-600 text-white border-indigo-600 shadow-md"
+                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                  }`}
+                >
+                  {index + 1}
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="flex items-center gap-1 px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition text-gray-700 font-medium"
+            >
+              Next <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+          <p className="text-sm text-gray-500 font-medium">
+            Showing page {currentPage} of {totalPages}
+          </p>
+        </div>
+      )}
 
       {/* Modals */}
       <TaskModal
@@ -483,7 +519,7 @@ const TaskStatusDetail = () => {
         setStageModal={setStageModal}
         stage={stage}
         handleTaskUpdate={handleTaskUpdate}
-        fetchTasks={fetchTasks}
+        fetchTasks={() => fetchTasks(currentPage)}
       />
 
       {/* --- Invoice Modal UI --- */}
@@ -491,9 +527,7 @@ const TaskStatusDetail = () => {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 overflow-hidden">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">
-                Invoice Details
-              </h2>
+              <h2 className="text-2xl font-bold text-gray-800">Invoice Details</h2>
               <button
                 onClick={() => setInvoiceModal(false)}
                 className="text-gray-400 hover:text-gray-600 text-xl"
@@ -503,60 +537,38 @@ const TaskStatusDetail = () => {
             </div>
 
             <form onSubmit={handleInvoiceSubmit} className="space-y-5">
-              {/* Link Input */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Invoice/Link
-                </label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Invoice/Link</label>
                 <input
                   type="text"
                   placeholder="Paste link here..."
                   className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                   value={invoiceData.link}
-                  onChange={(e) =>
-                    setInvoiceData({ ...invoiceData, link: e.target.value })
-                  }
+                  onChange={(e) => setInvoiceData({ ...invoiceData, link: e.target.value })}
                   required
                 />
               </div>
-
-              {/* Amount Input */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Amount
-                </label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Amount</label>
                 <input
                   type="number"
                   placeholder="Enter amount"
                   className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                   value={invoiceData.amount}
-                  onChange={(e) =>
-                    setInvoiceData({ ...invoiceData, amount: e.target.value })
-                  }
+                  onChange={(e) => setInvoiceData({ ...invoiceData, amount: e.target.value })}
                   required
                 />
               </div>
-
-              {/* Paid Checkbox */}
               <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
                 <input
                   type="checkbox"
                   id="paidStatus"
                   className="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer"
                   checked={invoiceData.paid}
-                  onChange={(e) =>
-                    setInvoiceData({ ...invoiceData, paid: e.target.checked })
-                  }
+                  onChange={(e) => setInvoiceData({ ...invoiceData, paid: e.target.checked })}
                 />
-                <label
-                  htmlFor="paidStatus"
-                  className="text-sm font-medium text-gray-700 cursor-pointer"
-                >
-                  Mark as Paid
-                </label>
+                <label htmlFor="paidStatus" className="text-sm font-medium text-gray-700 cursor-pointer">Mark as Paid</label>
               </div>
-
-              {/* Modal Actions */}
               <div className="flex space-x-3 pt-4">
                 <button
                   type="button"

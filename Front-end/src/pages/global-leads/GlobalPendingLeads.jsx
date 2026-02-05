@@ -11,11 +11,13 @@ const GlobalPendingLeads = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filter, setFilter] = useState([]); // Array of unique staff
+  const [selectedStaffId, setSelectedStaffId] = useState(""); // State for selection
   const limit = 10;
 
   const columns = [
     { label: "Lead Name", key: "name", className: "font-medium text-gray-800" },
-    { label: "Created Date", key: "displayDate" }, // 👈 Added Date column
+    { label: "Created Date", key: "displayDate" },
     { label: "Description", key: "description" },
     { label: "Email", key: "email", className: "text-indigo-600" },
     { label: "Phone", key: "phone" },
@@ -28,22 +30,24 @@ const GlobalPendingLeads = () => {
     { label: "Role", key: "staffRole" },
   ];
 
-  const getLeads = async (pageNo = 1, search = "") => {
+  const getLeads = async (pageNo = 1, search = "", staffId = "") => {
     try {
-      const response = await axios.get(
-        `/customer/pending/global/lead/get?page=${pageNo}&limit=${limit}&search=${search}`
+      const response = await axios.post(
+        `/customer/pending/global/lead/get?page=${pageNo}&limit=${limit}&search=${search}`,
+        { staffId: staffId } // 👈 Corrected key name to use the parameter
       );
 
       if (response.data?.data) {
-        const { leads, total } = response.data.data;
+        const { leads, total, filterList } = response.data.data;
 
+        if (filterList) setFilter(filterList);
+        
         const formattedLeads = leads.map((lead) => {
           let priority = lead.priority;
           if (priority === "WaitingPeriod") priority = "Waiting Period";
           else if (priority === "NoUpdates") priority = "No Updates";
           else if (priority === "NotAnClient") priority = "Not a Client";
 
-          // 👉 Format Date to "30 Oct 2025"
           const displayDate = lead.createdAt
             ? new Date(lead.createdAt).toLocaleDateString("en-GB", {
                 day: "2-digit",
@@ -55,7 +59,7 @@ const GlobalPendingLeads = () => {
           return {
             ...lead,
             priority,
-            displayDate, // 👈 Added formatted date
+            displayDate,
             followerName: lead.assignedStaff?.name || "-",
             staffRole: lead.assignedStaff?.role || "-",
           };
@@ -71,11 +75,12 @@ const GlobalPendingLeads = () => {
 
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
-      getLeads(page, searchTerm);
+      // 👈 Added selectedStaffId to the function call
+      getLeads(page, searchTerm, selectedStaffId); 
     }, 500);
 
     return () => clearTimeout(delayDebounce);
-  }, [page, searchTerm]);
+  }, [page, searchTerm, selectedStaffId]); // 👈 Added selectedStaffId to dependencies
 
   // Download Function
   const handleDownload = () => {
@@ -92,12 +97,12 @@ const GlobalPendingLeads = () => {
     doc.text(
       `Total Records: ${totalCount} | Generated on: ${new Date().toLocaleDateString()}`,
       14,
-      22
+      22,
     );
 
     const tableColumn = [
       "Name",
-      "Created Date", // 👈 Added to PDF header
+      "Created Date",
       "Description",
       "Email",
       "Phone",
@@ -110,7 +115,7 @@ const GlobalPendingLeads = () => {
 
     const tableRows = leads.map((lead) => [
       lead.name,
-      lead.displayDate, // 👈 Added to PDF rows
+      lead.displayDate,
       lead.description,
       lead.email,
       lead.phone,
@@ -126,7 +131,7 @@ const GlobalPendingLeads = () => {
       body: tableRows,
       startY: 30,
       styles: { fontSize: 8 },
-      headStyles: { fillColor: [220, 38, 38] }, // Red theme for Rejected Leads
+      headStyles: { fillColor: [220, 38, 38] },
     });
 
     const fileName = `Rejected_Leads_${
@@ -154,6 +159,22 @@ const GlobalPendingLeads = () => {
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={selectedStaffId}
+            onChange={(e) => {
+              setSelectedStaffId(e.target.value);
+              setPage(1); // Reset to first page on filter change
+            }}
+            className="border rounded px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm min-w-[150px]"
+          >
+            <option value="">All Members</option>
+            {filter.map((staff) => (
+              <option key={staff.id} value={staff.id}>
+                {staff.name} ({staff.role})
+              </option>
+            ))}
+          </select>
+
           <button
             onClick={handleDownload}
             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow w-full sm:w-auto flex items-center justify-center gap-2 transition-colors"
@@ -209,23 +230,44 @@ const GlobalPendingLeads = () => {
         }}
       />
 
-      <div className="flex justify-between items-center mt-4 text-sm text-gray-600">
-        <span>{limit} Records Per Page</span>
+      {/* Pagination */}
+      <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-4 text-sm text-gray-600">
         <div className="flex items-center gap-2">
+          <span className="font-semibold text-gray-800">{limit}</span>
+          <span>Records Per Page</span>
+        </div>
+
+        <div className="flex items-center gap-1">
           <button
             disabled={page === 1}
             onClick={() => setPage((p) => p - 1)}
-            className="px-3 py-1 border rounded disabled:opacity-50"
+            className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 transition-colors"
           >
             Prev
           </button>
-          <span>
-            Page {page} of {totalPages}
-          </span>
+
+          <div className="flex items-center gap-1">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+              (pageNum) => (
+                <button
+                  key={pageNum}
+                  onClick={() => setPage(pageNum)}
+                  className={`px-3 py-1 border rounded min-w-[35px] transition-all ${
+                    page === pageNum
+                      ? "bg-indigo-600 text-white border-indigo-600 font-bold"
+                      : "bg-white text-gray-700 hover:bg-gray-100 border-gray-300"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              ),
+            )}
+          </div>
+
           <button
-            disabled={page === totalPages}
+            disabled={page === totalPages || totalPages === 0}
             onClick={() => setPage((p) => p + 1)}
-            className="px-3 py-1 border rounded disabled:opacity-50"
+            className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 transition-colors"
           >
             Next
           </button>

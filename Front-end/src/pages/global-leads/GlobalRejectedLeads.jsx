@@ -6,12 +6,13 @@ import toast from "react-hot-toast";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
-
 const GlobalRejectedLeads = () => {
   const [leads, setLeads] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filter, setFilter] = useState([]); // Array of unique staff
+  const [selectedStaffId, setSelectedStaffId] = useState(""); // State for selection
   const limit = 10;
 
   const columns = [
@@ -29,14 +30,16 @@ const GlobalRejectedLeads = () => {
     { label: "Role", key: "staffRole" },
   ];
 
-  const getLeads = async (pageNo = 1, search = "") => {
+  const getLeads = async (pageNo = 1, search = "",  staffId = "") => {
     try {
-      const response = await axios.get(
-        `/customer/rejected/global/lead/get?page=${pageNo}&limit=${limit}&search=${search}`
+      const response = await axios.post(
+        `/customer/rejected/global/lead/get?page=${pageNo}&limit=${limit}&search=${search}`,
+        { staffId: staffId } // 👈 Corrected key name to use the parameter
       );
 
       if (response.data?.data) {
-        const { leads, total } = response.data.data;
+        const { leads, total , filterList} = response.data.data;
+          if (filterList) setFilter(filterList);
 
         const formattedLeads = leads.map((lead) => {
           let priority = lead.priority;
@@ -45,7 +48,7 @@ const GlobalRejectedLeads = () => {
           else if (priority === "NotAnClient") priority = "Not a Client";
 
           // 👉 Format Date to "30 Oct 2025"
-          const displayDate = lead.createdAt 
+          const displayDate = lead.createdAt
             ? new Date(lead.createdAt).toLocaleDateString("en-GB", {
                 day: "2-digit",
                 month: "short",
@@ -70,14 +73,13 @@ const GlobalRejectedLeads = () => {
     }
   };
 
-  useEffect(() => {
-    const delayDebounce = setTimeout(() => {
-      getLeads(page, searchTerm);
-    }, 500);
+ useEffect(() => {
+  const delayDebounce = setTimeout(() => {
+    getLeads(page, searchTerm, selectedStaffId);
+  }, 500);
 
-    return () => clearTimeout(delayDebounce);
-  }, [page, searchTerm]);
-
+  return () => clearTimeout(delayDebounce);
+}, [page, searchTerm, selectedStaffId]); // 👈 Add selectedStaffId here
 
   const handleDownload = () => {
     if (leads.length === 0) {
@@ -90,10 +92,25 @@ const GlobalRejectedLeads = () => {
     doc.setFontSize(16);
     doc.text("Rejected Leads List", 14, 15);
     doc.setFontSize(10);
-    doc.text(`Total Records: ${totalCount} | Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
+    doc.text(
+      `Total Records: ${totalCount} | Generated on: ${new Date().toLocaleDateString()}`,
+      14,
+      22,
+    );
 
     // Added Date column to table
-    const tableColumn = ["Name", "Created Date", "Description", "Email", "Phone", "Location", "Purpose", "Source", "Priority", "Amount"];
+    const tableColumn = [
+      "Name",
+      "Created Date",
+      "Description",
+      "Email",
+      "Phone",
+      "Location",
+      "Purpose",
+      "Source",
+      "Priority",
+      "Amount",
+    ];
     const tableRows = leads.map((lead) => [
       lead.name,
       lead.displayDate, // 👈 Added to PDF rows
@@ -139,6 +156,21 @@ const GlobalRejectedLeads = () => {
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+            <select
+            value={selectedStaffId}
+            onChange={(e) => {
+              setSelectedStaffId(e.target.value);
+              setPage(1); // Reset to first page on filter change
+            }}
+            className="border rounded px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm min-w-[150px]"
+          >
+            <option value="">All Members</option>
+            {filter.map((staff) => (
+              <option key={staff.id} value={staff.id}>
+                {staff.name} ({staff.role})
+              </option>
+            ))}
+          </select>
           <button
             onClick={handleDownload}
             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow w-full sm:w-auto flex items-center justify-center gap-2 transition-colors"
@@ -180,9 +212,12 @@ const GlobalRejectedLeads = () => {
           }
 
           if (key === "staffRole") {
-            const roleColor = row.staffRole === "admin" ? "bg-red-300" : "bg-blue-300";
+            const roleColor =
+              row.staffRole === "admin" ? "bg-red-300" : "bg-blue-300";
             return (
-              <span className={`inline-block px-2 py-1 text-xs font-medium ${roleColor} text-indigo-700 rounded-full`}>
+              <span
+                className={`inline-block px-2 py-1 text-xs font-medium ${roleColor} text-indigo-700 rounded-full`}
+              >
                 {row.staffRole || "-"}
               </span>
             );
@@ -193,23 +228,46 @@ const GlobalRejectedLeads = () => {
       />
 
       {/* Pagination */}
-      <div className="flex justify-between items-center mt-4 text-sm text-gray-600">
-        <span>{limit} Records Per Page</span>
+      <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-4 text-sm text-gray-600">
         <div className="flex items-center gap-2">
+          <span className="font-semibold text-gray-800">{limit}</span>
+          <span>Records Per Page</span>
+        </div>
+
+        <div className="flex items-center gap-1">
+          {/* Previous Button */}
           <button
             disabled={page === 1}
             onClick={() => setPage((p) => p - 1)}
-            className="px-3 py-1 border rounded disabled:opacity-50"
+            className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Prev
           </button>
-          <span>
-            Page {page} of {totalPages}
-          </span>
+
+          {/* Dynamic Page Number Buttons */}
+          <div className="flex items-center gap-1 overflow-x-auto">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+              (pageNum) => (
+                <button
+                  key={pageNum}
+                  onClick={() => setPage(pageNum)}
+                  className={`px-3 py-1 border rounded min-w-[32px] transition-all duration-200 ${
+                    page === pageNum
+                      ? "bg-indigo-600 text-white border-indigo-600 font-bold shadow-sm"
+                      : "bg-white text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 border-gray-300"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              ),
+            )}
+          </div>
+
+          {/* Next Button */}
           <button
-            disabled={page === totalPages}
+            disabled={page === totalPages || totalPages === 0}
             onClick={() => setPage((p) => p + 1)}
-            className="px-3 py-1 border rounded disabled:opacity-50"
+            className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Next
           </button>

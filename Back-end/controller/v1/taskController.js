@@ -36,7 +36,7 @@ const createTask = async (req, res) => {
       return httpError(
         res,
         400,
-        "Contact not found. Cannot create task without a contact."
+        "Contact not found. Cannot create task without a contact.",
       );
     }
 
@@ -54,40 +54,56 @@ const createTask = async (req, res) => {
   }
 };
 
-
 const getTask = async (req, res) => {
   const user = req.user;
+  const stages = ["1", "2", "3", "4"]; // Your ENUM values
+
   try {
-    // 1. Fetch tasks first
-    const allTask = await task.findAll({
-      where: { staffId: user.id, softDelete: false },
-      order: [["createdAt", "DESC"]],
-      include: [
-        {
-          model: contacts,
-          as: "customer",
-          attributes: ["id", "name", "phone", "amount"],
+    // 1. Fetch 10 tasks for each stage in parallel
+    const taskPromises = stages.map((stageValue) =>
+      task.findAll({
+        where: { 
+          staffId: user.id, 
+          softDelete: false, 
+          stage: stageValue 
         },
-      ],
-    });
+        order: [["createdAt", "DESC"]],
+        limit: 10, // Limit per stage
+        include: [
+          {
+            model: contacts,
+            as: "customer",
+            attributes: ["id", "name", "phone", "amount"],
+          },
+        ],
+      })
+    );
 
-    // 2. Extract all task IDs
-    const taskIds = allTask.map(t => t.id);
+    // Wait for all stages to resolve and flatten the nested arrays
+    const results = await Promise.all(taskPromises);
+    const allTask = results.flat();
 
-    // 3. Fetch all invoices matching those task IDs separately
+    // 2. Extract all task IDs for invoices
+    const taskIds = allTask.map((t) => t.id);
+
+    // 3. Fetch all invoices matching those task IDs
     const allInvoices = await Invoice.findAll({
-      where: { taskId: taskIds }
+      where: { taskId: taskIds },
     });
 
     // 4. Map invoices back to their respective tasks
-    const tasksWithInvoices = allTask.map(t => {
+    const tasksWithInvoices = allTask.map((t) => {
       const taskJson = t.toJSON();
-      // Filter invoices that belong to this specific task
-      taskJson.invoices = allInvoices.filter(inv => inv.taskId === t.id);
+      taskJson.invoices = allInvoices.filter((inv) => inv.taskId === t.id);
       return taskJson;
     });
 
-    return httpSuccess(res, 200, "Tasks retrieved successfully", tasksWithInvoices);
+    return httpSuccess(
+      res,
+      200,
+      "Tasks (10 per stage) retrieved successfully",
+      tasksWithInvoices
+    );
   } catch (error) {
     console.error("Error in getTask:", error);
     return httpError(res, 500, "Server error", error.message || error);
@@ -97,70 +113,72 @@ const getTask = async (req, res) => {
 
 const getTaskByStatus = async (req, res) => {
   try {
-    const user = req.user;
-    const parsed = req.body.parsed?.status;
+    const { parsed, limit = 12, page = 1 } = req.body; // Default to page 1
+    const statusLabel = parsed?.status;
+    
+    // Calculate how many records to skip
+    const offset = (page - 1) * limit;
 
     let stage = null;
-    if (parsed == "Not Started") {
-      stage = "1";
-    } else if (parsed == "In Progress") {
-      stage = "2";
-    } else if (parsed == "Review") {
-      stage = "3";
-    } else if (parsed == "Completed") {
-      stage = "4";
-    }
+    const stageMap = {
+      "Not Started": "1",
+      "In Progress": "2",
+      "Review": "3",
+      "Completed": "4"
+    };
+    stage = stageMap[statusLabel];
 
-    const allTask = await task.findAll({
+    // findAndCountAll is better for pagination as it returns the total count
+    const { count, rows: allTask } = await task.findAndCountAll({
       where: { softDelete: false, stage },
+      limit: limit,
+      offset: offset, // Add this line
       order: [["createdAt", "DESC"]],
       include: [
-        {
-          model: contacts,
-          as: "customer", // must match the alias
-          attributes: ["id", "name", "phone", "amount"],
-        },
-        {
-          model: signup,
-          as: "staff", // must match the alias
-          attributes: ["id", "name", "email"],
-        },
+        { model: contacts, as: "customer", attributes: ["id", "name", "phone", "amount"] },
+        { model: signup, as: "staff", attributes: ["id", "name", "email"] },
       ],
     });
 
-    if (allTask.length === 0) {
-      return httpError(res, 404, "No tasks found");
-    }
-
-    return httpSuccess(res, 200, "Tasks getted successfully", allTask);
+    return httpSuccess(res, 200, "Tasks fetched successfully", {
+      tasks: allTask,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page,
+      totalTasks: count
+    });
   } catch (error) {
-    console.error("Error in getTask:", error);
-    return httpError(res, 500, "Server error", error.message || error);
+    return httpError(res, 500, "Server error", error.message);
   }
 };
 
 const getTaskByStage = async (req, res) => {
   const user = req.user;
-  const data = req.params.data;
+  const { data } = req.params;
+  // Get page and limit from query strings, set defaults
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 6; 
+  const offset = (page - 1) * limit;
+
   let stage = null;
   try {
-    if (data == "Not Started") {
-      stage = "1";
-    } else if (data == "In Progress") {
-      stage = "2";
-    } else if (data == "Review") {
-      stage = "3";
-    } else if (data == "Completed") {
-      stage = "4";
-    }
+    const stageMap = {
+      "Not Started": "1",
+      "In Progress": "2",
+      "Review": "3",
+      "Completed": "4"
+    };
+    stage = stageMap[data];
 
-    const allTask = await task.findAll({
+    // Use findAndCountAll for pagination metadata
+    const { count, rows: allTask } = await task.findAndCountAll({
       where: { staffId: user.id, softDelete: false, stage },
       order: [["createdAt", "DESC"]],
+      limit,
+      offset,
       include: [
         {
           model: contacts,
-          as: "customer", // must match the alias
+          as: "customer",
           attributes: ["id", "name", "phone", "amount"],
         },
       ],
@@ -170,30 +188,28 @@ const getTaskByStage = async (req, res) => {
       return httpError(res, 404, "No tasks found");
     }
 
-       // 2. Extract all task IDs
-    const taskIds = allTask.map(t => t.id);
-
-    // 3. Fetch all invoices matching those task IDs separately
+    const taskIds = allTask.map((t) => t.id);
     const allInvoices = await Invoice.findAll({
-      where: { taskId: taskIds }
+      where: { taskId: taskIds },
     });
 
-    // 4. Map invoices back to their respective tasks
-    const tasksWithInvoices = allTask.map(t => {
+    const tasksWithInvoices = allTask.map((t) => {
       const taskJson = t.toJSON();
-      // Filter invoices that belong to this specific task
-      taskJson.invoices = allInvoices.filter(inv => inv.taskId === t.id);
+      taskJson.invoices = allInvoices.filter((inv) => inv.taskId === t.id);
       return taskJson;
     });
 
-    return httpSuccess(res, 200, "Tasks retrieved successfully", tasksWithInvoices);
-
+    return httpSuccess(res, 200, "Tasks retrieved successfully", {
+      tasks: tasksWithInvoices,
+      totalItems: count,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page
+    });
   } catch (error) {
     console.error("Error in getTask:", error);
     return httpError(res, 500, "Server error", error.message || error);
   }
 };
-
 
 const editTask = async (req, res) => {
   try {
@@ -316,7 +332,7 @@ const taskStageUpdate = async (req, res) => {
       res,
       200,
       "Task stage updated successfully",
-      existingTask
+      existingTask,
     );
   } catch (error) {
     console.log("Error in taskStageUpdate:", error);
@@ -369,16 +385,16 @@ const getTaskDetails = async (req, res) => {
       ? taskDetails.filter((t) => t.id === Number(taskId))
       : taskDetails;
 
-      const invoiceDetails = await Invoice.findAll({where:{taskId:taskId}})
+    const invoiceDetails = await Invoice.findAll({ where: { taskId: taskId } });
 
-      // Send response
+    // Send response
     return httpSuccess(res, 200, "task details getted successfully", {
       customerDetails,
       meetingDetails,
       callDetails,
       taskDetails: filteredTaskDetails,
       documents,
-      invoiceDetails
+      invoiceDetails,
     });
   } catch (error) {
     console.error("Error in getTaskDetails:", error);
@@ -515,9 +531,8 @@ const getTeamTaskDetails = async (req, res) => {
       ? taskDetails.filter((t) => t.id === Number(taskId))
       : taskDetails;
 
-       const invoiceDetails = await Invoice.findAll({where:{taskId:taskId}})
+    const invoiceDetails = await Invoice.findAll({ where: { taskId: taskId } });
 
-       
     // Send response
     return httpSuccess(res, 200, "team task details getted successfully", {
       customerDetails,
@@ -525,7 +540,7 @@ const getTeamTaskDetails = async (req, res) => {
       callDetails,
       taskDetails: filteredTaskDetails,
       documents,
-      invoiceDetails
+      invoiceDetails,
     });
   } catch (error) {
     console.error("Error in get team task details:", error);
@@ -553,17 +568,17 @@ const updateTeamStagesAndNotes = async (req, res) => {
               Sequelize.fn(
                 "JSON_CONTAINS",
                 Sequelize.col("staffIds"),
-                JSON.stringify(user.id)
+                JSON.stringify(user.id),
               ),
-              1
+              1,
             ),
             Sequelize.where(
               Sequelize.fn(
                 "JSON_CONTAINS",
                 Sequelize.col("staffIds"),
-                JSON.stringify(existingTask.staffId)
+                JSON.stringify(existingTask.staffId),
               ),
-              1
+              1,
             ),
           ],
         },
@@ -573,9 +588,11 @@ const updateTeamStagesAndNotes = async (req, res) => {
       const staffDetails = await signup.findOne({ where: { id: user.id } });
       if (!staffDetails) return httpError(res, 404, "Staff not found");
 
-      const fullDetails = `Date: ${new Date().toISOString().split("T")[0]
-        },    Staff Name: ${staffDetails.name},    Stage: ${data.stages
-        }, notes: ${data.notes}`;
+      const fullDetails = `Date: ${
+        new Date().toISOString().split("T")[0]
+      },    Staff Name: ${staffDetails.name},    Stage: ${
+        data.stages
+      }, notes: ${data.notes}`;
       const updatedTeamWork = existingTask.teamWork
         ? [...existingTask.teamWork, fullDetails]
         : [fullDetails];
@@ -728,22 +745,20 @@ const getTaskDetailForAdmin = async (req, res) => {
       ? taskDetails.filter((t) => t.id === Number(taskId))
       : taskDetails;
 
-
-       const taskIds = filteredTaskDetails.map(t => t.id);
+    const taskIds = filteredTaskDetails.map((t) => t.id);
 
     // 3. Fetch all invoices matching those task IDs separately
     const allInvoices = await Invoice.findAll({
-      where: { taskId: taskIds }
+      where: { taskId: taskIds },
     });
 
     // 4. Map invoices back to their respective tasks
-    const tasksWithInvoices = filteredTaskDetails.map(t => {
+    const tasksWithInvoices = filteredTaskDetails.map((t) => {
       const taskJson = t.toJSON();
       // Filter invoices that belong to this specific task
-      taskJson.invoices = allInvoices.filter(inv => inv.taskId === t.id);
+      taskJson.invoices = allInvoices.filter((inv) => inv.taskId === t.id);
       return taskJson;
     });
-
 
     // Send response
     return httpSuccess(res, 200, "task details getted successfully", {
@@ -1033,21 +1048,35 @@ const getTaskForAdmin = async (req, res) => {
     }
 
     // Fetch all tasks with associated contact and staff details
-    const tasks = await task.findAll({
-      where: { softDelete: false },
-      include: [
-        {
-          model: contacts,
-          as: "customer",
-          attributes: ["name", "phone", "email", "amount"],
-        },
-        {
-          model: signup,
-          as: "staff",
-          attributes: ["name", "email"],
-        },
-      ],
-    });
+    const stages = ["1", "2", "3", "4"];
+
+    const tasksByStage = await Promise.all(
+      stages.map((stage) =>
+        task.findAll({
+          where: {
+            stage: stage,
+            softDelete: false,
+          },
+          limit: 10,
+          order: [["createdAt", "DESC"]], // Get the 10 most recent
+          include: [
+            {
+              model: contacts,
+              as: "customer",
+              attributes: ["name", "phone", "email", "amount"],
+            },
+            {
+              model: signup,
+              as: "staff",
+              attributes: ["name", "email"],
+            },
+          ],
+        }),
+      ),
+    );
+
+    // Flatten the array of arrays into one list
+    const tasks = tasksByStage.flat();
 
     return res.status(200).json({
       success: true,
@@ -1107,7 +1136,6 @@ const getAdminTask = async (req, res) => {
   }
 };
 
-
 const invoiceUpdate = async (req, res) => {
   try {
     const { link, amount, paid, taskId } = req.body;
@@ -1154,9 +1182,8 @@ const invoiceUpdate = async (req, res) => {
         data: invoice,
       });
     }
-
   } catch (error) {
-    console.error('error found in invoice update', error);
+    console.error("error found in invoice update", error);
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -1164,7 +1191,6 @@ const invoiceUpdate = async (req, res) => {
     });
   }
 };
-
 
 module.exports = {
   createTask,
@@ -1186,5 +1212,5 @@ module.exports = {
   getTaskByStatus,
   getAdminTask,
   againReworkUpdate,
-  invoiceUpdate
+  invoiceUpdate,
 };

@@ -65,7 +65,6 @@ const Task = () => {
     }
   };
 
-
   const fetchTasks = async () => {
     try {
       Swal.fire({

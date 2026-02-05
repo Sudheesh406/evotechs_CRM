@@ -11,6 +11,8 @@ const GlobalContacts = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filter, setFilter] = useState([]); // Array of unique staff
+  const [selectedStaffId, setSelectedStaffId] = useState(""); // State for selection
   const limit = 10;
 
   const columns = [
@@ -32,14 +34,19 @@ const GlobalContacts = () => {
     { label: "Amount", key: "amount" },
   ];
 
-  const getContacts = async (pageNo = 1, search = "") => {
+  const getContacts = async (pageNo = 1, search = "",  staffId = "") => {
     try {
-      const response = await axios.get(
-        `/customer/contact/global/get?page=${pageNo}&limit=${limit}&search=${search}`
+      const response = await axios.post(
+        `/customer/contact/global/get?page=${pageNo}&limit=${limit}&search=${search}`,
+        { staffId: staffId } // 👈 Corrected key name to use the parameter
+
       );
 
       if (response.data?.data) {
-        const { contacts: apiContacts, total } = response.data.data;
+        const { contacts: apiContacts, total, filterList } = response.data.data;
+        if(filterList){
+         setFilter(filterList)
+        }
 
         // Map contacts and extract followerName, role, and formatted displayDate
         const formattedContacts = apiContacts.map((contact) => {
@@ -71,10 +78,10 @@ const GlobalContacts = () => {
 
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
-      getContacts(page, searchTerm);
+      getContacts(page, searchTerm, selectedStaffId);
     }, 500);
     return () => clearTimeout(delayDebounce);
-  }, [page, searchTerm]);
+  }, [page, searchTerm, selectedStaffId]);
 
   const handleDownload = () => {
     if (contacts.length === 0) {
@@ -90,7 +97,7 @@ const GlobalContacts = () => {
     doc.text(
       `Total Records: ${totalCount} | Generated on: ${new Date().toLocaleDateString()}`,
       14,
-      22
+      22,
     );
 
     // Added "Date" to tableColumn
@@ -154,6 +161,21 @@ const GlobalContacts = () => {
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+           <select
+            value={selectedStaffId}
+            onChange={(e) => {
+              setSelectedStaffId(e.target.value);
+              setPage(1); // Reset to first page on filter change
+            }}
+            className="border rounded px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm min-w-[150px]"
+          >
+            <option value="">All Members</option>
+            {filter.map((staff) => (
+              <option key={staff.id} value={staff.id}>
+                {staff.name} ({staff.role})
+              </option>
+            ))}
+          </select>
           <button
             onClick={handleDownload}
             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow w-full sm:w-auto flex items-center justify-center gap-2 transition-colors"
@@ -195,36 +217,61 @@ const GlobalContacts = () => {
           }
 
           if (key === "role") {
-            const roleColor = row.role === "admin" ? "bg-red-300" : "bg-blue-300";
+            const roleColor =
+              row.role === "admin" ? "bg-red-300" : "bg-blue-300";
             return (
-              <span className={`inline-block px-2 py-1 text-xs font-medium ${roleColor} text-indigo-700 rounded-full`}>
+              <span
+                className={`inline-block px-2 py-1 text-xs font-medium ${roleColor} text-indigo-700 rounded-full`}
+              >
                 {row.role || "-"}
               </span>
             );
           }
-
           return row[key];
         }}
       />
 
       {/* Pagination */}
-      <div className="flex justify-between items-center mt-4 text-sm text-gray-600">
-        <span>{limit} Records Per Page</span>
+      <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-4 text-sm text-gray-600">
         <div className="flex items-center gap-2">
+          <span className="font-medium text-gray-700">{limit}</span>
+          <span>Records Per Page</span>
+        </div>
+
+        <div className="flex items-center gap-1">
+          {/* Prev Button */}
           <button
             disabled={page === 1}
             onClick={() => setPage((p) => p - 1)}
-            className="px-3 py-1 border rounded disabled:opacity-50"
+            className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:hover:bg-transparent transition-colors"
           >
             Prev
           </button>
-          <span>
-            Page {page} of {totalPages}
-          </span>
+
+          {/* Page Number Buttons */}
+          <div className="flex items-center gap-1">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+              (pageNum) => (
+                <button
+                  key={pageNum}
+                  onClick={() => setPage(pageNum)}
+                  className={`px-3 py-1 border rounded min-w-[32px] transition-all ${
+                    page === pageNum
+                      ? "bg-indigo-600 text-white border-indigo-600 font-bold shadow-sm"
+                      : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              ),
+            )}
+          </div>
+
+          {/* Next Button */}
           <button
-            disabled={page === totalPages}
+            disabled={page === totalPages || totalPages === 0}
             onClick={() => setPage((p) => p + 1)}
-            className="px-3 py-1 border rounded disabled:opacity-50"
+            className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:hover:bg-transparent transition-colors"
           >
             Next
           </button>

@@ -8,10 +8,8 @@ const getCompletedLeads = async (req, res) => {
   try {
     const user = req.user;
     const { page = 1, limit = 10, search = "" } = req.query;
-
     const offset = (page - 1) * limit;
 
-    // 🔍 Build dynamic where condition
     const whereCondition = {
       staffId: user.id,
       softDelete: false, // ✅ only fetch non-deleted leads
@@ -44,9 +42,14 @@ const getCompletedLeads = async (req, res) => {
   }
 };
 
+
 const getGlobalCompletedLeads = async (req, res) => {
   try {
     const user = req.user;
+    const { staffId } = req.body;
+
+    console.log(staffId)
+
     const access = await roleChecker(user.id);
     if (!access) {
       return httpError(res, 403, "Access denied. Admins only.");
@@ -55,12 +58,21 @@ const getGlobalCompletedLeads = async (req, res) => {
     const { page = 1, limit = 10, search = "" } = req.query;
 
     const offset = (page - 1) * limit;
-
     // 🔍 Build dynamic where condition
-    const whereCondition = {
-      softDelete: false, // ✅ only fetch non-deleted leads
-      priority: "Client", // ✅ only leads with priority = 'Client'
-    };
+    let whereCondition = {};
+
+      if(!staffId){
+      whereCondition = {
+      softDelete: false,
+      priority: "Client",
+      };
+      }else{
+      whereCondition = {
+      softDelete: false,
+      priority: "Client",
+      staffId
+      }
+    }
 
     if (search.trim()) {
       whereCondition[Op.or] = [
@@ -90,11 +102,16 @@ const getGlobalCompletedLeads = async (req, res) => {
       staffName: lead.staff ? lead.staff.name : null,
     }));
 
+    const filterList = await signup.findAll({
+      attributes: ["id", "name", "role"],
+    });
+
     return httpSuccess(res, 200, "Client Leads fetched successfully", {
       total: count,
       page: parseInt(page),
       limit: parseInt(limit),
       leads: leadsWithStaff,
+      filterList
     });
   } catch (error) {
     console.error("Error in getting Leads", error);
