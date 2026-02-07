@@ -14,7 +14,6 @@ const { Op, fn, col, literal, Sequelize } = require("sequelize");
 const handleSignup = async (req, res) => {
   try {
     const { name, email, password, AuthorisationCode } = req.body;
-    // console.log(req.body);
 
     // 1. Validate
     if (!name || !email || !password || !AuthorisationCode) {
@@ -82,7 +81,6 @@ const handleSignup = async (req, res) => {
 const handleLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
-    // console.log(req.body);
 
     // 1. Validate
     if (!email || !password) {
@@ -271,7 +269,6 @@ const createPin = async (req, res) => {
   const user = req.user; // logged-in user
   const { pin } = req.body; // pin from request
 
-  console.log(req.body);
   if (!pin) {
     return httpError(res, 400, "Pin is required");
   }
