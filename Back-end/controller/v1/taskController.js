@@ -150,7 +150,6 @@ const getTaskByStatus = async (req, res) => {
     return httpError(res, 500, "Server error", error.message);
   }
 };
-
 const getTaskByStage = async (req, res) => {
   const user = req.user;
   const { data } = req.params;

@@ -464,8 +464,6 @@ export default function TeamWorkOverview({ role }) {
     initializeData();
   }, [refresh]);
 
-
-
   return (
     <div className="relative p-6 font-sans bg-white rounded-2xl shadow-3xl border border-gray-100 max-w-7xl mx-auto">
       <div className="mb-6 border-b pb-4 flex justify-between">
@@ -491,7 +489,6 @@ export default function TeamWorkOverview({ role }) {
           )}
         </div>
       </div>
-
 
       <div className="flex flex-wrap justify-center gap-x-4 gap-y-6">
         {staffData.map((staff) => (
