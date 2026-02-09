@@ -3,7 +3,8 @@ import axios from "../../../instance/Axios";
 import Swal from "sweetalert2";
 import { Download } from "lucide-react";
 import toast from "react-hot-toast";
-import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const StaffWorklog = () => {
   const today = new Date();
@@ -108,32 +109,80 @@ const StaffWorklog = () => {
     return `${h}h ${m}m`;
   };
 
-  // --- Export Function ---
+  // --- PDF Export Function ---
   const handleDownload = () => {
     if (workDetails.length === 0) {
       toast.error("No work logs available to export");
       return;
     }
 
-    const selectedStaffName = staff.find(s => s.id === staffId)?.name || "Staff";
+    const selectedStaffName =
+      staff.find((s) => s.id === staffId)?.name || "Staff";
+    const doc = new jsPDF("l", "mm", "a4");
 
-    const dataToExport = workDetails.map((detail) => ({
-      "Date": detail.date,
-      "Staff Name": detail.staffName,
-      "Email": detail.staffEmail,
-      "Tasks": detail.tasks?.map(t => t.taskName).join(", ") || "-",
-      "Comments": detail.tasks?.map(t => t.comment).join(" | ") || "-",
-      "Task Time Total": calculateTotalTaskTime(detail.tasks),
-      "Actual Hours Worked": calculateHoursWorked(detail.attendance)
-    }));
+    // Header Styling
+    doc.setFontSize(18);
+    doc.setTextColor(79, 70, 229);
+    doc.text("Staff Work Log Report", 14, 15);
 
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "WorkLog");
+    doc.setFontSize(11);
+    doc.setTextColor(100);
+    doc.text(`Staff: ${selectedStaffName}`, 14, 22);
+    doc.text(
+      `Period: ${new Date(0, month - 1).toLocaleString("default", { month: "long" })} ${year}`,
+      14,
+      28,
+    );
 
-    const fileName = `WorkLog_${selectedStaffName}_${month}_${year}.xlsx`;
-    XLSX.writeFile(workbook, fileName);
-    toast.success("Work log report downloaded");
+    const tableColumn = [
+      "Date",
+      "Task Details",
+      "Time Spent",
+      "Total Task Time",
+      "Attendance (In/Out)",
+      "Logged",
+    ];
+    const tableRows = [];
+
+    workDetails.forEach((detail) => {
+      const tasksString =
+        detail.tasks?.length > 0
+          ? detail.tasks.map((t) => t.taskName).join("\n")
+          : "No tasks recorded";
+
+      const entry =
+        detail.attendance?.find((a) => a.type === "entry")?.time || "--";
+      const exit =
+        detail.attendance
+          ?.slice()
+          .reverse()
+          .find((a) => a.type === "exit")?.time || "--";
+
+      const rowData = [
+        detail.date,
+        tasksString,
+        detail.tasks?.map((t) => t.time).join("\n") || "-",
+        calculateTotalTaskTime(detail.tasks),
+        `IN: ${entry} / OUT: ${exit}`,
+        calculateHoursWorked(detail.attendance),
+      ];
+      tableRows.push(rowData);
+    });
+
+    // Corrected plugin call
+    autoTable(doc, {
+      startY: 35,
+      head: [tableColumn],
+      body: tableRows,
+      theme: "striped",
+      headStyles: { fillColor: [79, 70, 229] },
+      styles: { fontSize: 9 },
+      columnStyles: { 1: { cellWidth: 70 } },
+    });
+
+    const fileName = `WorkLog_${selectedStaffName}_${month}_${year}.pdf`;
+    doc.save(fileName);
+    toast.success("Work log PDF report downloaded");
   };
 
   return (
@@ -147,15 +196,18 @@ const StaffWorklog = () => {
             </h1>
             <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-gray-500">
               Viewing work logs for {year},{" "}
-              {new Date(0, month - 1).toLocaleString("default", { month: "long" })}.
+              {new Date(0, month - 1).toLocaleString("default", {
+                month: "long",
+              })}
+              .
             </p>
           </div>
           <button
             onClick={handleDownload}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow flex items-center gap-2 text-sm font-medium transition-colors"
+            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow flex items-center gap-2 text-sm font-medium transition-colors"
           >
             <Download size={18} />
-            Export Excel
+            Export PDF
           </button>
         </div>
 
@@ -214,6 +266,7 @@ const StaffWorklog = () => {
                     "Task Name",
                     "Comment",
                     "Time Spent",
+                    "Hour Calculation",
                     "Attendance",
                   ].map((head) => (
                     <th
@@ -228,58 +281,98 @@ const StaffWorklog = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {workDetails.length > 0 ? (
                   workDetails.map((detail, index) => (
-                    <tr key={index} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                        {detail.date}
+                    <tr
+                      key={index}
+                      className="hover:bg-indigo-50/30 transition-colors align-top"
+                    >
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {detail.date}
+                        </div>
                       </td>
-                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm font-semibold text-gray-900">
-                        {detail.staffName}
+                      <td className="px-4 py-4 whitespace-nowrap hidden sm:table-cell">
+                        <div className="text-sm font-semibold text-gray-900">
+                          {detail.staffName}
+                        </div>
                       </td>
-                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600">
-                        {detail.staffEmail}
+                      <td className="px-4 py-4 whitespace-nowrap hidden sm:table-cell">
+                        <div className="text-xs text-gray-500">
+                          {detail.staffEmail}
+                        </div>
                       </td>
-                      <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-gray-900">
-                        {detail.tasks?.length > 0
-                          ? detail.tasks.map((t, i) => (
-                              <div key={i} className="mb-1">• {t.taskName}</div>
-                            ))
-                          : "-"}
-                      </td>
-                      <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-gray-500 italic">
-                        {detail.tasks?.length > 0
-                          ? detail.tasks.map((t, i) => (
-                              <div key={i} className="mb-1">{t.comment}</div>
-                            ))
-                          : "-"}
-                      </td>
-                      <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-gray-900">
-                        {detail.tasks?.length > 0 ? (
-                          <div className="bg-indigo-50 p-2 rounded">
-                            {detail.tasks.map((t, i) => (
-                              <div key={i} className="text-[11px] text-indigo-700">{t.time}</div>
-                            ))}
-                            <div className="mt-1 font-bold border-t border-indigo-200 pt-1">
-                              Total: {calculateTotalTaskTime(detail.tasks)}
-                            </div>
-                          </div>
-                        ) : (
-                          "-"
-                        )}
-                      </td>
-                      <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-gray-900">
-                        {detail.attendance?.length > 0 ? (
-                          <div className="bg-gray-50 p-2 rounded">
-                            {detail.attendance.map((a, i) => (
-                              <div key={i} className="text-[11px] uppercase">
-                                {a.type}: {a.time}
+
+                      <td colSpan="3" className="px-0 py-0">
+                        <div className="flex flex-col">
+                          {detail.tasks?.length > 0 ? (
+                            detail.tasks.map((t, i) => (
+                              <div
+                                key={i}
+                                className={`flex items-start px-4 py-3 gap-4 ${i !== detail.tasks.length - 1 ? "border-b border-gray-100" : ""}`}
+                              >
+                                <div className="w-1/3">
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
+                                    {t.taskName}
+                                  </span>
+                                </div>
+                                <div className="w-1/2 text-xs text-gray-600 italic">
+                                  <span className="text-gray-500">
+                                    Heavy to download Please visit the Detail
+                                    page
+                                  </span>
+                                </div>
+                                <div className="w-1/6 text-right text-xs font-mono font-bold text-gray-700">
+                                  {t.time}
+                                </div>
                               </div>
-                            ))}
-                            <div className="mt-1 font-bold border-t border-gray-200 pt-1 text-green-700">
-                              Logged: {calculateHoursWorked(detail.attendance)}
+                            ))
+                          ) : (
+                            <div className="px-4 py-4 text-gray-400 italic text-center">
+                              No tasks recorded
+                            </div>
+                          )}
+                        </div>
+                      </td>
+
+                      <td className="px-4 py-4">
+                        <div className="flex flex-col gap-2">
+                          <div className="bg-indigo-600 text-white p-2 rounded-md shadow-sm text-center">
+                            <div className="text-[10px] uppercase opacity-80">
+                              Task Total
+                            </div>
+                            <div className="text-sm font-bold">
+                              {calculateTotalTaskTime(detail.tasks)}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="px-4 py-4">
+                        {detail.attendance?.length > 0 ? (
+                          <div className="flex flex-col gap-1">
+                            <div className="flex justify-between text-[14px] text-gray-500 border-b border-dashed pb-1">
+                              <span>
+                                IN:{" "}
+                                {detail.attendance.find(
+                                  (a) => a.type === "entry",
+                                )?.time || "--"}
+                              </span>
+                              <span>
+                                OUT:{" "}
+                                {detail.attendance
+                                  .slice()
+                                  .reverse()
+                                  .find((a) => a.type === "exit")?.time || "--"}
+                              </span>
+                            </div>
+                            <div className="text-center pt-1">
+                              <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded">
+                                Logged:{" "}
+                                {calculateHoursWorked(detail.attendance)}
+                              </span>
                             </div>
                           </div>
                         ) : (
-                          "-"
+                          <span className="text-gray-300">-</span>
                         )}
                       </td>
                     </tr>
