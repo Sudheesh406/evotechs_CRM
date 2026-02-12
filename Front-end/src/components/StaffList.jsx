@@ -346,21 +346,21 @@ export default function TeamWorkOverview({ role }) {
         total: 0,
       };
 
-      const safeImageName = taskDetail.imageUrl
-        ? encodeURIComponent(taskDetail.imageUrl)
-        : null;
+     const fileName = taskDetail.imageUrl;
 
-      const finalImageUrl = safeImageName
-        ? `${STAFF_PROFILE_BASE_URL}${safeImageName}`
-        : DEFAULT_AVATAR;
+    // Use replace logic or careful encoding for the filename
+    const finalImageUrl = fileName
+      ? `${STAFF_PROFILE_BASE_URL}${fileName.replace(/ /g, "%20")}`
+      : DEFAULT_AVATAR;
 
-      return {
-        ...staff,
-        imageUrl: finalImageUrl,
-        work: taskDetail.taskCounts || defaultWork,
-      };
-    });
-  };
+    return {
+      ...staff,
+      imageUrl: finalImageUrl,
+      work: taskDetail.taskCounts || defaultWork,
+    };
+  });
+};
+
 
   const handleMouseEnter = (staff, event) => {
     const targetRect = event.currentTarget.getBoundingClientRect();
@@ -396,15 +396,18 @@ export default function TeamWorkOverview({ role }) {
     }));
 
     // 2. Immediately update staffData with the full URL to refresh the avatar
-const fullImageUrl = `${STAFF_PROFILE_BASE_URL}${encodeURIComponent(newImageUrl)}`;
-    setStaffData((prevData) =>
+const fullImageUrl = `${STAFF_PROFILE_BASE_URL}${newImageUrl.replace(/ /g, "%20")}`;
+
+setStaffData((prevData) =>
       prevData.map((staff) =>
         staff.id === staffId ? { ...staff, imageUrl: fullImageUrl } : staff,
       ),
     );
   };
 
+
   // --- Fetch real staff list from API ---
+
   const fetchStaffData = async () => {
     try {
       const { data } = await axios.get("home/staff-details");
