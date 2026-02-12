@@ -18,6 +18,8 @@ import Swal from "sweetalert2";
 // --- Base URL for Staff Profile Images (UPDATED based on user's new link) ---
 const STAFF_PROFILE_BASE_URL = `${import.meta.env.VITE_BACKEND_URL}/images/`;
 
+console.log('STAFF_PROFILE_BASE_URL',STAFF_PROFILE_BASE_URL)
+
 // --- Staff Tooltip Component (UNCHANGED) ---
 const StaffTooltip = ({ staff, position, onStay, onLeave }) => {
   if (!staff || !staff.work) return null;
@@ -130,10 +132,7 @@ const StaffModal = ({
       setImageFile(null);
       setImagePreview(null);
     }
-    
-    // **FIX:** Clear the file input's value after processing the file.
-    // This allows the user to re-select the exact same file immediately after
-    // it was cleared from the state or if they want to try uploading it again.
+
     e.target.value = null;
   };
 
@@ -204,8 +203,6 @@ const StaffModal = ({
       });
     }
   };
-
-
 
   return (
     <div
@@ -336,6 +333,8 @@ export default function TeamWorkOverview({ role }) {
     setButton(role);
   },[role])
 
+  // console.log(taskDetails)
+
   // --- Helper to merge data and get final structure (UPDATED BASE URL) ---
   const mergeStaffData = (staffList, taskDetails) => {
     return staffList.map((staff) => {
@@ -348,6 +347,7 @@ export default function TeamWorkOverview({ role }) {
         stage4: 0,
         total: 0,
       };
+      
 
       // Construct the image URL using the UPDATED base URL
       const finalImageUrl = taskDetail.imageUrl
@@ -433,6 +433,7 @@ export default function TeamWorkOverview({ role }) {
   const getStaffProfile = async (baseStaff) => {
     try {
       const { data } = await axios.get("home/staff-profile");
+      console.log(data)
 
       const taskDetailsMap = (data.data || []).reduce((acc, profile) => {
         acc[profile.staffId] = {
