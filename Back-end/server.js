@@ -74,8 +74,7 @@ app.use("/api/home", homePageRoute);
 
 const path = require("path");
 const imagePath = path.join(__dirname, "images");
-app.use("/images", express.static(imagePath));
-
+app.use("/api/images", express.static(imagePath));
 const server = http.createServer(app);
 
 // Initialize Socket.IO

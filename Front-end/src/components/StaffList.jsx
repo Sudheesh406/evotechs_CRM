@@ -16,7 +16,7 @@ import DEFAULT_AVATAR from "../assets/images/default.png";
 import Swal from "sweetalert2";
 
 // --- Base URL for Staff Profile Images (UPDATED based on user's new link) ---
-const STAFF_PROFILE_BASE_URL = `${import.meta.env.VITE_BACKEND_URL}/images/`;
+const STAFF_PROFILE_BASE_URL = `${import.meta.env.VITE_BACKEND_URL}/api/images/`;
 
 console.log("STAFF_PROFILE_BASE_URL", STAFF_PROFILE_BASE_URL);
 
@@ -335,8 +335,8 @@ export default function TeamWorkOverview({ role }) {
 
   // --- Helper to merge data and get final structure (UPDATED BASE URL) ---
   const mergeStaffData = (staffList, taskDetails) => {
-    return staffList.map((staff) => {
-      const taskDetail = taskDetails[staff.id] || {};
+   return staffList.map((staff) => {
+    const taskDetail = taskDetails[staff.id] || {};
 
       const defaultWork = {
         stage1: 0,
