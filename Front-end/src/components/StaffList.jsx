@@ -11,14 +11,14 @@ import {
 } from "lucide-react";
 import axios from "../instance/Axios";
 
-import DEFAULT_AVATAR from '../assets/images/default.png'
+import DEFAULT_AVATAR from "../assets/images/default.png";
 
 import Swal from "sweetalert2";
 
 // --- Base URL for Staff Profile Images (UPDATED based on user's new link) ---
 const STAFF_PROFILE_BASE_URL = `${import.meta.env.VITE_BACKEND_URL}/images/`;
 
-console.log('STAFF_PROFILE_BASE_URL',STAFF_PROFILE_BASE_URL)
+console.log("STAFF_PROFILE_BASE_URL", STAFF_PROFILE_BASE_URL);
 
 // --- Staff Tooltip Component (UNCHANGED) ---
 const StaffTooltip = ({ staff, position, onStay, onLeave }) => {
@@ -127,7 +127,6 @@ const StaffModal = ({
         setImagePreview(reader.result);
       };
       reader.readAsDataURL(file);
-
     } else {
       setImageFile(null);
       setImagePreview(null);
@@ -136,7 +135,6 @@ const StaffModal = ({
     e.target.value = null;
   };
 
-  
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -152,7 +150,7 @@ const StaffModal = ({
     }
 
     const currentStaff = staffList.find(
-      (s) => s.id === Number(selectedStaffId)
+      (s) => s.id === Number(selectedStaffId),
     );
 
     if (!currentStaff) return;
@@ -329,9 +327,9 @@ export default function TeamWorkOverview({ role }) {
   const [refresh, setRefresh] = useState(false);
   const [button, setButton] = useState(false);
 
-  useEffect(()=>{
+  useEffect(() => {
     setButton(role);
-  },[role])
+  }, [role]);
 
   // console.log(taskDetails)
 
@@ -347,11 +345,13 @@ export default function TeamWorkOverview({ role }) {
         stage4: 0,
         total: 0,
       };
-      
 
-      // Construct the image URL using the UPDATED base URL
-      const finalImageUrl = taskDetail.imageUrl
-        ? `${STAFF_PROFILE_BASE_URL}${taskDetail.imageUrl}`
+      const safeImageName = taskDetail.imageUrl
+        ? encodeURIComponent(taskDetail.imageUrl)
+        : null;
+
+      const finalImageUrl = safeImageName
+        ? `${STAFF_PROFILE_BASE_URL}${safeImageName}`
         : DEFAULT_AVATAR;
 
       return {
@@ -396,12 +396,11 @@ export default function TeamWorkOverview({ role }) {
     }));
 
     // 2. Immediately update staffData with the full URL to refresh the avatar
-    const fullImageUrl = `${STAFF_PROFILE_BASE_URL}${newImageUrl}`;
-
+const fullImageUrl = `${STAFF_PROFILE_BASE_URL}${encodeURIComponent(newImageUrl)}`;
     setStaffData((prevData) =>
       prevData.map((staff) =>
-        staff.id === staffId ? { ...staff, imageUrl: fullImageUrl } : staff
-      )
+        staff.id === staffId ? { ...staff, imageUrl: fullImageUrl } : staff,
+      ),
     );
   };
 
@@ -433,7 +432,7 @@ export default function TeamWorkOverview({ role }) {
   const getStaffProfile = async (baseStaff) => {
     try {
       const { data } = await axios.get("home/staff-profile");
-      console.log(data)
+      console.log(data);
 
       const taskDetailsMap = (data.data || []).reduce((acc, profile) => {
         acc[profile.staffId] = {
@@ -474,8 +473,7 @@ export default function TeamWorkOverview({ role }) {
             Our Squad
           </h2>
           <p className="text-gray-500 text-sm mt-1">
-            Hover over any member to view their current
-            task metrics.
+            Hover over any member to view their current task metrics.
           </p>
         </div>
         <div>
