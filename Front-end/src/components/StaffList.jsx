@@ -4,10 +4,10 @@ import {
   User,
   X,
   Upload,
-  PlayCircle, // Stage 1: Not Started
-  RotateCcw, // Stage 3: In Review
-  Send, // Stage 2: Ongoing
-  CheckSquare, // Stage 4: Completed
+  PlayCircle,
+  RotateCcw,
+  Send,
+  CheckSquare,
 } from "lucide-react";
 import axios from "../instance/Axios";
 
@@ -15,12 +15,10 @@ import DEFAULT_AVATAR from "../assets/images/default.png";
 
 import Swal from "sweetalert2";
 
-// --- Base URL for Staff Profile Images (UPDATED based on user's new link) ---
+// --- Base URL for Staff Profile Images ---
 const STAFF_PROFILE_BASE_URL = `${import.meta.env.VITE_BACKEND_URL}/api/images/`;
 
-console.log("STAFF_PROFILE_BASE_URL", STAFF_PROFILE_BASE_URL);
-
-// --- Staff Tooltip Component (UNCHANGED) ---
+// --- Staff Tooltip Component ---
 const StaffTooltip = ({ staff, position, onStay, onLeave }) => {
   if (!staff || !staff.work) return null;
 
@@ -43,7 +41,6 @@ const StaffTooltip = ({ staff, position, onStay, onLeave }) => {
       </h3>
 
       <div className="space-y-2 text-sm">
-        {/* Stage 1: Not Started */}
         <div className="flex justify-between items-center text-gray-500">
           <span className="flex items-center">
             <PlayCircle className="w-4 h-4 mr-2" /> Stage 1: Not Started
@@ -51,7 +48,6 @@ const StaffTooltip = ({ staff, position, onStay, onLeave }) => {
           <span className="font-semibold text-base">{taskCounts.stage1}</span>
         </div>
 
-        {/* Stage 2: Ongoing */}
         <div className="flex justify-between items-center text-indigo-700">
           <span className="flex items-center">
             <Send className="w-4 h-4 mr-2" /> Stage 2: Ongoing
@@ -59,7 +55,6 @@ const StaffTooltip = ({ staff, position, onStay, onLeave }) => {
           <span className="font-semibold text-base">{taskCounts.stage2}</span>
         </div>
 
-        {/* Stage 3: In Review */}
         <div className="flex justify-between items-center text-yellow-700">
           <span className="flex items-center">
             <RotateCcw className="w-4 h-4 mr-2" /> Stage 3: In Review
@@ -67,7 +62,6 @@ const StaffTooltip = ({ staff, position, onStay, onLeave }) => {
           <span className="font-semibold text-base">{taskCounts.stage3}</span>
         </div>
 
-        {/* Stage 4: Completed */}
         <div className="flex justify-between items-center text-green-700">
           <span className="flex items-center">
             <CheckSquare className="w-4 h-4 mr-2" /> Stage 4: Completed
@@ -75,7 +69,6 @@ const StaffTooltip = ({ staff, position, onStay, onLeave }) => {
           <span className="font-semibold text-base">{taskCounts.stage4}</span>
         </div>
 
-        {/* Total Tasks */}
         <div className="pt-2 border-t mt-2 flex justify-between items-center text-red-700">
           <span className="flex items-center font-bold">
             <Briefcase className="w-4 h-4 mr-2" />
@@ -88,8 +81,7 @@ const StaffTooltip = ({ staff, position, onStay, onLeave }) => {
   );
 };
 
-// --- Staff Modal Component (FIXED) ---
-
+// --- Staff Modal Component ---
 const StaffModal = ({
   isOpen,
   onClose,
@@ -103,7 +95,6 @@ const StaffModal = ({
   const [imagePreview, setImagePreview] = useState(null);
 
   useEffect(() => {
-    // If the selected staff member is removed from staffList (e.g., API update), reset selection
     if (
       staffList.length > 0 &&
       selectedStaffId !== "" &&
@@ -119,7 +110,6 @@ const StaffModal = ({
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-
     if (file) {
       setImageFile(file);
       const reader = new FileReader();
@@ -131,14 +121,11 @@ const StaffModal = ({
       setImageFile(null);
       setImagePreview(null);
     }
-
     e.target.value = null;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Check against "" instead of null/false
     if (selectedStaffId === "" || !imageFile) {
       Swal.fire({
         title: "Missing Information",
@@ -149,13 +136,9 @@ const StaffModal = ({
       return;
     }
 
-    const currentStaff = staffList.find(
-      (s) => s.id === Number(selectedStaffId),
-    );
-
+    const currentStaff = staffList.find((s) => s.id === Number(selectedStaffId));
     if (!currentStaff) return;
 
-    // Prepare form data
     const formData = new FormData();
     formData.append("id", currentStaff.id);
     formData.append("name", currentStaff.name);
@@ -164,22 +147,18 @@ const StaffModal = ({
 
     try {
       const response = await axios.post("home/staff-profile", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
       const updatedStaff = response.data;
-
+      // Pass the new image URL from response to the update handler
       onStaffUpdate(updatedStaff.id, updatedStaff.imageUrl);
 
-      // Reset local state after successful submission
       setImageFile(null);
       setImagePreview(null);
       setSelectedStaffId("");
       onClose();
 
-      // *** SweetAlert2 Success Alert ***
       Swal.fire({
         title: "Success!",
         text: `Image for ${currentStaff.name} updated successfully!`,
@@ -187,12 +166,9 @@ const StaffModal = ({
         confirmButtonColor: "#3085d6",
       });
 
-      // Toggle refresh state to trigger main data fetch
       setRefresh(!refresh);
     } catch (error) {
       console.error("Error updating staff image:", error);
-
-      // *** SweetAlert2 Error Alert ***
       Swal.fire({
         title: "Error!",
         text: "Failed to update staff image. Please try again.",
@@ -215,39 +191,23 @@ const StaffModal = ({
           <h3 className="text-xl font-bold text-indigo-700 flex items-center">
             <Upload className="w-5 h-5 mr-2" /> Update Staff Profile Image
           </h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="w-6 h-6" />
           </button>
         </div>
 
-        {/* Modal Body (Form) */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Staff Selection */}
           <div>
-            <label
-              htmlFor="staff-select"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
+            <label htmlFor="staff-select" className="block text-sm font-medium text-gray-700 mb-2">
               Select Staff Member:
             </label>
             <select
               id="staff-select"
               value={selectedStaffId}
-              onChange={(e) => {
-                // **FIX:** We only update the staff ID.
-                // We keep the image selection persistent until the user selects a new image.
-                setSelectedStaffId(e.target.value);
-              }}
+              onChange={(e) => setSelectedStaffId(e.target.value)}
               className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
             >
-              <option value="" disabled>
-                Select a staff member
-              </option>
-
-              {/* Map through the actual staff list */}
+              <option value="" disabled>Select a staff member</option>
               {staffList.map((staff) => (
                 <option key={staff.id} value={staff.id}>
                   {staff.name} ({staff.email})
@@ -256,17 +216,13 @@ const StaffModal = ({
             </select>
           </div>
 
-          {/* Current Info Display (name + email) */}
           {selectedStaff && (
             <div className="text-sm bg-indigo-50 p-3 rounded-lg border border-indigo-200">
-              <p className="font-semibold text-indigo-700">
-                Selected Staff: {selectedStaff.name}
-              </p>
+              <p className="font-semibold text-indigo-700">Selected Staff: {selectedStaff.name}</p>
               <p className="text-gray-600">Email: {selectedStaff.email}</p>
             </div>
           )}
 
-          {/* Image Upload Area */}
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-400 transition-all">
             <label htmlFor="image-upload" className="block cursor-pointer">
               <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
@@ -283,7 +239,6 @@ const StaffModal = ({
             </label>
           </div>
 
-          {/* Image Preview */}
           {imagePreview ? (
             <div className="text-center">
               <p className="text-sm font-medium mb-2">Image Preview:</p>
@@ -294,17 +249,13 @@ const StaffModal = ({
               />
             </div>
           ) : (
-            <p className="text-center text-sm text-gray-500">
-              No image selected.
-            </p>
+            <p className="text-center text-sm text-gray-500">No image selected.</p>
           )}
 
-          {/* Submit Button */}
           <div className="pt-4 border-t">
             <button
               type="submit"
               className="w-full px-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition-all duration-200 shadow-md disabled:bg-indigo-300"
-              // Disabled if no staff is selected (selectedStaffId is "") OR no image is selected
               disabled={selectedStaffId === "" || !imageFile}
             >
               Save New Profile Image
@@ -316,8 +267,7 @@ const StaffModal = ({
   );
 };
 
-// --- Main Component (UNCHANGED) ---
-
+// --- Main Component ---
 export default function TeamWorkOverview({ role }) {
   const [staffData, setStaffData] = useState([]);
   const [staffTaskDetails, setStaffTaskDetails] = useState({});
@@ -331,48 +281,32 @@ export default function TeamWorkOverview({ role }) {
     setButton(role);
   }, [role]);
 
-  // console.log(taskDetails)
-
-  // --- Helper to merge data and get final structure (UPDATED BASE URL) ---
+  // --- Helper to merge data ---
   const mergeStaffData = (staffList, taskDetails) => {
-   return staffList.map((staff) => {
-    const taskDetail = taskDetails[staff.id] || {};
+    return staffList.map((staff) => {
+      const taskDetail = taskDetails[staff.id] || {};
+      const defaultWork = { stage1: 0, stage2: 0, stage3: 0, stage4: 0, total: 0 };
+      const fileName = taskDetail.imageUrl;
 
-      const defaultWork = {
-        stage1: 0,
-        stage2: 0,
-        stage3: 0,
-        stage4: 0,
-        total: 0,
+      // FIXED: Added check to prevent .replace() on undefined
+      const finalImageUrl = (fileName && typeof fileName === 'string')
+        ? `${STAFF_PROFILE_BASE_URL}${fileName.replace(/ /g, "%20")}`
+        : DEFAULT_AVATAR;
+
+      return {
+        ...staff,
+        imageUrl: finalImageUrl,
+        work: taskDetail.taskCounts || defaultWork,
       };
-
-     const fileName = taskDetail.imageUrl;
-
-    // Use replace logic or careful encoding for the filename
-    const finalImageUrl = fileName
-      ? `${STAFF_PROFILE_BASE_URL}${fileName.replace(/ /g, "%20")}`
-      : DEFAULT_AVATAR;
-
-    return {
-      ...staff,
-      imageUrl: finalImageUrl,
-      work: taskDetail.taskCounts || defaultWork,
-    };
-  });
-};
-
+    });
+  };
 
   const handleMouseEnter = (staff, event) => {
     const targetRect = event.currentTarget.getBoundingClientRect();
-    const containerRect = event.currentTarget
-      .closest(".relative")
-      .getBoundingClientRect();
-
+    const containerRect = event.currentTarget.closest(".relative").getBoundingClientRect();
     const TOOLTIP_HALF_WIDTH = 128;
-    const x_centered =
-      targetRect.left - containerRect.left + targetRect.width / 2;
+    const x_centered = targetRect.left - containerRect.left + targetRect.width / 2;
     const x = Math.max(x_centered, TOOLTIP_HALF_WIDTH + 10);
-
     const tooltipHeight = 150;
     const y = targetRect.top - containerRect.top - tooltipHeight;
 
@@ -380,13 +314,10 @@ export default function TeamWorkOverview({ role }) {
     setTooltipPosition({ x, y });
   };
 
-  const handleLeave = () => {
-    setHoveredStaff(null);
-  };
+  const handleLeave = () => setHoveredStaff(null);
 
-  // --- Handle staff update logic (UPDATED BASE URL) ---
+  // --- Handle staff update logic ---
   const handleStaffUpdate = (staffId, newImageUrl) => {
-    // 1. Update staffTaskDetails with the new filename/path
     setStaffTaskDetails((prevDetails) => ({
       ...prevDetails,
       [staffId]: {
@@ -395,24 +326,26 @@ export default function TeamWorkOverview({ role }) {
       },
     }));
 
-    // 2. Immediately update staffData with the full URL to refresh the avatar
-const fullImageUrl = `${STAFF_PROFILE_BASE_URL}${newImageUrl.replace(/ /g, "%20")}`;
+    // FIXED: Added check to prevent .replace() on undefined
+    const safePath = (newImageUrl && typeof newImageUrl === 'string') 
+      ? newImageUrl.replace(/ /g, "%20") 
+      : "";
+    
+    const fullImageUrl = safePath 
+      ? `${STAFF_PROFILE_BASE_URL}${safePath}` 
+      : DEFAULT_AVATAR;
 
-setStaffData((prevData) =>
+    setStaffData((prevData) =>
       prevData.map((staff) =>
-        staff.id === staffId ? { ...staff, imageUrl: fullImageUrl } : staff,
-      ),
+        staff.id === staffId ? { ...staff, imageUrl: fullImageUrl } : staff
+      )
     );
   };
-
-
-  // --- Fetch real staff list from API ---
 
   const fetchStaffData = async () => {
     try {
       const { data } = await axios.get("home/staff-details");
       const apiStaff = data.staffDetails || data;
-
       const baseStaff = apiStaff.map((staff) => ({
         id: staff.id,
         name: staff.name,
@@ -422,7 +355,6 @@ setStaffData((prevData) =>
         imageUrl: DEFAULT_AVATAR,
         work: { stage1: 0, stage2: 0, stage3: 0, stage4: 0, total: 0 },
       }));
-
       setStaffData(baseStaff);
       return baseStaff;
     } catch (error) {
@@ -431,12 +363,9 @@ setStaffData((prevData) =>
     }
   };
 
-  // --- Fetch staff profile and task data and merge ---
   const getStaffProfile = async (baseStaff) => {
     try {
       const { data } = await axios.get("home/staff-profile");
-      console.log(data);
-
       const taskDetailsMap = (data.data || []).reduce((acc, profile) => {
         acc[profile.staffId] = {
           imageUrl: profile.imageUrl,
@@ -444,9 +373,7 @@ setStaffData((prevData) =>
         };
         return acc;
       }, {});
-
       setStaffTaskDetails(taskDetailsMap);
-
       if (baseStaff.length > 0) {
         const finalStaff = mergeStaffData(baseStaff, taskDetailsMap);
         setStaffData(finalStaff);
@@ -456,7 +383,6 @@ setStaffData((prevData) =>
     }
   };
 
-  // --- Combined useEffect to fetch both sets of data ---
   useEffect(() => {
     const initializeData = async () => {
       const baseStaff = await fetchStaffData();
@@ -508,7 +434,6 @@ setStaffData((prevData) =>
                 <img
                   src={staff.imageUrl}
                   alt={staff.name}
-                  // Fallback to DEFAULT_AVATAR if the fetched image link is broken
                   onError={(e) => {
                     e.currentTarget.onerror = null;
                     e.currentTarget.src = DEFAULT_AVATAR;
@@ -522,7 +447,6 @@ setStaffData((prevData) =>
             </div>
           </div>
         ))}
-
         {staffData.length === 0 && (
           <p className="text-sm text-gray-400 mt-4">Loading staff details...</p>
         )}

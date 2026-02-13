@@ -86,7 +86,8 @@ const Sidebar = ({ closeSidebar }) => {
       subMenu: [
         { title: "Contacts", path: "/operations/contacts", icon: Users },
         { title: "Check list", path: "/operations/personalize", icon: Shield },
-        // { title: "Invoice model", path: "/operations/invoice", icon: ClipboardList },
+        { title: "GST Invoice", path: "/operations/gst-invoice", icon: ClipboardList },
+        { title: "Non-GST Invoice", path: "/operations/invoice", icon: ClipboardList },
         { title: "Pending", path: "/operations/pendings", icon: Hourglass },
         { title: "Rework", path: "/operations/reworks", icon: RotateCcw },
         {
@@ -208,7 +209,7 @@ const Sidebar = ({ closeSidebar }) => {
         { title: "Highlights", path: "/operations/deals", icon: Briefcase },
         { title: "Assignment", path: "/workspace/todo", icon: ClipboardList },
         { title: "Tasks", path: "/activities/task/port", icon: ClipboardList },
-
+        { title: "Invoice Form", path: "/operations/invoice", icon: ClipboardList },
         { title: "Pending", path: "/operations/pending/task", icon: Hourglass },
         {
           title: "Completed",
@@ -530,7 +531,6 @@ const Sidebar = ({ closeSidebar }) => {
           </nav>
         </div>
       </div>
-
       {/* --- Logout Button --- */}
       <div className="space-y-2 p-4 border-t border-gray-200">
         <div

@@ -70,7 +70,8 @@ import RejectedWorks from './pages/rejection/RejectedWorks';
 import AdminRejectedWork from './pages/rejection/adminRejectedWork/AdminRejectedWork';
 import WorklogDetail from "./pages/workspace-pages/admin_workspace_side/WorklogDetail";
 import SubTaskForAdmin from './pages/activity-pages/admin_activity/SubTaskForAdmin';
-import InvoiceModel from './pages/operation-pages/InvoiceModel';
+import GstInvoiceModel from './pages/operation-pages/GstInvoiceModel';
+import InvoiceModel from './pages/operation-pages/NonGstInvoice';
 
 import Pipeline from "./pages/home-page/adminSide/Pipeline";
 import EmployeeAbsence from "./pages/workspace-pages/EmployeeAbsence";
@@ -381,9 +382,17 @@ function Layout() {
             }
           />
           <Route
+            path="/operations/gst-invoice"
+            element={
+              <ProtectedRoute allowedRoles={["staff","admin"]}>
+                <GstInvoiceModel />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/operations/invoice"
             element={
-              <ProtectedRoute allowedRoles={["staff"]}>
+              <ProtectedRoute allowedRoles={["staff","admin"]}>
                 <InvoiceModel />
               </ProtectedRoute>
             }

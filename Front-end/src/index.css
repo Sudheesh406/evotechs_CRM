@@ -44,3 +44,211 @@
 }
 
 
+
+/* General Document Setup */
+.invoice-container {
+  max-width: 800px;
+  margin: 20px auto;
+  background: white;
+  padding: 10px;
+  font-family: Arial, sans-serif;
+  color: #000;
+  border: 1px solid #000;
+}
+
+.invoice-border-outer {
+  border: 1px solid #000;
+  padding: 2px;
+}
+
+/* Header Section */
+.header-wrapper {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+  align-items: flex-start;
+}
+
+.logo-section {
+  width: 40%;
+  padding-left: 10px;
+}
+
+.invoice-info-box {
+  width: 45%;
+}
+
+.invoice-title {
+  border: 1px solid #000;
+  text-align: center;
+  font-size: 24px;
+  font-weight: bold;
+  letter-spacing: 5px;
+  margin-bottom: 2px;
+  padding: 5px 0;
+}
+
+.invoice-meta-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.invoice-meta-table td {
+  border: 1px solid #000;
+  text-align: center;
+  font-weight: bold;
+  font-size: 11px;
+  padding: 4px;
+}
+
+/* Address Section (The "Company Left / Bill To Right" layout) */
+.address-section {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.company-details {
+  width: 45%;
+  border: 1px solid #000;
+}
+
+.company-name {
+  border-bottom: 1px solid #000;
+  font-weight: bold;
+  padding: 4px;
+}
+
+.company-info {
+  padding: 4px;
+  line-height: 1.4;
+  font-size: 12px;
+}
+
+.bill-to-section {
+  width: 45%;
+  border: 1px solid #000;
+}
+
+.bill-to-header {
+  background: #000;
+  color: #fff;
+  font-weight: bold;
+  padding: 4px;
+  font-size: 11px;
+}
+
+.bill-to-info {
+  padding: 4px;
+  font-size: 12px;
+}
+
+/* Items Table */
+.items-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 10px;
+}
+
+.items-table th, .items-table td {
+  border: 1px solid #000;
+  padding: 4px;
+  font-size: 11px;
+}
+
+.items-table th {
+  text-align: center;
+}
+
+.row-h-100 { height: 100px; vertical-align: top; }
+.row-h-blank { height: 25px; }
+
+/* Summary & Totals */
+.summary-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-top: 10px;
+}
+
+.tax-summary-table {
+  width: 25%;
+  border-collapse: collapse;
+}
+
+.tax-summary-table td, .tax-summary-table th {
+  border: 1px solid #000;
+  font-size: 11px;
+  padding: 2px 4px;
+}
+
+.amount-in-words {
+  width: 40%;
+  text-align: center;
+  font-size: 11px;
+}
+
+.totals-box {
+  width: 33%;
+  border: 1px solid #000;
+}
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px;
+  border-bottom: 1px solid #000;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.total-row:last-child { border-bottom: none; }
+
+/* Bank Details */
+.bank-details-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.bank-table {
+  width: 45%;
+  border: 1px solid #000;
+  border-collapse: collapse;
+}
+
+.bank-table th {
+  background: #f0f0f0;
+  border-bottom: 1px solid #000;
+  font-size: 10px;
+}
+
+.bank-table td {
+  border: 1px solid #000;
+  padding: 3px;
+  font-size: 11px;
+}
+
+/* Footer */
+.footer-text {
+  margin-top: 20px;
+  font-size: 10px;
+  font-style: italic;
+  border-top: 1px solid #000;
+  padding-top: 5px;
+}
+
+/* Input Resets for editing */
+.invoice-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font: inherit;
+  padding: 0;
+  outline: none;
+}
+
+@media print {
+  .no-print { display: none; }
+}
+
