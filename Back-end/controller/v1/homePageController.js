@@ -167,6 +167,8 @@ const profileUpload = async (req, res) => {
     const data = req.body;
     const image = req.file;
 
+    // console.log('image',image)
+
    const access = await roleChecker(user.id);
     if (!access) {
       return httpError(res, 403, "Access denied. Admins only.");
@@ -204,6 +206,7 @@ const profileUpload = async (req, res) => {
       name: data.name,
       email: data.email,
     });
+
 
     return res.json({
       success: true,

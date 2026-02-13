@@ -95,9 +95,7 @@ const Invoice = () => {
 
   // --- Automatic Calculations ---
   const subtotal = items.reduce((sum, itm) => sum + itm.unitPrice, 0);
-  const taxRate = 0.18; 
-  const totalTax = subtotal * taxRate;
-  const totalAmount = subtotal + totalTax;
+  const totalAmount = subtotal; // No tax calculation
   const balance = totalAmount - advance;
 
   const fmt = (num) => Number(num).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -212,8 +210,8 @@ const Invoice = () => {
               <div className="company-details" style={{ border: '1px solid #000', padding: '10px', width: '45%' }}>
                 <div className="company-name" style={{ fontWeight: 'bold' }}>EVO Finance Consultancy Pvt Ltd</div>
                 <div className="company-info" style={{ lineHeight: '1.4', fontSize: '0.9rem' }}>
-                  Tropicana Shopping Complex<br />
-                  PATHANAMTHITTA, KERALA-689645<br />
+                  Building No -26, 362
+                  3 Meraki, Plamoodu - Thekkamoodu Rd, near Anadiyil Hospital, Nethaji Nagar, Plammoodu, Thiruvananthapuram, Kerala 695004<br />
                   Mobile : 9446141240, 9544877473<br />
                   Web: <span style={{color: 'blue'}}>evofins.com</span><br />
                   Email: <span style={{color: 'blue'}}>mail@evotechs.in</span>
@@ -345,9 +343,7 @@ const Invoice = () => {
               </div>
 
               <div className="totals-box" style={{ width: '200px', border: '1px solid #000', padding: '5px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}><span>SUBTOTAL</span><span>{fmt(subtotal)}</span></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}><span>TAX</span><span>{fmt(totalTax)}</span></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderTop: '1px solid #000', fontWeight: 'bold' }}><span>TOTAL</span><span>{fmt(totalAmount)}</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', fontWeight: 'bold' }}><span>TOTAL</span><span>{fmt(totalAmount)}</span></div>
               </div>
             </div>
 
@@ -355,13 +351,13 @@ const Invoice = () => {
             <div className="bank-details-wrapper" style={{ marginTop: '20px' }}>
               <table className="bank-table" style={{ border: '1px solid #000', width: '300px', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ background: '#000', color: '#150101' }}><th colSpan="2" style={{ padding: '4px' }}>OUR BANK DETAILS</th></tr>
+                  <tr style={{ background: '#000', color: '#170a0a' }}><th colSpan="2" style={{ padding: '4px' }}>OUR BANK DETAILS</th></tr>
                 </thead>
-                <tbody>
-                  <tr style={{borderBottom: '1px solid #eee'}}><td style={{ padding: '4px' }}><strong>BANK NAME</strong></td><td style={{ padding: '4px' }}>: ICICI BANK</td></tr>
-                  <tr style={{borderBottom: '1px solid #eee'}}><td style={{ padding: '4px' }}><strong>BRANCH</strong></td><td style={{ padding: '4px' }}>: PATHANAMTHITTA</td></tr>
-                  <tr style={{borderBottom: '1px solid #eee'}}><td style={{ padding: '4px' }}><strong>A/c No.</strong></td><td style={{ padding: '4px' }}>: 021605001394</td></tr>
-                  <tr><td style={{ padding: '4px' }}><strong>IFSC</strong></td><td style={{ padding: '4px' }}>: ICIC0000216</td></tr>
+               <tbody>
+                  <tr style={{borderBottom: '1px solid #eee'}}><td style={{ padding: '4px' }}><strong>BANK NAME</strong></td><td style={{ padding: '4px' }}>: STATE BANK OF INDIA</td></tr>
+                  <tr style={{borderBottom: '1px solid #eee'}}><td style={{ padding: '4px' }}><strong>BRANCH</strong></td><td style={{ padding: '4px' }}>: PATTOM</td></tr>
+                  <tr style={{borderBottom: '1px solid #eee'}}><td style={{ padding: '4px' }}><strong>A/c No.</strong></td><td style={{ padding: '4px' }}>: 043454026647</td></tr>
+                  <tr><td style={{ padding: '4px' }}><strong>IFSC</strong></td><td style={{ padding: '4px' }}>: SBIN0070493</td></tr>
                 </tbody>
               </table>
             </div>

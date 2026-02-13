@@ -209,7 +209,8 @@ const Sidebar = ({ closeSidebar }) => {
         { title: "Highlights", path: "/operations/deals", icon: Briefcase },
         { title: "Assignment", path: "/workspace/todo", icon: ClipboardList },
         { title: "Tasks", path: "/activities/task/port", icon: ClipboardList },
-        { title: "Invoice Form", path: "/operations/invoice", icon: ClipboardList },
+        { title: "GST Invoice", path: "/operations/gst-invoice", icon: Shield },
+        { title: "Non-GST Invoice", path: "/operations/invoice", icon: Shield },
         { title: "Pending", path: "/operations/pending/task", icon: Hourglass },
         {
           title: "Completed",

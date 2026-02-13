@@ -216,7 +216,7 @@ const Invoice = () => {
                   PATHANAMTHITTA, KERALA-689645<br />
                   Mobile : 9446141240, 9544877473<br />
                   GSTN: 32GOYPS9637M1ZL<br />
-                  Web: <span style={{color: 'blue'}}>www.evotechs.in</span><br />
+                  Web: <span style={{color: 'blue'}}>evofins.com</span><br />
                   Email: <span style={{color: 'blue'}}>mail@evotechs.in</span>
                 </div>
               </div>

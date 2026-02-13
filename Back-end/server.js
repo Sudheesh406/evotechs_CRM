@@ -34,7 +34,6 @@ const rejectRoute = require('./routes/v1/rejectedRoute');
 const accountsRoute = require('./routes/v1/accountsRoute');
 const homePageRoute = require('./routes/v1/homePageRoute');
 
-app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
   origin: process.env.FRONTEND_URL,
@@ -80,7 +79,6 @@ const server = http.createServer(app);
 // Initialize Socket.IO
 const { init } = require("./utils/v1/socket.js");
 const io = init(server);
-
 
 // Start server
 const startServer = async () => {
